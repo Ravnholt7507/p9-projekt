@@ -10,7 +10,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
-string downloadData(const string &url, const string &outputFilePath)
+void downloadData(const string &url, const string &outputFilePath)
 {
     CURL* curl;
     CURLcode res;
@@ -27,7 +27,6 @@ string downloadData(const string &url, const string &outputFilePath)
 
         if (res != CURLE_OK) {
             cerr << "curl easy perform failed: " << curl_easy_strerror(res) << endl;
-            return curl_easy_strerror(res);
         } 
         else {
             curl_easy_cleanup(curl);
