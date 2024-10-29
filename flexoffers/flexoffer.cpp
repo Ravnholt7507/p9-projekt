@@ -9,11 +9,11 @@ using namespace std;
 time_t generateRandomTimestampToday(); 
 void printTimestamp(time_t timestamp); 
 int randomInt(int min, int max); 
+double randomDouble(double min, double max);
 
-Flexoffer::Flexoffer(int oi, time_t est, time_t lst, double *p, int d, time_t et){
+Flexoffer::Flexoffer(int oi, time_t est, time_t et, TimeSlice *p, int d){
         offer_id = oi;
         earliest_start_time = est;
-        latest_start_time = lst;
         for(int i = 0; i < 24; i++) {
             profile[i] = p[i];
         }
@@ -25,8 +25,6 @@ void Flexoffer::print_flexoffer(){
     cout << "Offer id: " << offer_id << endl << "Earliest start time: ";
     printTimestamp(earliest_start_time);
     cout << endl << "latest_start_time: ";
-    printTimestamp(latest_start_time);
-    cout << endl << "Profile elements: ";
     for(int i = 0; i < 24; i++){
         std::cout << profile[i] << " ";
     }
@@ -37,23 +35,47 @@ void Flexoffer::print_flexoffer(){
 
 Flexoffer generateFlexOffer(int id) {
     time_t earliest_start_time = generateRandomTimestampToday();
-    double kwh = 10;
     int duration = randomInt (1, 4);
-    double kwh_per_hour = kwh / duration;
-    int start_time  = randomInt(0, 23-duration);
-    double profile[24] = {0};
     time_t latest_end_time = earliest_start_time + (60*60*duration);
-    time_t end_time = earliest_start_time + (60*60*24);
 
-    for(int i = start_time; i < start_time + duration; i++){
-        profile[i] = kwh_per_hour;
+    // Ensure latest start time and latest end time make sense
+    if(earliest_start_time + (duration * 3600) > latest_end_time) {
+        earliest_start_time = latest_end_time - (duration * 3600);
     }
 
-    
-    Flexoffer obj(id, earliest_start_time, latest_end_time, profile, duration, end_time);
+    // Initialize profile with zeroes
+    TimeSlice profile[24];
+    for(int i = 0; i < 24; i++) {
+        profile[i].min_power = 0.0;
+        profile[i].max_power = 0.0;
+    }
+
+    // Determine the start hour (0 to 23 - duration)
+    // To align with earliest_start_time, convert earliest_start_time to hour
+    tm *est_tm = localtime(&earliest_start_time);
+    int earliest_hour = est_tm->tm_hour;
+
+
+    // Select a random start_hour between earliest_hour and latest_hour
+    // If earliest_hour > latest_hour, set start_hour to latest_hour
+    int start_hour = earliest_hour;
+
+
+    // Assign min and max power to each time slice in the duration
+    for(int i = start_hour; i < start_hour + duration; i++) {
+        profile[i].min_power = randomDouble(0.5, 1.0); // Min power between 0.5 and 1.0 kW
+        profile[i].max_power = randomDouble(1.0, 3.0); // Max power between 1.0 and 3.0 kW
+
+        // Ensure min_power <= max_power
+        if(profile[i].min_power > profile[i].max_power) {
+            swap(profile[i].min_power, profile[i].max_power);
+        }
+    }
+        // Create and return the Flexoffer object
+    Flexoffer obj(id, earliest_start_time, latest_end_time, profile, duration);
 
     return obj;
-}
+
 
 time_t generateRandomTimestampToday() {
     // Get the current time and date
@@ -91,5 +113,12 @@ int randomInt(int min, int max) {
     std::uniform_int_distribution<> dist(min, max);
 
     // Generate and return a random integer between min and max
+    return dist(gen);
+}
+
+double randomDouble(double min, double max) {
+    static random_device rd;
+    static mt19937 gen(rd());
+    uniform_real_distribution<> dist(min, max);
     return dist(gen);
 }
