@@ -1,17 +1,19 @@
 #ifndef FLEXOFFER_H
 #define FLEXOFFER_H
+#include <ctime>
 class Flexoffer{
     int offer_id;
-    int earliest_start_time;
-    int latest_start_time;
+    time_t earliest_start_time;
+    time_t latest_start_time;
     double profile[24] = {0};
     int duration; 
-    int end_time;
+    time_t end_time;
     
     public:
-        Flexoffer(int oi, int est, int lst, double *p, int d, int et);
+        Flexoffer(int oi, time_t est, time_t lst, double *p, int d, time_t et);
         void print_flexoffer();
 
 };
 
+Flexoffer generateFlexOffer(int id);
 #endif
