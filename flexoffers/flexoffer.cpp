@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iomanip>
 #include "random"
+#include "vector"
 #include "flexoffer.h"
 using namespace std;
 
@@ -12,14 +13,14 @@ int randomInt(int min, int max);
 double randomDouble(double min, double max);
 
 Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, TimeSlice *p, int d){
-        offer_id = oi;
-        earliest_start_time = est;
-        latest_start_time = lst;
-        for(int i = 0; i < 24; i++) {
-            profile[i] = p[i];
-        }
-        duration = d;
-        end_time = et;
+    offer_id = oi;
+    earliest_start_time = est;
+    latest_start_time = lst;
+    for(int i = 0; i < 24; i++) {
+        profile[i] = p[i];
+    }
+    duration = d;
+    end_time = et;
 };
 
 // Method to print Flexoffer details
@@ -92,6 +93,16 @@ Flexoffer generateFlexOffer(int id) {
     Flexoffer obj(id, earliest_start_time, latest_start_time, end_time, profile, duration);
 
     return obj;
+}
+
+
+vector<Flexoffer> generateMultipleFlexOffers(int numOffers) {
+    vector<Flexoffer> flexOffers;
+    for (int i = 0; i < numOffers; ++i) {
+        Flexoffer flexOffer = generateFlexOffer(i + 1); // ID starts from 1
+        flexOffers.push_back(flexOffer); // Add each Flexoffer to the vector
+    }
+    return flexOffers;
 }
 
 

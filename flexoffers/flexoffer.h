@@ -1,6 +1,8 @@
 #ifndef FLEXOFFER_H
 #define FLEXOFFER_H
 #include <ctime>
+#include <vector>
+using namespace std;
 
 struct TimeSlice {
     double min_power; // Minimum power in kW
@@ -22,4 +24,5 @@ class Flexoffer{
 };
 
 Flexoffer generateFlexOffer(int id);
+vector<Flexoffer> generateMultipleFlexOffers(int num);
 #endif
