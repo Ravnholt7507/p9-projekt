@@ -11,9 +11,10 @@ void printTimestamp(time_t timestamp);
 int randomInt(int min, int max); 
 double randomDouble(double min, double max);
 
-Flexoffer::Flexoffer(int oi, time_t est, time_t et, TimeSlice *p, int d){
+Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, TimeSlice *p, int d){
         offer_id = oi;
         earliest_start_time = est;
+        latest_start_time = lst;
         for(int i = 0; i < 24; i++) {
             profile[i] = p[i];
         }
@@ -21,60 +22,77 @@ Flexoffer::Flexoffer(int oi, time_t est, time_t et, TimeSlice *p, int d){
         end_time = et;
 };
 
-void Flexoffer::print_flexoffer(){
-    cout << "Offer id: " << offer_id << endl << "Earliest start time: ";
-    printTimestamp(earliest_start_time);
-    cout << endl << "latest_start_time: ";
-    for(int i = 0; i < 24; i++){
-        std::cout << profile[i] << " ";
+// Method to print Flexoffer details
+void Flexoffer::print_flexoffer() {
+    // Helper lambda to convert time_t to readable format
+    auto to_readable = [](time_t timestamp) -> string {
+        char buffer[20];
+        struct tm * timeinfo = localtime(&timestamp);
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+        return string(buffer);
+    };
+
+    cout << "=== FlexOffer Details ===" << endl;
+    cout << "Offer ID: " << offer_id << endl;
+    cout << "Earliest Start Time: " << to_readable(earliest_start_time) << endl;
+    cout << "Latest Start Time:   " << to_readable(latest_start_time) << endl;
+    cout << "Latest End Time:     " << to_readable(end_time) << endl;
+    cout << "Duration:            " << duration << " hour(s)" << endl;
+    cout << "Profile Elements:" << endl;
+
+    for(int i = 0; i < 24; i++) {
+        if(profile[i].min_power > 0 || profile[i].max_power > 0) {
+            cout << "  Hour " << i << ": Min Power = " << fixed << setprecision(2) 
+                 << profile[i].min_power << " kW, Max Power = " 
+                 << profile[i].max_power << " kW" << endl;
+        }
     }
-    cout << endl << "Duration: " << duration << endl << "End time: ";
-    printTimestamp(end_time);
-    cout << endl;
+    cout << "==========================" << endl;
 }
 
 Flexoffer generateFlexOffer(int id) {
     time_t earliest_start_time = generateRandomTimestampToday();
-    int duration = randomInt (1, 4);
-    time_t latest_end_time = earliest_start_time + (60*60*duration);
+    int time_flex = randomInt(1, 4);
 
-    // Ensure latest start time and latest end time make sense
-    if(earliest_start_time + (duration * 3600) > latest_end_time) {
-        earliest_start_time = latest_end_time - (duration * 3600);
+    time_t latest_start_time = earliest_start_time + (time_flex * 3600);
+    int duration = randomInt(1, 4);
+
+    time_t end_time = latest_start_time + (duration * 3600);
+
+    if (latest_start_time + (duration * 3600) > end_time) {
+        latest_start_time = end_time - (duration * 3600);
     }
-
-    // Initialize profile with zeroes
     TimeSlice profile[24];
-    for(int i = 0; i < 24; i++) {
+    for (int i = 0; i < 24; i++) {
         profile[i].min_power = 0.0;
         profile[i].max_power = 0.0;
     }
-
-    // Determine the start hour (0 to 23 - duration)
-    // To align with earliest_start_time, convert earliest_start_time to hour
     tm *est_tm = localtime(&earliest_start_time);
     int earliest_hour = est_tm->tm_hour;
 
+    tm *lst_tm = localtime(&latest_start_time);
+    int latest_hour = lst_tm->tm_hour;
 
-    // Select a random start_hour between earliest_hour and latest_hour
-    // If earliest_hour > latest_hour, set start_hour to latest_hour
-    int start_hour = earliest_hour;
+    if (latest_hour > (23 - duration)) {
+        latest_hour = 23 - duration;
+    }
 
+    int start_hour = randomInt(earliest_hour, latest_hour);
 
-    // Assign min and max power to each time slice in the duration
-    for(int i = start_hour; i < start_hour + duration; i++) {
+    for (int i = start_hour; i < start_hour + duration; i++) {
         profile[i].min_power = randomDouble(0.5, 1.0); // Min power between 0.5 and 1.0 kW
         profile[i].max_power = randomDouble(1.0, 3.0); // Max power between 1.0 and 3.0 kW
 
-        // Ensure min_power <= max_power
-        if(profile[i].min_power > profile[i].max_power) {
+        if (profile[i].min_power > profile[i].max_power) {
             swap(profile[i].min_power, profile[i].max_power);
         }
     }
-        // Create and return the Flexoffer object
-    Flexoffer obj(id, earliest_start_time, latest_end_time, profile, duration);
+
+    // Create and return the Flexoffer object
+    Flexoffer obj(id, earliest_start_time, latest_start_time, end_time, profile, duration);
 
     return obj;
+}
 
 
 time_t generateRandomTimestampToday() {
@@ -89,16 +107,17 @@ time_t generateRandomTimestampToday() {
     local_tm.tm_sec = 0;
     time_t start_of_day = mktime(&local_tm);
 
-    // Generate a random number of seconds to add (0 to 86399)
+    // Generate a random number of hours to add (0 to 23)
     random_device rd;
     mt19937 gen(rd());
-    uniform_int_distribution<> dist(0, 86399); // Total seconds in a day minus one
+    uniform_int_distribution<> hour_dist(0, 23);
 
-    // Add random seconds to the start of the day
-    time_t random_timestamp = start_of_day + dist(gen);
+    // Add random hours to the start of the day
+    time_t random_timestamp = start_of_day + (hour_dist(gen) * 3600);
 
     return random_timestamp;
 }
+
 
 void printTimestamp(time_t timestamp) {
     tm local_tm = *localtime(&timestamp);
