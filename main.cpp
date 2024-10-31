@@ -1,6 +1,7 @@
 #include <vector>
 #include "flexoffers/flexoffer.h"
 #include "aggregation/aggregation.h"
+#include "evaluation/evaluation.h"
 using namespace std;
 
 int main(){
@@ -13,6 +14,8 @@ int main(){
 
     Flexoffer aggregatedOffer = AggregateFlexOffers(flexOffers);
     aggregatedOffer.print_flexoffer();
+
+    evaluateAggregatedFlexOffer(flexOffers, aggregatedOffer);
     return 0;
 }
 

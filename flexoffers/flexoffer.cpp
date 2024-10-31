@@ -92,7 +92,6 @@ Flexoffer generateFlexOffer(int id) {
     return obj;
 }
 
-
 vector<Flexoffer> generateMultipleFlexOffers(int numOffers) {
     vector<Flexoffer> flexOffers;
     for (int i = 1; i <= numOffers; i++) {
@@ -101,7 +100,6 @@ vector<Flexoffer> generateMultipleFlexOffers(int numOffers) {
     }
     return flexOffers;
 }
-
 
 time_t generateRandomTimestampToday() {
     // Get the current time and date
@@ -122,7 +120,6 @@ time_t generateRandomTimestampToday() {
 
     return random_timestamp;
 }
-
 
 void printTimestamp(time_t timestamp) {
     tm local_tm = *localtime(&timestamp);
