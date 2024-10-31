@@ -12,8 +12,8 @@ int main(){
         flexOffers[i].print_flexoffer();
     }
 
-    Flexoffer aggregatedOffer = AggregateFlexOffers(flexOffers);
-    aggregatedOffer.print_flexoffer();
+    AggregatedFlexOffer obj(flexOffers);
+    obj.print_flexoffer();
 
     evaluateAggregatedFlexOffer(flexOffers, aggregatedOffer);
     return 0;

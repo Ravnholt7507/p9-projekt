@@ -1,24 +1,29 @@
-#include <ctime>
 #include "vector"
 #include "aggregation.h"
 #include "../flexoffers/flexoffer.h"
 using namespace std;
 
-Flexoffer AggregateFlexOffers(vector<Flexoffer> offers){
-    time_t aggregated_earliest = offers[0].earliest_start_time;
-    time_t aggregated_end_time = offers[0].end_time;
-    TimeSlice aggregatedprofile[24] = {0};
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> offers){
+    id = offer_id;
+    duration = 24;
+    aggregated_earliest = offers[0].earliest_start_time;
+    aggregated_end_time = offers[0].end_time;
 
     for (unsigned int i=1; i < offers.size(); i++){
         aggregated_earliest = min(aggregated_earliest, offers[i].earliest_start_time);
         aggregated_end_time = max(aggregated_end_time, offers[i].end_time);
 
         for (int j = 0; j < 24; j++ ){
-            aggregatedprofile[j].min_power += offers[i].profile[j].min_power;
-            aggregatedprofile[j].max_power += offers[i].profile[j].max_power;
+            aggregated_profile[j].min_power += offers[i].profile[j].min_power;
+            aggregated_profile[j].max_power += offers[i].profile[j].max_power;
         }
     }
+    
+    for(unsigned int i = 0; i < offers.size(); i++){
+        individual_offers.push_back(offers[i]);
+    }
+};
 
-    Flexoffer obj(0, aggregated_earliest, aggregated_earliest, aggregated_end_time, aggregatedprofile, 24);
-    return obj;
-}
+void AggregatedFlexOffer::pretty_print(){
+    
+};
