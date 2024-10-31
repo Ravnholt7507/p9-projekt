@@ -4,6 +4,7 @@
 #include <vector>
 using namespace std;
 
+
 struct TimeSlice {
     double min_power; // Minimum power in kW
     double max_power; // Maximum power in kW
@@ -14,7 +15,7 @@ class Flexoffer{
     time_t earliest_start_time;
     time_t latest_start_time;
     time_t end_time;
-    TimeSlice profile[24] = {0};
+    TimeSlice profile[24];
     int duration; 
     
     public:

@@ -63,6 +63,7 @@ Flexoffer generateFlexOffer(int id) {
     if (latest_start_time + (duration * 3600) > end_time) {
         latest_start_time = end_time - (duration * 3600);
     }
+
     TimeSlice profile[24];
     for (int i = 0; i < 24; i++) {
         profile[i].min_power = 0.0;
@@ -83,10 +84,6 @@ Flexoffer generateFlexOffer(int id) {
     for (int i = start_hour; i < start_hour + duration; i++) {
         profile[i].min_power = randomDouble(0.5, 1.0); // Min power between 0.5 and 1.0 kW
         profile[i].max_power = randomDouble(1.0, 3.0); // Max power between 1.0 and 3.0 kW
-
-        if (profile[i].min_power > profile[i].max_power) {
-            swap(profile[i].min_power, profile[i].max_power);
-        }
     }
 
     // Create and return the Flexoffer object
@@ -98,8 +95,8 @@ Flexoffer generateFlexOffer(int id) {
 
 vector<Flexoffer> generateMultipleFlexOffers(int numOffers) {
     vector<Flexoffer> flexOffers;
-    for (int i = 0; i < numOffers; ++i) {
-        Flexoffer flexOffer = generateFlexOffer(i + 1); // ID starts from 1
+    for (int i = 1; i <= numOffers; i++) {
+        Flexoffer flexOffer = generateFlexOffer(i); // ID starts from 1
         flexOffers.push_back(flexOffer); // Add each Flexoffer to the vector
     }
     return flexOffers;
@@ -119,12 +116,9 @@ time_t generateRandomTimestampToday() {
     time_t start_of_day = mktime(&local_tm);
 
     // Generate a random number of hours to add (0 to 23)
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<> hour_dist(0, 23);
-
+    int hour_dist = randomInt(0,18);
     // Add random hours to the start of the day
-    time_t random_timestamp = start_of_day + (hour_dist(gen) * 3600);
+    time_t random_timestamp = start_of_day + (hour_dist * 3600);
 
     return random_timestamp;
 }
@@ -136,19 +130,20 @@ void printTimestamp(time_t timestamp) {
 }
 
 
+static random_device rd;
+static mt19937 gen(rd());
+
 int randomInt(int min, int max) {
+    cout << "Min: " << min << endl;
+    cout << "Max: " << max << endl;
      // Random number generator seeded with random_device
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(min, max);
+    uniform_int_distribution<> dist(min, max);
 
     // Generate and return a random integer between min and max
     return dist(gen);
 }
 
 double randomDouble(double min, double max) {
-    static random_device rd;
-    static mt19937 gen(rd());
     uniform_real_distribution<> dist(min, max);
     return dist(gen);
 }
