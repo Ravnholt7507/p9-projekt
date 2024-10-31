@@ -13,9 +13,7 @@ int main(){
     }
 
     AggregatedFlexOffer obj(0, flexOffers);
-    obj.pretty_print();
-    Flexoffer aggregatedOffer(1, obj.aggregated_earliest, obj.aggregated_earliest, obj.aggregated_end_time, obj.aggregated_profile, obj.duration);
-    evaluateAggregatedFlexOffer(obj.individual_offers, aggregatedOffer);
+    evaluateAggregatedFlexOffer(obj);
     return 0;
 }
 
