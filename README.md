@@ -7,3 +7,6 @@
         - Array-like time tracker 
 - Finde test data + preprocessing
 - Implementere aggregerings algoritmer
+    - Dis-aggregering
+    - Grouping og bin-packing
+    - Evaluere 
