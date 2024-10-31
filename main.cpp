@@ -12,10 +12,10 @@ int main(){
         flexOffers[i].print_flexoffer();
     }
 
-    AggregatedFlexOffer obj(flexOffers);
-    obj.print_flexoffer();
-
-    evaluateAggregatedFlexOffer(flexOffers, aggregatedOffer);
+    AggregatedFlexOffer obj(0, flexOffers);
+    obj.pretty_print();
+    Flexoffer aggregatedOffer(1, obj.aggregated_earliest, obj.aggregated_earliest, obj.aggregated_end_time, obj.aggregated_profile, obj.duration);
+    evaluateAggregatedFlexOffer(obj.individual_offers, aggregatedOffer);
     return 0;
 }
 
