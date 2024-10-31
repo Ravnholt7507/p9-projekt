@@ -1,8 +1,4 @@
-#include <iostream>
 #include <ctime>
-#include <chrono>
-#include <iomanip>
-#include "random"
 #include "vector"
 #include "aggregation.h"
 #include "../flexoffers/flexoffer.h"
@@ -15,7 +11,7 @@ Flexoffer AggregateFlexOffers(vector<Flexoffer> offers){
 
     for (unsigned int i=1; i < offers.size(); i++){
         aggregated_earliest = min(aggregated_earliest, offers[i].earliest_start_time);
-        aggregated_end_time = min(aggregated_end_time, offers[i].earliest_start_time);
+        aggregated_end_time = max(aggregated_end_time, offers[i].earliest_start_time);
 
         for (int j = 0; j < 24; j++ ){
             aggregatedprofile[j].min_power += offers[i].profile[j].min_power;
