@@ -134,8 +134,6 @@ static random_device rd;
 static mt19937 gen(rd());
 
 int randomInt(int min, int max) {
-    cout << "Min: " << min << endl;
-    cout << "Max: " << max << endl;
      // Random number generator seeded with random_device
     uniform_int_distribution<> dist(min, max);
 
