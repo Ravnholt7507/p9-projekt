@@ -1,11 +1,10 @@
 #include <vector>
 #include "flexoffers/flexoffer.h"
 #include "aggregation/aggregation.h"
-#include "evaluation/evaluation.h"
 using namespace std;
 
 int main(){
-    int numOffers = 5;
+    int numOffers = 1;
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
 
     for(int i = 0; i < numOffers; i++){
@@ -13,7 +12,8 @@ int main(){
     }
 
     AggregatedFlexOffer obj(0, flexOffers);
-    evaluateAggregatedFlexOffer(obj);
+    obj.pretty_print();
+    
     return 0;
 }
 
