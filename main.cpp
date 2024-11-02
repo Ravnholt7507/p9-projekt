@@ -4,7 +4,7 @@
 using namespace std;
 
 int main(){
-    int numOffers = 1;
+    int numOffers = 2;
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
 
     for(int i = 0; i < numOffers; i++){
@@ -13,6 +13,8 @@ int main(){
 
     AggregatedFlexOffer obj(0, flexOffers);
     obj.pretty_print();
+    obj.schedule();
+    disaggregate(obj);
     
     return 0;
 }

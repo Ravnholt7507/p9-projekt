@@ -20,6 +20,8 @@ class Flexoffer{
         time_t end_time;
         TimeSlice profile[24];
         int duration; 
+        double scheduled_allocation[24] = {0};
+        time_t scheduled_start_time;
 };
 
 Flexoffer generateFlexOffer(int id);
