@@ -3,18 +3,20 @@
 
 #include <ctime>
 #include <vector>
-#include "flexoffers/flexoffer.h"
+#include "../flexoffers/flexoffer.h"
+#include "../aggregation/aggregation.h"
+using namespace std;
+
 
 class ScheduledFlexOffer {
 public:
+    AggregatedFlexOffer &aggregated_offer;
     int offer_id;
-    time_t scheduled_start_time;
-    std::vector<TimeSlice> scheduled_profile;
-    ScheduledFlexOffer(int id, time_t start_time, const std::vector<TimeSlice>& profile);
-
-    void printScheduledDetails() const;
-    void execute() const;
-
+    vector<double> scheduled_profile;
+    ScheduledFlexOffer(AggregatedFlexOffer &AFO);
+    
+    void schedule();
+    void print_schedule();
 };
 
 #endif // SCHEDULED_FLEX_OFFER_H

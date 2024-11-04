@@ -74,8 +74,6 @@ void AggregatedFlexOffer::pretty_print(){
 
 
 
-
-
 void AggregatedFlexOffer::schedule(){
     for (int i=0; i < 24; i++){
         scheduled_allocation[i] = (aggregated_profile[i].min_power + aggregated_profile[i].max_power) / 2.0;
@@ -88,23 +86,3 @@ void AggregatedFlexOffer::schedule(){
         }
     }
 };
-
-
-void disaggregate(AggregatedFlexOffer AFO) {
-    double scheduled_allocation_norm[24] = {0};
-
-    for (int i = 0; i < 24; i++){
-        if (AFO.scheduled_allocation[i] > 0.0) {
-            scheduled_allocation_norm[i] = 
-            (AFO.scheduled_allocation[i] - AFO.aggregated_profile[i].min_power) / 
-            (AFO.aggregated_profile[i].max_power - AFO.aggregated_profile[i].min_power);
-        }
-    }
-
-    for (auto &offer : AFO.individual_offers) {
-        for (int i = 0; i < 24; i++){
-            offer.scheduled_allocation[i] = offer.profile[i].min_power + ((offer.profile[i].max_power - offer.profile[i].min_power) * scheduled_allocation_norm[i]);
-        }
-    }
-
-}

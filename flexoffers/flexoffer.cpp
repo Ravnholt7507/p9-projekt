@@ -59,9 +59,6 @@ Flexoffer generateFlexOffer(int id) {
         latest_start_time = end_time - (duration * 3600);
     }
 
-    tm *est_tm = localtime(&earliest_start_time);
-    int earliest_hour = est_tm->tm_hour;
-
     tm *lst_tm = localtime(&latest_start_time);
     int latest_hour = lst_tm->tm_hour;
 
@@ -69,14 +66,11 @@ Flexoffer generateFlexOffer(int id) {
         latest_hour = 23 - duration;
     }
 
-    int start_hour = randomInt(earliest_hour, latest_hour);
-
-
     vector<TimeSlice> profile(duration);
 
     for (int i = 0; i < duration; i++) {
-        profile[i].min_power = randomDouble(0.5, 1.0); // Min power between 0.5 and 1.0 kW
-        profile[i].max_power = randomDouble(1.0, 3.0); // Max power between 1.0 and 3.0 kW
+        profile[i].min_power = randomDouble(0.5, 1.0);
+        profile[i].max_power = randomDouble(1.0, 3.0);
     }
 
     // Create and return the Flexoffer object

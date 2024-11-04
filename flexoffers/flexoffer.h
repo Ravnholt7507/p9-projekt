@@ -18,9 +18,6 @@ class Flexoffer{
         time_t earliest_start_time;
         time_t latest_start_time;
         time_t end_time;
-        int earliest_start_time_asInt;
-        int latest_start_time_asInt;
-        int end_time_asInt;
         vector<TimeSlice> profile;
         int duration; 
         double scheduled_allocation[24] = {0};
