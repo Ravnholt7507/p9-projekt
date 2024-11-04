@@ -2,8 +2,8 @@ CC = g++
 CFLAGS = -Wall -g
 
 # Target to build the final executable
-main: main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
-	$(CC) $(CFLAGS) -o main main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
+output: main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
+	$(CC) $(CFLAGS) -o output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
 
 # Rule to compile main.o
 main.o: main.cpp flexoffers/flexoffer.h aggregation/aggregation.h evaluation/evaluation.h
@@ -23,5 +23,5 @@ evaluation/evaluation.o: evaluation/evaluation.cpp evaluation/evaluation.h
 
 # Clean up build files
 clean:
-	rm -f main main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
+	rm -f output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o
 
