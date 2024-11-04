@@ -11,9 +11,9 @@ class AggregatedFlexOffer{
     public:
         int id;
         time_t aggregated_earliest = std::numeric_limits<int>::max();
-        time_t aggregated_latest_start = 0;
+        time_t aggregated_latest= std::numeric_limits<int>::max();
         time_t aggregated_end_time = 0;
-        TimeSlice aggregated_profile[24] = {0};
+        vector<TimeSlice> aggregated_profile;
         double scheduled_allocation[24] = {0};
         int duration; 
         vector<Flexoffer> individual_offers;

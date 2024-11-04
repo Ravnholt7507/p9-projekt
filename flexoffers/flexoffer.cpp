@@ -12,14 +12,12 @@ void printTimestamp(time_t timestamp);
 int randomInt(int min, int max); 
 double randomDouble(double min, double max);
 
-Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, TimeSlice *p, int d){
+Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d){
     offer_id = oi;
     earliest_start_time = est;
     latest_start_time = lst;
-    for(int i = 0; i < 24; i++) {
-        profile[i] = p[i];
-    }
     duration = d;
+    profile = p;
     end_time = et;
 };
 
@@ -41,12 +39,11 @@ void Flexoffer::print_flexoffer() {
     cout << "Duration:            " << duration << " hour(s)" << endl;
     cout << "Profile Elements:" << endl;
 
-    for(int i = 0; i < 24; i++) {
-        if(profile[i].min_power > 0 || profile[i].max_power > 0) {
-            cout << "  Hour " << i << ": Min Power = " << fixed << setprecision(2) 
-                 << profile[i].min_power << " kW, Max Power = " 
-                 << profile[i].max_power << " kW" << endl;
-        }
+    for(int i = 0; i < duration; i++) {
+        cout << "  Hour " << i << ": Min Power = " << fixed << setprecision(2) 
+                << profile[i].min_power << " kW, Max Power = " 
+                << profile[i].max_power << " kW" << endl;
+        
     }
     cout << "==========================" << endl;
 }
@@ -54,21 +51,14 @@ void Flexoffer::print_flexoffer() {
 Flexoffer generateFlexOffer(int id) {
     time_t earliest_start_time = generateRandomTimestampToday();
     int time_flex = randomInt(1, 4);
-
     time_t latest_start_time = earliest_start_time + (time_flex * 3600);
     int duration = randomInt(1, 4);
-
     time_t end_time = latest_start_time + (duration * 3600);
 
     if (latest_start_time + (duration * 3600) > end_time) {
         latest_start_time = end_time - (duration * 3600);
     }
 
-    TimeSlice profile[24];
-    for (int i = 0; i < 24; i++) {
-        profile[i].min_power = 0.0;
-        profile[i].max_power = 0.0;
-    }
     tm *est_tm = localtime(&earliest_start_time);
     int earliest_hour = est_tm->tm_hour;
 
@@ -81,7 +71,10 @@ Flexoffer generateFlexOffer(int id) {
 
     int start_hour = randomInt(earliest_hour, latest_hour);
 
-    for (int i = start_hour; i < start_hour + duration; i++) {
+
+    vector<TimeSlice> profile(duration);
+
+    for (int i = 0; i < duration; i++) {
         profile[i].min_power = randomDouble(0.5, 1.0); // Min power between 0.5 and 1.0 kW
         profile[i].max_power = randomDouble(1.0, 3.0); // Max power between 1.0 and 3.0 kW
     }

@@ -30,7 +30,7 @@
 *.lib
 
 # Executables
-main
+output
 *.exe
 *.out
 *.app
