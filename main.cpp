@@ -6,7 +6,7 @@ using namespace std;
 
 int main(){
     int numOffers = 5;
-    
+
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
 
     for(int i = 0; i < numOffers; i++){
@@ -16,8 +16,7 @@ int main(){
     AggregatedFlexOffer obj(0, flexOffers);
     obj.pretty_print();
     ScheduledFlexOffer SFO(obj);
-    //disaggregate(obj);
-    
+
     return 0;
 }
 

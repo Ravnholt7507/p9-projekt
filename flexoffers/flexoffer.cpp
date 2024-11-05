@@ -12,6 +12,7 @@ void printTimestamp(time_t timestamp);
 int randomInt(int min, int max); 
 double randomDouble(double min, double max);
 
+
 Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d){
     offer_id = oi;
     earliest_start_time = est;
@@ -128,4 +129,44 @@ int randomInt(int min, int max) {
 double randomDouble(double min, double max) {
     uniform_real_distribution<> dist(min, max);
     return dist(gen);
+}
+
+
+dependencyFlexoffer::dependencyFlexoffer(int num){
+    num_intervals = num;
+}
+
+dependencyFlexoffer generateDFO() {
+
+    srand(static_cast<unsigned int>(time(0)));
+
+    int num_intervals = 3;
+    dependencyFlexoffer dfo(num_intervals);
+
+    double dep_min = 0.0;
+    double dep_max = 5.0;
+    double energy_min = 1.0;
+    double energy_max = 6.0;
+
+    dfo.dependency_bounds.resize(num_intervals);
+    dfo.energy_bounds.resize(num_intervals);
+    for (int i = 0; i < num_intervals; i++) {
+
+        // Set bounds in the DFO
+        dfo.dependency_bounds[i] = {dep_min, dep_max};
+        dfo.energy_bounds[i] = {energy_min, energy_max};
+    }
+
+    return dfo;
+}
+
+void dependencyFlexoffer::pretty_print() {
+    std::cout << "Dependency-Based Flexoffer with " << num_intervals << " intervals:\n";
+    for (int i = 0; i < num_intervals; ++i) {
+        auto dep = dependency_bounds[i];
+        auto energy = energy_bounds[i];
+        std::cout << "  Interval " << i + 1 << ":\n";
+        std::cout << "    Dependency Bounds: [" << dep.min_power << ", " << dep.max_power << "]\n";
+        std::cout << "    Energy Bounds: [" << energy.min_power << ", " << energy.max_power << "]\n";
+    }
 }
