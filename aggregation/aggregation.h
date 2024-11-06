@@ -17,12 +17,9 @@ class AggregatedFlexOffer{
         double scheduled_allocation[24] = {0};
         int duration; 
         vector<Flexoffer> individual_offers;
-        AggregatedFlexOffer(int offer_id, vector<Flexoffer> offers);
+        AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers);
         void pretty_print();
         void schedule();
 };
-
-void disaggregate(AggregatedFlexOffer AFO);
-
 
 #endif

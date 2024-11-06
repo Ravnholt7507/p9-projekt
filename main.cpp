@@ -16,6 +16,8 @@ int main(){
     AggregatedFlexOffer obj(0, flexOffers);
     obj.pretty_print();
     ScheduledFlexOffer SFO(obj);
+    SFO.print_schedule();
+    SFO.n_to_1_disaggregation(obj.individual_offers, obj);
 
     return 0;
 }

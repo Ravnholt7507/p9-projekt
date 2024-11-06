@@ -17,6 +17,7 @@ public:
     
     void schedule();
     void print_schedule();
+    void n_to_1_disaggregation(vector<Flexoffer> &F, AggregatedFlexOffer &fa);
 };
 
 #endif // SCHEDULED_FLEX_OFFER_H

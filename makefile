@@ -12,7 +12,7 @@ main.o: main.cpp flexoffers/flexoffer.h aggregation/aggregation.h evaluation/eva
 # Rule to compile flexoffer.o
 flexoffers/flexoffer.o: flexoffers/flexoffer.cpp flexoffers/flexoffer.h
 	$(CC) $(CFLAGS) -c flexoffers/flexoffer.cpp -o flexoffers/flexoffer.o
-
+ 
 # Rule to compile aggregation.o
 aggregation/aggregation.o: aggregation/aggregation.cpp aggregation/aggregation.h
 	$(CC) $(CFLAGS) -c aggregation/aggregation.cpp -o aggregation/aggregation.o

@@ -6,7 +6,8 @@
 #include "../flexoffers/flexoffer.h"
 using namespace std;
 
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> offers){
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers){
+  //  individual_offers = offers;
     id = offer_id;
 
     //step 1. Assign earliest and latest times of aggregated flex offer. (by looking at the min/max of individual offers)
@@ -36,7 +37,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> offers)
                 slice.max_power += offer.profile[relative_index].max_power;
             }
         }
-
         // Assign the aggregated time slice to the profile
         aggregated_profile[j] = slice;
     }

@@ -20,7 +20,7 @@ class Flexoffer{
         time_t end_time;
         vector<TimeSlice> profile;
         int duration; 
-        double scheduled_allocation[24] = {0};
+        vector<double> scheduled_allocation;
         time_t scheduled_start_time;
 };
 
