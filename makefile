@@ -2,11 +2,11 @@ CC = g++
 CFLAGS = -Wall -g
 
 # Target to build the final executable
-output: main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
-	$(CC) $(CFLAGS) -o output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
+output: main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexoffer/scheduled_flexoffer.o
+	$(CC) $(CFLAGS) -o output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexoffer/scheduled_flexoffer.o
 
 # Rule to compile main.o
-main.o: main.cpp flexoffers/flexoffer.h aggregation/aggregation.h evaluation/evaluation.h scheduled_flexOffer/scheduled_flexOffer.h
+main.o: main.cpp flexoffers/flexoffer.h aggregation/aggregation.h evaluation/evaluation.h scheduled_flexoffer/scheduled_flexoffer.h
 	$(CC) $(CFLAGS) -c main.cpp -o main.o 
 
 # Rule to compile flexoffer.o
@@ -21,12 +21,12 @@ aggregation/aggregation.o: aggregation/aggregation.cpp aggregation/aggregation.h
 evaluation/evaluation.o: evaluation/evaluation.cpp evaluation/evaluation.h
 	$(CC) $(CFLAGS) -c evaluation/evaluation.cpp -o evaluation/evaluation.o
 
-# Rule to compile scheduled_flexOffer
-scheduled_flexOffer/scheduled_flexOffer.o: scheduled_flexOffer/scheduled_flexOffer.cpp scheduled_flexOffer/scheduled_flexOffer.h
-	$(CC) $(CFLAGS) -c scheduled_flexOffer/scheduled_flexOffer.cpp -o scheduled_flexOffer/scheduled_flexOffer.o
+# Rule to compile scheduled_flexoffer
+scheduled_flexoffer/scheduled_flexoffer.o: scheduled_flexoffer/scheduled_flexoffer.cpp scheduled_flexoffer/scheduled_flexoffer.h
+	$(CC) $(CFLAGS) -c scheduled_flexoffer/scheduled_flexoffer.cpp -o scheduled_flexoffer/scheduled_flexoffer.o
 
 
 # Clean up build files
 clean:
-	rm -f output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
+	rm -f output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexoffer/scheduled_flexoffer.o
 
