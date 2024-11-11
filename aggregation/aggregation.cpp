@@ -59,8 +59,8 @@ void AggregatedFlexOffer::pretty_print(){
     cout << "Duration:            " << duration << " hour(s)" << endl;
     cout << "Profile Elements:" << endl;
 
-    int aggregated_end_time_hour = localtime(&aggregated_end_time)->tm_hour;
-    int aggregated_earliest_hour = localtime(&aggregated_earliest)->tm_hour;    
+    // int aggregated_end_time_hour = localtime(&aggregated_end_time)->tm_hour;
+    // int aggregated_earliest_hour = localtime(&aggregated_earliest)->tm_hour;    
 
     for(int i = 0; i < 24; i++) {
         if(aggregated_profile[i].min_power > 0.0 || aggregated_profile[i].max_power > 0.0) {
