@@ -2,41 +2,33 @@
 CC = g++
 CFLAGS = -Wall -g
 
-# Directories
-SRC_DIR = .
-FO_DIR = flexoffers
-AGG_DIR = aggregation
-EVAL_DIR = evaluation
-SFO_DIR = scheduled_flexoffer
+# Target to build the final executable
+output: main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
+	$(CC) $(CFLAGS) -o output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
 
-# Output executable
-TARGET = output
+# Rule to compile main.o
+main.o: main.cpp flexoffers/flexoffer.h aggregation/aggregation.h evaluation/evaluation.h scheduled_flexOffer/scheduled_flexOffer.h
+	$(CC) $(CFLAGS) -c main.cpp -o main.o 
 
-# Source files
-SRCS = $(SRC_DIR)/main.cpp \
-       $(FO_DIR)/flexoffer.cpp \
-       $(AGG_DIR)/aggregation.cpp \
-       $(EVAL_DIR)/evaluation.cpp \
-       $(SFO_DIR)/scheduled_flexoffer.cpp
+# Rule to compile flexoffer.o
+flexoffers/flexoffer.o: flexoffers/flexoffer.cpp flexoffers/flexoffer.h
+	$(CC) $(CFLAGS) -c flexoffers/flexoffer.cpp -o flexoffers/flexoffer.o
+ 
+# Rule to compile aggregation.o
+aggregation/aggregation.o: aggregation/aggregation.cpp aggregation/aggregation.h
+	$(CC) $(CFLAGS) -c aggregation/aggregation.cpp -o aggregation/aggregation.o
 
-# Object files
-OBJS = $(SRCS:.cpp=.o)
+# Rule to compile evaluation.o
+evaluation/evaluation.o: evaluation/evaluation.cpp evaluation/evaluation.h
+	$(CC) $(CFLAGS) -c evaluation/evaluation.cpp -o evaluation/evaluation.o
 
-# Header files for dependencies
-HEADERS = $(FO_DIR)/flexoffer.h \
-          $(AGG_DIR)/aggregation.h \
-          $(EVAL_DIR)/evaluation.h \
-          $(SFO_DIR)/scheduled_flexoffer.h
+# Rule to compile scheduled_flexOffer
+scheduled_flexOffer/scheduled_flexOffer.o: scheduled_flexOffer/scheduled_flexOffer.cpp scheduled_flexOffer/scheduled_flexOffer.h
+	$(CC) $(CFLAGS) -c scheduled_flexOffer/scheduled_flexOffer.cpp -o scheduled_flexOffer/scheduled_flexOffer.o
 
-# Default target to build the final executable
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
-
-# Pattern rule to compile object files
-%.o: %.cpp $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean up build files
 .PHONY: clean
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f output main.o flexoffers/flexoffer.o aggregation/aggregation.o evaluation/evaluation.o scheduled_flexOffer/scheduled_flexOffer.o
+
