@@ -1,10 +1,7 @@
-#include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <set>
 #include "../flexoffers/flexoffer.h"
-#include <climits>
-#include <algorithm>
 #include <functional>
 
 using namespace std;
@@ -42,8 +39,8 @@ namespace std {
 class Grid {
 public:
     unordered_map<Cell, set<int>> cellmap;
-    vector<int> intervals;
     vector<function<int(const Flexoffer&)>> featureExtractors;
+    vector<int> intervals;
 
     Grid(const vector<function<int(const Flexoffer&)>>& extractors, const vector<int>& intervals)
         : featureExtractors(extractors), intervals(intervals) {}
