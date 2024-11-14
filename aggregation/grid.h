@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <set>
 #include <functional>
-#include "flexoffers/flexoffer.h"  // Adjust the include path as necessary
-#include "aggregation/aggregation.h"
+#include "../flexoffers/flexoffer.h"
+#include "../aggregation/aggregation.h"
 
 struct Cell {
     std::vector<int> indices;
