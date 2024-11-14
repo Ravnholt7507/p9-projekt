@@ -40,15 +40,14 @@ class Grid {
 public:
     unordered_map<Cell, set<int>> cellmap;
     vector<function<int(const Flexoffer&)>> featureExtractors;
-    vector<int> intervals;
 
-    Grid(const vector<function<int(const Flexoffer&)>>& extractors, const vector<int>& intervals)
-        : featureExtractors(extractors), intervals(intervals) {}
+    Grid(const vector<function<int(const Flexoffer&)>>& extractors)
+        : featureExtractors(extractors) {}
 
     Cell mapFlexOfferToCell(const Flexoffer& f) const {
         Cell cell;
         for (size_t i = 0; i < featureExtractors.size(); ++i) {
-            int value = featureExtractors[i](f) / intervals[i];
+            int value = featureExtractors[i](f);
             cell.indices.push_back(value);
         }
         return cell;

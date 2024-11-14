@@ -18,7 +18,8 @@ SRCS = $(SRC_DIR)/main.cpp \
        $(AGG_DIR)/aggregation.cpp \
        $(EVAL_DIR)/evaluation.cpp \
        $(SFO_DIR)/scheduled_flexoffer.cpp \
-       $(AGG_DIR)/grid.cpp
+       $(AGG_DIR)/grid.cpp \
+       $(AGG_DIR)/group.cpp
 
 
 # Object files
@@ -29,7 +30,8 @@ HEADERS = $(FO_DIR)/flexoffer.h \
           $(AGG_DIR)/aggregation.h \
           $(EVAL_DIR)/evaluation.h \
           $(SFO_DIR)/scheduled_flexoffer.h \
-          $(AGG_DIR)/grid.h
+          $(AGG_DIR)/grid.h \
+          $(AGG_DIR)/group.h
 
 # Default target to build the final executable
 $(TARGET): $(OBJS)
