@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <set>
 #include <functional>
-#include "../flexoffers/flexoffer.h"  // Adjust the include path as necessary
-
+#include "../flexoffers/flexoffer.h"
+#include "../aggregation/aggregation.h"
 
 struct Cell {
     std::vector<int> indices;
@@ -41,14 +41,34 @@ public:
          const std::vector<int>& intervals)
         : featureExtractors(extractors), intervals(intervals) {}
 
-    void addFlexOffer(const Flexoffer& f);
+    void addFlexOffer(const Flexoffer& f) {
+        cellmap[mapFlexOfferToCell(f)].insert(f.offer_id);
+    }
 
-    void removeFlexOffer(const Flexoffer& f);
+    void removeFlexOffer(const Flexoffer& f) {
+        Cell cell = mapFlexOfferToCell(f);
+        if (cellmap[cell].erase(f.offer_id) && cellmap[cell].empty()) {
+            cellmap.erase(cell);
+        }
+    }
 
-    const std::set<int>& getFlexOffersInCell(const Cell& cell);
-    bool hasCell(const Cell& cell);
+    const std::set<int>& getFlexOffersInCell(const Cell& cell) const {
+        return cellmap.at(cell);
+    }
 
-    Cell mapFlexOfferToCell(const Flexoffer& f);
+    bool hasCell(const Cell& cell) const {
+        return cellmap.count(cell) > 0;
+    }
+
+private:
+    Cell mapFlexOfferToCell(const Flexoffer& f) const {
+        Cell cell;
+        for (size_t i = 0; i < featureExtractors.size(); ++i) {
+            int value = featureExtractors[i](f) / intervals[i];
+            cell.indices.push_back(value);
+        }
+        return cell;
+    }
 
     std::unordered_map<Cell, std::set<int>> cellmap;
     std::vector<int> intervals;
