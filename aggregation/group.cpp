@@ -7,7 +7,6 @@
 #include "functional"
 #include "../flexoffers/flexoffer.h"
 #include "grid.h"
-#include "group.h"
 // Group class
 class Group {
 public:

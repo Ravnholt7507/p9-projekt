@@ -11,6 +11,7 @@
 #include <functional>
 #include <grid.h>
 #include "../flexoffers/flexoffer.h"
+#include "../aggregation/aggregation.h"
 
 // Group class
 class Group {
