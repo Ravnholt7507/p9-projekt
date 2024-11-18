@@ -24,16 +24,6 @@ class Flexoffer{
         time_t scheduled_start_time;
 };
 
-class dependencyFlexoffer{
-    public:
-        dependencyFlexoffer(int num_intervals);
-        int num_intervals;
-        vector<TimeSlice> dependency_bounds;
-        vector<TimeSlice> energy_bounds;
-        void pretty_print();
-};
-
 Flexoffer generateFlexOffer(int id);
 vector<Flexoffer> generateMultipleFlexOffers(int num);
-dependencyFlexoffer generateDFO();
 #endif
