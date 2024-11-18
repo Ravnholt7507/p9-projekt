@@ -68,12 +68,13 @@ Flexoffer generateFlexOffer(int id) {
     }
 
     vector<TimeSlice> profile(duration);
+    
 
     for (int i = 0; i < duration; i++) {
         profile[i].min_power = randomDouble(0.5, 1.0);
         profile[i].max_power = randomDouble(1.0, 3.0);
     }
-
+    
     // Create and return the Flexoffer object
     Flexoffer obj(id, earliest_start_time, latest_start_time, end_time, profile, duration);
 
