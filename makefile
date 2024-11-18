@@ -33,7 +33,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
 
 # Pattern rule to compile object files
-%.o: %.cpp $(HEADERS)
+%.o: %.cpp 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean up build files
