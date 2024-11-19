@@ -8,14 +8,11 @@ SOURCE_FILES := $(wildcard $(SRC_DIR)*.cpp)
 # Object Files
 OBJ_DIR := bin/
 OBJECT_FILES := $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SOURCE_FILES))
+DEPEND_FILES := $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.d,$(SOURCE_FILES))
 
 # Header Files
 HEADER_DIR := include/
 INCLUDE := -I$(HEADER_DIR)
-
-# Depend Files
-DEPEND_DIR := depend/
-DEPEND_FILES := $(patsubst $(SRC_DIR)%.cpp,$(DEPEND_DIR)%.d,$(SOURCE_FILES))
 
 # Compiler
 CC := g++
@@ -38,6 +35,6 @@ $(OBJ_DIR)%.o: $(SRC_DIR)%.cpp
 
 clean:
 	rm -f $(OBJ_DIR)*.o
-	rm -f $(DEPEND_DIR)*.d
+	rm -f $(OBJ_DIR)*.d
 	rm -f $(OBJ)
 
