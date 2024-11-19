@@ -33,7 +33,7 @@ class Grid {
 public:
     Grid(const std::vector<std::function<int(const Flexoffer&)>>& extractors,
          const std::vector<int>& intervals)
-        : featureExtractors(extractors), intervals(intervals) {}
+        : intervals(intervals), featureExtractors(extractors) {}
 
     void addFlexOffer(const Flexoffer& f);
     void removeFlexOffer(const Flexoffer& f);
