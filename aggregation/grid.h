@@ -41,7 +41,6 @@ public:
     bool hasCell(const Cell& cell) const;
     Cell mapFlexOfferToCell(const Flexoffer& f) const;
 
-private:
     std::unordered_map<Cell, std::set<int>> cellmap;
     std::vector<int> intervals;
     std::vector<std::function<int(const Flexoffer&)>> featureExtractors;

@@ -52,7 +52,7 @@ std::vector<Group> binPackGroup(
     const Group& group, 
     int max_size, 
     GroupHash& group_hash, 
-    ChangeList& change_list
+    ChangesList& change_list
 ) {
     std::vector<Group> bins;
     std::vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
@@ -142,7 +142,7 @@ void optimizeGroup(
     Grid& grid, 
     GroupHash& group_hash, 
     const std::vector<int>& thresholds, 
-    ChangeList& change_list, 
+    ChangesList& change_list, 
     const std::unordered_map<int, Flexoffer>& flexOffers
 ) {
     auto it = group_hash.groups.find(group_id);
