@@ -8,6 +8,7 @@
 #include "functional"
 #include "../flexoffers/flexoffer.h"
 #include "group.h"
+#include "grid.h"
 
 
 void Group::addFlexOffer(int flexOfferID, const Cell& cell) {

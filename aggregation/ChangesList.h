@@ -17,7 +17,7 @@ struct Change {
 };
 
 // ChangeList class
-class ChangeList {
+class ChangesList {
 public:
     vector<Change> changes;
 

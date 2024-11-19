@@ -3,7 +3,6 @@
 
 using namespace std;
 
-
 void ChangesList::registerChange(int groupID, char type, const vector<int>& flexOfferIDs) {
     changes.emplace_back(groupID, type, flexOfferIDs);
 }

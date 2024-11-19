@@ -9,8 +9,8 @@
 #include <climits>
 #include <algorithm>
 #include <functional>
-#include "ChangesList.h"
 #include "grid.h"
+#include "ChangesList.h"
 #include "../flexoffers/flexoffer.h"
 #include "../aggregation/aggregation.h"
 
@@ -34,10 +34,10 @@ public:
     unordered_map<int, Group> groups;
     unordered_map<Cell, int> cellToGroupMap;
     Grid& grid;
-    ChangeList& changeList;
+    ChangesList& changeList;
     int currentGroupID = 0;
 
-    GroupHash(Grid& gridRef, ChangeList& clRef) : grid(gridRef), changeList(clRef) {}
+    GroupHash(Grid& gridRef, ChangesList& clRef) : grid(gridRef), changeList(clRef) {}
     int generateUniqueGroupID();
     void addFlexOffer(const Flexoffer& f);
     void removeFlexOffer(const Flexoffer& f);
