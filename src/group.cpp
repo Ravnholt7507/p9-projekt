@@ -1,14 +1,15 @@
-#include "iostream"
-#include "vector"
-#include "unordered_map"
-#include "set"
-#include "climits"
-#include "algorithm"
-#include "ChangesList.h"
-#include "functional"
-#include "../flexoffers/flexoffer.h"
-#include "group.h"
-#include "grid.h"
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <set>
+#include <climits>
+#include <algorithm>
+#include <functional>
+
+#include "../include/ChangesList.h"
+#include "../include/flexoffer.h"
+#include "../include/group.h"
+#include "../include/grid.h"
 
 
 void Group::addFlexOffer(int flexOfferID, const Cell& cell) {

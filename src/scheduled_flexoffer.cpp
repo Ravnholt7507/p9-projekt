@@ -3,9 +3,10 @@
 #include <iostream>
 #include <chrono>
 #include <iomanip>
-#include "scheduled_flexoffer.h"
-#include "../flexoffers/flexoffer.h"
-#include "../aggregation/aggregation.h"
+
+#include "../include/scheduled_flexoffer.h"
+#include "../include/flexoffer.h"
+#include "../include/aggregation.h"
 using namespace std;
 
 ScheduledFlexOffer::ScheduledFlexOffer(AggregatedFlexOffer& AFO)

@@ -1,16 +1,15 @@
 #ifndef HELPER_FUNCTIONS
 #define HELPER_FUNCTIONS
-
-
 #include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <set>
 #include <climits>
 #include <algorithm>
-#include "ChangesList.h"
 #include <functional>
-#include "../flexoffers/flexoffer.h"
+
+#include "ChangesList.h"
+#include "flexoffer.h"
 #include "group.h"
 #include "grid.h"
 

@@ -1,8 +1,6 @@
 #ifndef CHANGESLIST_H
 #define CHANGESLIST_H
-
-#include "vector"
-
+#include <vector>
 
 using namespace std;
 

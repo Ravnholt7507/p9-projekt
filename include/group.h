@@ -1,7 +1,5 @@
 #ifndef GROUP_H
 #define GROUP_H
-
-
 #include <iostream>
 #include <vector>
 #include <unordered_map>
@@ -9,10 +7,11 @@
 #include <climits>
 #include <algorithm>
 #include <functional>
+
 #include "grid.h"
 #include "ChangesList.h"
-#include "../flexoffers/flexoffer.h"
-#include "../aggregation/aggregation.h"
+#include "flexoffer.h"
+#include "aggregation.h"
 
 // Group class
 class Group {

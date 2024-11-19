@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <set>
 #include <functional>
-#include "grid.h"
-#include "../flexoffers/flexoffer.h"
+
+#include "../include/grid.h"
+#include "../include/flexoffer.h"
 using namespace std;
 
 // Define Cell operators
