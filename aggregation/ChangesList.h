@@ -3,6 +3,7 @@
 
 #include "vector"
 
+
 using namespace std;
 
 // Change struct
@@ -22,7 +23,6 @@ public:
 
     void registerChange(int groupID, char type, const vector<int>& flexOfferIDs);
     void clear();
-    const vector<Change>& getChanges();
 };
 
 
