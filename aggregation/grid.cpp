@@ -1,74 +1,53 @@
+#include <algorithm>
 #include <vector>
 #include <unordered_map>
 #include <set>
-#include "../flexoffers/flexoffer.h"
 #include <functional>
-
+#include "grid.h"
+#include "../flexoffers/flexoffer.h"
 using namespace std;
 
-
-// Struct for Cell
-struct Cell {
-    vector<int> indices;
-
-    bool operator==(const Cell& other) const {
-        return indices == other.indices;
-    }
-
-    bool operator<(const Cell& other) const {
-        return indices < other.indices;
-    }
-};
-
-// Hash function for Cell (this is needed to use cells as keys)
-namespace std {
-    template <>
-    struct hash<Cell> {
-        size_t operator()(const Cell& cell) const {
-            size_t seed = 0;
-            for (int index : cell.indices) {
-                seed ^= std::hash<int>()(index) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            }
-            return seed;
-        }
-    };
+// Define Cell operators
+bool Cell::operator==(const Cell& other) const {
+    return indices == other.indices;
 }
 
+bool Cell::operator<(const Cell& other) const {
+    return indices < other.indices;
+}
 
-// Grid class
-class Grid {
-public:
-    unordered_map<Cell, set<int>> cellmap;
-    vector<function<int(const Flexoffer&)>> featureExtractors;
+// Grid methods
+void Grid::addFlexOffer(const Flexoffer& f) {
+    Cell cell = mapFlexOfferToCell(f);
+    cellmap[cell].insert(f.offer_id);
+}
 
-    Grid(const vector<function<int(const Flexoffer&)>>& extractors)
-        : featureExtractors(extractors) {}
-
-    Cell mapFlexOfferToCell(const Flexoffer& f) const {
-        Cell cell;
-        for (size_t i = 0; i < featureExtractors.size(); ++i) {
-            int value = featureExtractors[i](f);
-            cell.indices.push_back(value);
-        }
-        return cell;
-    }
-
-    void addFlexOffer(const Flexoffer& f) {
-        cellmap[mapFlexOfferToCell(f)].insert(f.offer_id);
-    }
-
-    void removeFlexOffer(const Flexoffer& f) {
-        Cell cell = mapFlexOfferToCell(f);
-        if (cellmap[cell].erase(f.offer_id) && cellmap[cell].empty()) {
+void Grid::removeFlexOffer(const Flexoffer& f) {
+    Cell cell = mapFlexOfferToCell(f);
+    if (cellmap.count(cell)) {
+        cellmap[cell].erase(f.offer_id);
+        if (cellmap[cell].empty()) {
             cellmap.erase(cell);
         }
     }
+}
 
-    const set<int>& getFlexOffersInCell(const Cell& cell) const {
-        return cellmap.at(cell);
+const set<int>& Grid::getFlexOffersInCell(const Cell& cell) const {
+    if (!hasCell(cell)) {
+        throw out_of_range("Cell not found in the grid.");
     }
+    return cellmap.at(cell);
+}
 
-    bool hasCell(const Cell& cell) const {
-        return cellmap.count(cell);
+bool Grid::hasCell(const Cell& cell) const {
+    return cellmap.find(cell) != cellmap.end();
+}
+
+Cell Grid::mapFlexOfferToCell(const Flexoffer& f) const {
+    Cell cell;
+    for (size_t i = 0; i < featureExtractors.size(); ++i) {
+        int value = featureExtractors[i](f);
+        cell.indices.push_back(value / intervals[i]);
     }
-};
+    return cell;
+}

@@ -9,7 +9,8 @@
 #include <climits>
 #include <algorithm>
 #include <functional>
-#include <grid.h>
+#include "ChangesList.h"
+#include "grid.h"
 #include "../flexoffers/flexoffer.h"
 #include "../aggregation/aggregation.h"
 
@@ -25,4 +26,23 @@ public:
     vector<int> getFlexOfferIDs();
 };
 
+
+
+// GroupHash class
+class GroupHash {
+public:
+    unordered_map<int, Group> groups;
+    unordered_map<Cell, int> cellToGroupMap;
+    Grid& grid;
+    ChangeList& changeList;
+    int currentGroupID = 0;
+
+    GroupHash(Grid& gridRef, ChangeList& clRef) : grid(gridRef), changeList(clRef) {}
+    int generateUniqueGroupID();
+    void addFlexOffer(const Flexoffer& f);
+    void removeFlexOffer(const Flexoffer& f);
+    Group& getGroup(int groupID);
+    int getGroupIDForCell(const Cell& cell);
+    void removeGroup(int groupID);
+};
 #endif
