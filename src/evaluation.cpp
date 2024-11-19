@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ctime>
-#include "../aggregation/aggregation.h"
+
+#include "../include/aggregation.h"
 using namespace std;
 
 double calculateFlexibilityLoss(AggregatedFlexOffer offer){

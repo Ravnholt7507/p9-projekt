@@ -1,11 +1,11 @@
 #ifndef GRID_H
 #define GRID_H
-
 #include <vector>
 #include <unordered_map>
 #include <set>
 #include <functional>
-#include "../flexoffers/flexoffer.h"
+
+#include "flexoffer.h"
 
 // Struct definition for Cell
 struct Cell {

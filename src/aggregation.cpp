@@ -1,9 +1,10 @@
 #include <iostream>
 #include <ctime>
 #include <iomanip>
-#include "vector"
-#include "aggregation.h"
-#include "../flexoffers/flexoffer.h"
+#include <vector>
+
+#include "../include/aggregation.h"
+#include "../include/flexoffer.h"
 using namespace std;
 
 AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers){

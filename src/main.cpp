@@ -1,7 +1,8 @@
 #include <vector>
-#include "flexoffers/flexoffer.h"
-#include "aggregation/aggregation.h"
-#include "scheduled_flexoffer/scheduled_flexoffer.h"
+
+#include "../include/flexoffer.h"
+#include "../include/aggregation.h"
+#include "../include/scheduled_flexoffer.h"
 using namespace std;
 
 int main(){

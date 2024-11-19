@@ -2,9 +2,11 @@
 #include <ctime>
 #include <chrono>
 #include <iomanip>
-#include "random"
-#include "vector"
-#include "flexoffer.h"
+#include <random>
+#include <vector>
+
+#include "../include/flexoffer.h"
+
 using namespace std;
 
 time_t generateRandomTimestampToday(); 

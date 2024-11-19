@@ -1,51 +1,40 @@
-# Compiler and flags
-CC = g++
-CFLAGS = -Wall -g
+# Binary File
+OBJ := output
 
-# Directories
-SRC_DIR = .
-FO_DIR = flexoffers
-AGG_DIR = aggregation
-EVAL_DIR = evaluation
-SFO_DIR = scheduled_flexoffer
+# Source Files
+SRC_DIR := src/
+SOURCE_FILES := $(wildcard $(SRC_DIR)*.cpp)
 
-# Output executable
-TARGET = output
+# Object Files
+OBJ_DIR := bin/
+OBJECT_FILES := $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.o,$(SOURCE_FILES))
+DEPEND_FILES := $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.d,$(SOURCE_FILES))
 
-# Source files
-SRCS = $(SRC_DIR)/main.cpp \
-       $(FO_DIR)/flexoffer.cpp \
-       $(AGG_DIR)/aggregation.cpp \
-       $(EVAL_DIR)/evaluation.cpp \
-       $(SFO_DIR)/scheduled_flexoffer.cpp \
-       $(AGG_DIR)/ChangesList.cpp\
-       $(AGG_DIR)/grid.cpp \
-       $(AGG_DIR)/group.cpp \
-       $(AGG_DIR)/helperfunctions.cpp
+# Header Files
+HEADER_DIR := include/
+INCLUDE := -I$(HEADER_DIR)
 
+# Compiler
+CC := g++
 
-# Object files
-OBJS = $(SRCS:.cpp=.o)
+# Compilation Flags
+CFLAGS = -Wall -g -MMD -MP
 
-# Header files for dependencies
-HEADERS = $(FO_DIR)/flexoffer.h \
-          $(AGG_DIR)/aggregation.h \
-          $(EVAL_DIR)/evaluation.h \
-          $(SFO_DIR)/scheduled_flexoffer.h \
-          $(AGG_DIR)/ChangesList.h\
-          $(AGG_DIR)/grid.h \
-          $(AGG_DIR)/group.h \
-          $(AGG_DIR)/helperfunctions.h
+.PHONY: all clean
 
-# Default target to build the final executable
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+all: $(OBJ)
 
-# Pattern rule to compile object files
-%.o: %.cpp 
-	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJ): $(OBJECT_FILES)
+	$(CC) $(OBJECT_FILES) -o $(OBJ)
 
-# Clean up build files
-.PHONY: clean
+$(OBJ_DIR)%.o: $(SRC_DIR)%.cpp
+	$(CC) -c $< $(CFLAGS) $(INCLUDE) -o $@
+
+# Include generated dependency files
+-include $(DEPEND_FILES)
+
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(OBJ_DIR)*.o
+	rm -f $(OBJ_DIR)*.d
+	rm -f $(OBJ)
+

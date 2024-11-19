@@ -4,7 +4,8 @@
 #include <limits>
 #include <vector>
 #include <chrono>
-#include "../flexoffers/flexoffer.h"
+
+#include "flexoffer.h"
 
 
 class AggregatedFlexOffer{
