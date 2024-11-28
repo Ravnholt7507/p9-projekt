@@ -41,4 +41,5 @@ $(OBJ_DIR)%.o: $(SRC_DIR)%.cpp | $(OBJ_DIR)
 clean:
 	rm -f $(OBJ_DIR)*.o
 	rm -f $(OBJ_DIR)*.d
+	rmdir $(OBJ_DIR)
 	rm -f $(OBJ)

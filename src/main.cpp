@@ -14,7 +14,7 @@ int main(){
     Grid grid;
     GroupHash gh(grid);
 
-    vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
+    vector<Tec_flexoffer> flexOffers = generateMultipleTecFlexOffers(numOffers);
 
     for(int i = 0; i < numOffers; i++){
         flexOffers[i].print_flexoffer();
@@ -23,7 +23,7 @@ int main(){
 
     vector<int> thresholds = {2, 2};
 
-    optimizeGroup(1, gh, thresholds, flexOffers);
+    //optimizeGroup(1, gh, thresholds, flexOffers);
 
     return 0;
 }
