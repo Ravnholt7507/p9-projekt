@@ -2,11 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
-#include <climits>
-#include <algorithm>
-#include <functional>
 
-#include "../include/ChangesList.h"
 #include "../include/flexoffer.h"
 #include "../include/group.h"
 #include "../include/grid.h"
@@ -32,7 +28,7 @@ void GroupHash::addFlexOffer(const Flexoffer& f) {
     Cell cell = grid.mapFlexOfferToCell(f);
     int groupID = cellToGroupMap.count(cell) ? cellToGroupMap[cell] : generateUniqueGroupID();
     groups[groupID].id = groupID;
-    groups[groupID].addFlexOffer(f.offer_id, cell);
+    groups[groupID].addFlexOffer(f.get_offer_id(), cell);
     cellToGroupMap[cell] = groupID;
     grid.addFlexOffer(f);
 
@@ -44,7 +40,7 @@ void GroupHash::removeFlexOffer(const Flexoffer& f) {
     Cell cell = grid.mapFlexOfferToCell(f);
     if (cellToGroupMap.count(cell)) {
         int groupID = cellToGroupMap[cell];
-        groups[groupID].removeFlexOffer(f.offer_id);
+        groups[groupID].removeFlexOffer(f.get_offer_id());
         grid.removeFlexOffer(f);
 
         // Register change

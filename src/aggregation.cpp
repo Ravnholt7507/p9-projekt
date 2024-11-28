@@ -13,9 +13,9 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers
 
     //step 1. Assign earliest and latest times of aggregated flex offer. (by looking at the min/max of individual offers)
     for (unsigned int i=0; i < offers.size(); i++){
-        aggregated_earliest = min(aggregated_earliest, offers[i].earliest_start_time);
-        aggregated_latest = min(aggregated_latest, offers[i].latest_start_time - offers[i].earliest_start_time);
-        aggregated_end_time = max(aggregated_end_time, offers[i].earliest_start_time + (offers[i].duration * 3600));
+        aggregated_earliest = min(aggregated_earliest, offers[i].get_est());
+        aggregated_latest = min(aggregated_latest, offers[i].get_lst() - offers[i].get_est());
+        aggregated_end_time = max(aggregated_end_time, offers[i].get_est()+ (offers[i].get_duration() * 3600));
     }
     aggregated_latest += aggregated_earliest;
 
@@ -31,11 +31,12 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers
         TimeSlice slice = {0.0, 0.0};
 
         for (auto& offer : offers) {
-            int offer_start_hour = localtime(&offer.earliest_start_time)->tm_hour;
-            if (j >= offer_start_hour && j < offer_start_hour + offer.duration) {
+            time_t est = offer.get_est();
+            int offer_start_hour = localtime(&est)->tm_hour;
+            if (j >= offer_start_hour && j < offer_start_hour + offer.get_duration()) {
                 int relative_index = j - offer_start_hour;
-                slice.min_power += offer.profile[relative_index].min_power;
-                slice.max_power += offer.profile[relative_index].max_power;
+                slice.min_power += offer.get_profile()[relative_index].min_power;
+                slice.max_power += offer.get_profile()[relative_index].max_power;
             }
         }
         // Assign the aggregated time slice to the profile

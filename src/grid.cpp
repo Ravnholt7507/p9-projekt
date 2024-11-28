@@ -1,10 +1,8 @@
-#include <algorithm>
 #include <stdexcept>
 #include <vector>
 #include <unordered_map>
 #include <iostream>
 #include <set>
-#include <functional>
 
 #include "../include/grid.h"
 #include "../include/flexoffer.h"
@@ -22,7 +20,7 @@ bool Cell::operator<(const Cell& other) const {
 // Grid methods
 void Grid::addFlexOffer(const Flexoffer& f) {
     Cell cell = mapFlexOfferToCell(f);
-    cellmap[cell].insert(f.offer_id);
+    cellmap[cell].insert(f.get_offer_id());
 }
 
 
@@ -30,7 +28,7 @@ void Grid::addFlexOffer(const Flexoffer& f) {
 void Grid::removeFlexOffer(const Flexoffer& f) {
     Cell cell = mapFlexOfferToCell(f);
     if (cellmap.count(cell)) {
-        cellmap[cell].erase(f.offer_id);
+        cellmap[cell].erase(f.get_offer_id());
         if (cellmap[cell].empty()) {
             cellmap.erase(cell);
         }
@@ -51,9 +49,10 @@ bool Grid::hasCell(const Cell& cell) const {
 
 Cell Grid::mapFlexOfferToCell(const Flexoffer& f) const {
     Cell cell;
-
-    int est = localtime(&f.earliest_start_time)->tm_hour;
-    int lst = localtime(&f.latest_start_time)->tm_hour;
+    time_t offer_est = f.get_est();
+    time_t offer_lst = f.get_lst();
+    int est = localtime(&offer_est)->tm_hour;
+    int lst = localtime(&offer_lst)->tm_hour;
 
     cell.indices.push_back(est);
     cell.indices.push_back(lst);

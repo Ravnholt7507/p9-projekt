@@ -1,8 +1,7 @@
 #include <vector>
 
 #include "../include/flexoffer.h"
-#include "../include/aggregation.h"
-#include "../include/scheduled_flexoffer.h"
+#include "../include/generator.h"
 #include "../include/grid.h"
 #include "../include/group.h"
 #include "../include/helperfunctions.h"

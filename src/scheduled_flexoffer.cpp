@@ -1,7 +1,6 @@
 #include <ctime>
 #include <vector>
 #include <iostream>
-#include <chrono>
 #include <iomanip>
 
 #include "../include/scheduled_flexoffer.h"
@@ -49,8 +48,8 @@ void ScheduledFlexOffer::n_to_1_disaggregation(vector<Flexoffer> &F, AggregatedF
 
     // Step 2: Loop through each flex-offer F to adjust the times (this here only works for start alignment, but can be changed easily) and calculate actual enery 
     for (size_t i = 0; i < F.size(); ++i) { // for each flexOffer
-        F[i].scheduled_start_time = F[i].earliest_start_time / 3600;
-        for (int j = 0; j < F[i].duration; j++) { // for each slice
+        F[i].set_scheduled_start_time(F[i].get_est() / 3600);
+        for (int j = 0; j < F[i].get_duration(); j++) { // for each slice
             F[i].scheduled_allocation[j] = F[i].profile[j].min_power + ((F[i].profile[j].max_power - F[i].profile[j].min_power) * sx[i]);
         }
     }
