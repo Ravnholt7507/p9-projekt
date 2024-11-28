@@ -7,3 +7,4 @@
 - Evaluering:
     - Vi skal have metoder til at evaluere vores flexoffer mod real world data
     - Sammenligne vores implementation med andre papers (i forhold til memory usage og tid)
+- Lav mere avanceret flexOffer types (som total energy constraint and DFO)

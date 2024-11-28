@@ -2,13 +2,15 @@
 #include <set>
 #include <algorithm>
 
-#include "../include/ChangesList.h"
+//#include "../include/ChangesList.h"
+#include "../include/helperfunctions.h"
 #include "../include/flexoffer.h"
 #include "../include/group.h"
 
 using namespace std;
 
 const int maxGroupSize = 2;
+
 pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer> &offers) 
 {
     // Initialize MBR values
@@ -52,12 +54,14 @@ bool doesMBRExceedThreshold(
     return false;
 }
 
+
+
 // Bin packing algorithm
 vector<Group> binPackGroup(
     const Group& group, 
     int max_size, 
-    GroupHash& group_hash, 
-    ChangesList& change_list
+    GroupHash& group_hash
+   // ChangesList& change_list
 ) {
     vector<Group> bins;
     vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
@@ -71,9 +75,6 @@ vector<Group> binPackGroup(
             bin.flexOfferIDs.insert(offer_ids[index]);
         }
         bins.push_back(bin);
-
-        // Register the addition of the new bin
-        change_list.registerChange(bin.id, '+', vector<int>(bin.flexOfferIDs.begin(), bin.flexOfferIDs.end()));
     }
     return bins;
 }
@@ -143,41 +144,32 @@ vector<Group> clusterHierarch(
 
     return final_groups;
 }
-
+*/
 
 
 // Optimize group to meet thresholds or size constraints
-void optimizeGroup(
-    int group_id, 
-    Grid& grid, 
-    GroupHash& group_hash, 
-    const vector<int>& thresholds, 
-    ChangesList& change_list, 
-    const unordered_map<int, Flexoffer>& flexOffers
-) {
-    auto it = group_hash.groups.find(group_id);
-    if (it == group_hash.groups.end()) return; // Group not found
+void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers) {
+    auto it = gh.groups.find(group_id);
+    if (it == gh.groups.end()) return; // Group not found
 
     Group group_copy = it->second; // Copy for processing
-    auto mbr = calculateMBR(group_copy.flexOfferIDs, grid.featureExtractors, flexOffers);
+    vector<Flexoffer> FlexOffersInGroup = getFlexOffersById(group_copy.flexOfferIDs, flexOffers); //get FOs in group
+    auto mbr = calculateMBR(FlexOffersInGroup);
     if (doesMBRExceedThreshold(mbr, thresholds) || group_copy.flexOfferIDs.size() > maxGroupSize) {
-        // Register removal of the group
-        change_list.registerChange(group_id, '-', vector<int>(group_copy.flexOfferIDs.begin(), group_copy.flexOfferIDs.end()));
-        group_hash.removeGroup(group_id);
+        cout << "\n" << "exceeded" << "\n";
 
-        auto new_clusters = clusterHierarch(group_copy.cells, grid, group_hash, thresholds, flexOffers);
-        for (Group& new_group : new_clusters) {
-            group_hash.groups[new_group.id] = new_group;
-            for (const auto& cell : new_group.cells) {
-                group_hash.cellToGroupMap[cell] = new_group.id;
-            }
-            // Register addition of the new group
-            change_list.registerChange(new_group.id, '+', vector<int>(new_group.flexOfferIDs.begin(), new_group.flexOfferIDs.end()));
-        }
+        // gh.removeGroup(group_id);
+
+        // auto new_clusters = clusterHierarch(group_copy.cells, grid, gh, thresholds, flexOffers);
+        // for (Group& new_group : new_clusters) {
+        //     gh.groups[new_group.id] = new_group;
+        //     for (const auto& cell : new_group.cells) {
+        //         gh.cellToGroupMap[cell] = new_group.id;
+        //     }
+        // }
     }
 }
 
-*/
 
 // Handle delta updates for FlexOffers
 void deltaProcess(
