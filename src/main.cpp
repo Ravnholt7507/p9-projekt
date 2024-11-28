@@ -1,8 +1,7 @@
 #include <vector>
 
 #include "../include/flexoffer.h"
-#include "../include/aggregation.h"
-#include "../include/scheduled_flexoffer.h"
+#include "../include/generator.h"
 #include "../include/grid.h"
 #include "../include/group.h"
 #include "../include/helperfunctions.h"
@@ -36,9 +35,7 @@ int main(){
     // SFO.print_schedule();
     // SFO.n_to_1_disaggregation(obj.individual_offers, obj);
 
-    // auto mbr = calculateMBR(flexOffers);
 
-    // cout << "Min values: [" << mbr.first[0] << ", " << mbr.first[1] << "]\n";
-    // cout << "Max values: [" << mbr.second[0] << ", " << mbr.second[1] << "]\n";
+    return 0;
+}
 
-    // cout << doesMBRExceedThreshold(mbr, thresholds);

@@ -1,16 +1,11 @@
-#include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <set>
-#include <climits>
 #include <algorithm>
-#include <functional>
 
 //#include "../include/ChangesList.h"
 #include "../include/helperfunctions.h"
 #include "../include/flexoffer.h"
 #include "../include/group.h"
-#include "../include/grid.h"
 
 using namespace std;
 
@@ -27,8 +22,10 @@ pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer> &offers)
     // Iterate over the set of offer IDs
     for (Flexoffer& f : offers) {
         // Convert time_t to integer
-        int est = localtime(&f.earliest_start_time)->tm_hour;
-        int lst = localtime(&f.latest_start_time)->tm_hour;
+        time_t offer_est = f.get_est();
+        time_t offer_lst = f.get_lst();
+        int est = localtime(&offer_est)->tm_hour;
+        int lst = localtime(&offer_lst)->tm_hour;
 
         // Update MBR values
         minEarliestStartTime = min(minEarliestStartTime, est);
