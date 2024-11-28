@@ -33,20 +33,27 @@ namespace std {
 
 // Grid class definition
 class Grid {
-public:
-    // Constructor
-    Grid(){
+    private:
+        unordered_map<Cell, set<int>> cellmap;
 
-    }
+    public:
+        // Constructor
+        Grid();
 
-    void addFlexOffer(const Flexoffer& f);
-    void removeFlexOffer(const Flexoffer& f);
-    void prettyprint();
-    const set<int>& getFlexOffersInCell(const Cell& cell) const;
-    bool hasCell(const Cell& cell) const;
-    Cell mapFlexOfferToCell(const Flexoffer& f) const;
+        //Getters
+        unordered_map<Cell, set<int>> get_cellmap() const;
 
-    unordered_map<Cell, set<int>> cellmap;
+        //Setters
+        void set_cellmap(unordered_map<Cell, set<int>>);
+
+        //Utils
+        void addFlexOffer(const Flexoffer& f);
+        void removeFlexOffer(const Flexoffer& f);
+        void prettyprint();
+        const set<int>& getFlexOffersInCell(const Cell& cell) const;
+        bool hasCell(const Cell& cell) const;
+        Cell mapFlexOfferToCell(const Flexoffer& f) const;
+
 };
 
 #endif // GRID_H

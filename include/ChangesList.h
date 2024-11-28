@@ -16,10 +16,18 @@ struct Change {
 
 // ChangeList class
 class ChangesList {
-public:
     vector<Change> changes;
-
+public:
+    //Contructor
     void registerChange(int groupID, char type, const vector<int>& flexOfferIDs);
+
+    //Getters
+    vector<Change> get_changes() const;
+
+    //Setters
+    void set_changes(vector<Change>);
+
+    //Utils
     void clear();
 };
 

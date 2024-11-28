@@ -6,7 +6,7 @@
 #include "../include/aggregation.h"
 #include "../include/flexoffer.h"
 using namespace std;
-
+//Constructor
 AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers){
   //  individual_offers = offers;
     id = offer_id;
@@ -44,6 +44,31 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers
     }
 };
 
+//Getters
+int AggregatedFlexOffer::get_id() const {return id;};
+time_t AggregatedFlexOffer::get_aggregated_earliest() const {return aggregated_earliest;};
+time_t AggregatedFlexOffer::get_aggregated_latest() const {return aggregated_latest;};
+time_t AggregatedFlexOffer::get_aggregated_end_time() const {return aggregated_end_time;};
+vector<TimeSlice> AggregatedFlexOffer::get_aggregated_profile() const {return aggregated_profile;};
+double* AggregatedFlexOffer::get_scheduled_allocation() {return scheduled_allocation;};
+int AggregatedFlexOffer::get_duration() const {return duration;}; 
+vector<Flexoffer> AggregatedFlexOffer::get_individual_offers() const {return individual_offers;};
+
+//Setters
+void AggregatedFlexOffer::set_id(int value) {id = value;};
+void AggregatedFlexOffer::set_aggregated_earliest(time_t value) {aggregated_earliest = value;};
+void AggregatedFlexOffer::set_aggregated_latest(time_t value) {aggregated_latest = value;};
+void AggregatedFlexOffer::set_aggregated_end_time(time_t value) {aggregated_end_time = value;};
+void AggregatedFlexOffer::set_aggregated_profile(vector<TimeSlice> value) {aggregated_profile = value;};
+void AggregatedFlexOffer::set_scheduled_allocation(double value[24]) {
+    for(int i = 0; i < 24; i++){
+        scheduled_allocation[i] = value[i];
+    } 
+};
+void AggregatedFlexOffer::set_duration(int value) {duration = value;}; 
+void AggregatedFlexOffer::set_individual_offers(vector<Flexoffer> value) {individual_offers = value;};
+
+//Utils
 void AggregatedFlexOffer::pretty_print(){
     // Helper lambda to convert time_t to readable format
     auto to_readable = [](time_t timestamp) -> string {

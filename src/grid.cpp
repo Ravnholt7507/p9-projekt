@@ -17,7 +17,16 @@ bool Cell::operator<(const Cell& other) const {
     return indices < other.indices;
 }
 
-// Grid methods
+//Constructor
+Grid::Grid(){}
+
+//Getters
+unordered_map<Cell, set<int>> Grid::get_cellmap() const {return cellmap;};
+
+//Setters
+void Grid::set_cellmap(unordered_map<Cell, set<int>> value) {cellmap = value;};
+
+//Utils
 void Grid::addFlexOffer(const Flexoffer& f) {
     Cell cell = mapFlexOfferToCell(f);
     cellmap[cell].insert(f.get_offer_id());
