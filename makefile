@@ -14,6 +14,7 @@ DEPEND_FILES := $(patsubst $(SRC_DIR)%.cpp,$(OBJ_DIR)%.d,$(SOURCE_FILES))
 HEADER_DIR := include/
 INCLUDE := -I$(HEADER_DIR)
 
+
 # Compiler
 CC := g++
 
@@ -24,10 +25,14 @@ CFLAGS = -Wall -g -MMD -MP
 
 all: $(OBJ)
 
+# Ensure obj dir exists
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
 $(OBJ): $(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) -o $(OBJ)
 
-$(OBJ_DIR)%.o: $(SRC_DIR)%.cpp
+$(OBJ_DIR)%.o: $(SRC_DIR)%.cpp | $(OBJ_DIR)
 	$(CC) -c $< $(CFLAGS) $(INCLUDE) -o $@
 
 # Include generated dependency files
