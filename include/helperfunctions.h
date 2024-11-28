@@ -17,15 +17,11 @@ using namespace std;
 
 const int maxGroupSize = 2;
 
-pair<vector<int>, vector<int>> calculateMBR(
-    const set<int>& offer_ids, 
-    const vector<function<int(const Flexoffer&)>>& extractors,
-    const unordered_map<int, Flexoffer>& flexOffers
-);
+pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer>& flexOffers);
 
 bool doesMBRExceedThreshold(const pair<vector<int>, vector<int>>& mbr, const vector<int>& thresholds);
 
-vector<Group> binPackGroup( const Group& group, int max_size, GroupHash& group_hash, ChangesList& change_list);
+vector<Group> binPackGroup(const Group& group, int max_size, GroupHash& group_hash, ChangesList& change_list);
 
 vector<Group> clusterHierarch(const set<Cell>& cells, Grid& grid, GroupHash& group_hash, 
     const vector<int>& thresholds, const unordered_map<int, Flexoffer>& flexOffers);

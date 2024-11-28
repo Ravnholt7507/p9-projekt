@@ -11,33 +11,41 @@
 #include "../include/group.h"
 #include "../include/grid.h"
 
+using namespace std;
+
 const int maxGroupSize = 2;
+pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer> &offers) 
+{
+    // Initialize MBR values
+    int minEarliestStartTime = numeric_limits<int>::max();
+    int maxEarliestStartTime = numeric_limits<int>::min();
+    int minLatestStartTime = numeric_limits<int>::max();
+    int maxLatestStartTime = numeric_limits<int>::min();
 
-// Compute Minimum Bounding Rectangle (MBR)
-std::pair<std::vector<int>, std::vector<int>> calculateMBR(
-    const std::set<int>& offer_ids, 
-    const std::vector<std::function<int(const Flexoffer&)>>& extractors,
-    const std::unordered_map<int, Flexoffer>& flexOffers
-) {
-    std::vector<int> mins(extractors.size(), INT_MAX);
-    std::vector<int> maxs(extractors.size(), INT_MIN);
+    // Iterate over the set of offer IDs
+    for (Flexoffer& f : offers) {
+        // Convert time_t to integer
+        int est = localtime(&f.earliest_start_time)->tm_hour;
+        int lst = localtime(&f.latest_start_time)->tm_hour;
 
-    for (int id : offer_ids) {
-        const auto& offer = flexOffers.at(id); // Get the FlexOffer by ID
-        for (size_t i = 0; i < extractors.size(); ++i) {
-            int value = extractors[i](offer);
-            mins[i] = std::min(mins[i], value);
-            maxs[i] = std::max(maxs[i], value);
-        }
+        // Update MBR values
+        minEarliestStartTime = min(minEarliestStartTime, est);
+        maxEarliestStartTime = max(maxEarliestStartTime, est);
+        minLatestStartTime = min(minLatestStartTime, lst);
+        maxLatestStartTime = max(maxLatestStartTime, lst);
     }
 
-    return {mins, maxs};
+    // Prepare the result as a pair of vectors
+    vector<int> minValues = {minEarliestStartTime, minLatestStartTime};
+    vector<int> maxValues = {maxEarliestStartTime, maxLatestStartTime};
+
+    return {minValues, maxValues};
 }
 
 // Check if MBR exceeds thresholds
 bool doesMBRExceedThreshold(
-    const std::pair<std::vector<int>, std::vector<int>>& mbr, 
-    const std::vector<int>& thresholds
+    const pair<vector<int>, vector<int>>& mbr, 
+    const vector<int>& thresholds
 ) {
     for (size_t i = 0; i < mbr.first.size(); ++i) {
         if (mbr.second[i] - mbr.first[i] > thresholds[i]) {
@@ -48,14 +56,14 @@ bool doesMBRExceedThreshold(
 }
 
 // Bin packing algorithm
-std::vector<Group> binPackGroup(
+vector<Group> binPackGroup(
     const Group& group, 
     int max_size, 
     GroupHash& group_hash, 
     ChangesList& change_list
 ) {
-    std::vector<Group> bins;
-    std::vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
+    vector<Group> bins;
+    vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
 
     size_t index = 0;
     while (index < offer_ids.size()) {
@@ -68,20 +76,23 @@ std::vector<Group> binPackGroup(
         bins.push_back(bin);
 
         // Register the addition of the new bin
-        change_list.registerChange(bin.id, '+', std::vector<int>(bin.flexOfferIDs.begin(), bin.flexOfferIDs.end()));
+        change_list.registerChange(bin.id, '+', vector<int>(bin.flexOfferIDs.begin(), bin.flexOfferIDs.end()));
     }
     return bins;
 }
 
+
+/*
+
 // Hierarchical clustering with MBR checks
-std::vector<Group> clusterHierarch(
-    const std::set<Cell>& cells, 
+vector<Group> clusterHierarch(
+    const set<Cell>& cells, 
     Grid& grid, 
     GroupHash& group_hash, 
-    const std::vector<int>& thresholds, 
-    const std::unordered_map<int, Flexoffer>& flexOffers
+    const vector<int>& thresholds, 
+    const unordered_map<int, Flexoffer>& flexOffers
 ) {
-    std::vector<Group> clusters;
+    vector<Group> clusters;
     for (const auto& cell : cells) {
         int group_id = group_hash.generateUniqueGroupID();
         Group group(group_id);
@@ -95,7 +106,7 @@ std::vector<Group> clusterHierarch(
 
     while (clusters.size() > 1) {
         bool merged = false;
-        std::vector<Group> new_clusters;
+        vector<Group> new_clusters;
 
         for (size_t i = 0; i < clusters.size(); ++i) {
             if (i < clusters.size() - 1) {
@@ -119,11 +130,11 @@ std::vector<Group> clusterHierarch(
             }
         }
         if (!merged) break;
-        clusters = std::move(new_clusters);
+        clusters = move(new_clusters);
     }
 
     // Apply bin packing to adjust group sizes
-    std::vector<Group> final_groups;
+    vector<Group> final_groups;
     for (const auto& cluster : clusters) {
         if (cluster.flexOfferIDs.size() > maxGroupSize) {
             auto bins = binPackGroup(cluster, maxGroupSize, group_hash, group_hash.changeList);
@@ -136,14 +147,16 @@ std::vector<Group> clusterHierarch(
     return final_groups;
 }
 
+
+
 // Optimize group to meet thresholds or size constraints
 void optimizeGroup(
     int group_id, 
     Grid& grid, 
     GroupHash& group_hash, 
-    const std::vector<int>& thresholds, 
+    const vector<int>& thresholds, 
     ChangesList& change_list, 
-    const std::unordered_map<int, Flexoffer>& flexOffers
+    const unordered_map<int, Flexoffer>& flexOffers
 ) {
     auto it = group_hash.groups.find(group_id);
     if (it == group_hash.groups.end()) return; // Group not found
@@ -152,7 +165,7 @@ void optimizeGroup(
     auto mbr = calculateMBR(group_copy.flexOfferIDs, grid.featureExtractors, flexOffers);
     if (doesMBRExceedThreshold(mbr, thresholds) || group_copy.flexOfferIDs.size() > maxGroupSize) {
         // Register removal of the group
-        change_list.registerChange(group_id, '-', std::vector<int>(group_copy.flexOfferIDs.begin(), group_copy.flexOfferIDs.end()));
+        change_list.registerChange(group_id, '-', vector<int>(group_copy.flexOfferIDs.begin(), group_copy.flexOfferIDs.end()));
         group_hash.removeGroup(group_id);
 
         auto new_clusters = clusterHierarch(group_copy.cells, grid, group_hash, thresholds, flexOffers);
@@ -162,10 +175,12 @@ void optimizeGroup(
                 group_hash.cellToGroupMap[cell] = new_group.id;
             }
             // Register addition of the new group
-            change_list.registerChange(new_group.id, '+', std::vector<int>(new_group.flexOfferIDs.begin(), new_group.flexOfferIDs.end()));
+            change_list.registerChange(new_group.id, '+', vector<int>(new_group.flexOfferIDs.begin(), new_group.flexOfferIDs.end()));
         }
     }
 }
+
+*/
 
 // Handle delta updates for FlexOffers
 void deltaProcess(

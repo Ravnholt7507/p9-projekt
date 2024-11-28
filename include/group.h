@@ -33,15 +33,16 @@ public:
     unordered_map<int, Group> groups;
     unordered_map<Cell, int> cellToGroupMap;
     Grid& grid;
-    ChangesList& changeList;
+    //ChangesList& changeList;
     int currentGroupID = 0;
 
-    GroupHash(Grid& gridRef, ChangesList& clRef) : grid(gridRef), changeList(clRef) {}
+    GroupHash(Grid& gridRef) : grid(gridRef) {}
     int generateUniqueGroupID();
     void addFlexOffer(const Flexoffer& f);
     void removeFlexOffer(const Flexoffer& f);
     Group& getGroup(int groupID);
     int getGroupIDForCell(const Cell& cell);
     void removeGroup(int groupID);
+    void prettyprint();
 };
 #endif

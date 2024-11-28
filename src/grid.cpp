@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <vector>
 #include <unordered_map>
+#include <iostream>
 #include <set>
 #include <functional>
 
@@ -24,6 +25,8 @@ void Grid::addFlexOffer(const Flexoffer& f) {
     cellmap[cell].insert(f.offer_id);
 }
 
+
+
 void Grid::removeFlexOffer(const Flexoffer& f) {
     Cell cell = mapFlexOfferToCell(f);
     if (cellmap.count(cell)) {
@@ -45,11 +48,25 @@ bool Grid::hasCell(const Cell& cell) const {
     return cellmap.find(cell) != cellmap.end();
 }
 
+
 Cell Grid::mapFlexOfferToCell(const Flexoffer& f) const {
     Cell cell;
-    for (size_t i = 0; i < featureExtractors.size(); ++i) {
-        int value = featureExtractors[i](f);
-        cell.indices.push_back(value / intervals[i]);
-    }
+
+    int est = localtime(&f.earliest_start_time)->tm_hour;
+    int lst = localtime(&f.latest_start_time)->tm_hour;
+
+    cell.indices.push_back(est);
+    cell.indices.push_back(lst);
     return cell;
+}
+
+void Grid::prettyprint(){
+    for (auto cell : cellmap) {
+        cout << "Cell with dimensions: " << "\n";
+        cout << "est: " << cell.first.indices[0] << "\n" << "lst: " << cell.first.indices[1] << '\n';
+        cout << "has these flexOffer IDs: " << "\n";
+        for (auto FO_ID : cell.second) {
+            cout << FO_ID << "\n";
+        }
+    }
 }

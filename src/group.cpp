@@ -11,7 +11,6 @@
 #include "../include/group.h"
 #include "../include/grid.h"
 
-
 void Group::addFlexOffer(int flexOfferID, const Cell& cell) {
     flexOfferIDs.insert(flexOfferID);
     cells.insert(cell);
@@ -24,7 +23,6 @@ void Group::removeFlexOffer(int flexOfferID) {
 vector<int> Group::getFlexOfferIDs() {
     return vector<int>(flexOfferIDs.begin(), flexOfferIDs.end());
 }
-
 
 int GroupHash::generateUniqueGroupID() {
     return currentGroupID++;
@@ -39,7 +37,7 @@ void GroupHash::addFlexOffer(const Flexoffer& f) {
     grid.addFlexOffer(f);
 
     // Register change
-    changeList.registerChange(groupID, '+', {f.offer_id});
+   // changeList.registerChange(groupID, '+', {f.offer_id});
 }
 
 void GroupHash::removeFlexOffer(const Flexoffer& f) {
@@ -50,7 +48,7 @@ void GroupHash::removeFlexOffer(const Flexoffer& f) {
         grid.removeFlexOffer(f);
 
         // Register change
-        changeList.registerChange(groupID, '-', {f.offer_id});
+        // changeList.registerChange(groupID, '-', {f.offer_id});
 
         if (groups[groupID].flexOfferIDs.empty()) {
             for (const auto& c : groups[groupID].cells) {
@@ -75,5 +73,13 @@ void GroupHash::removeGroup(int groupID) {
             cellToGroupMap.erase(cell);
         }
         groups.erase(groupID);
+    }
+}
+
+
+void GroupHash::prettyprint() {
+    for (const auto& cell : cellToGroupMap) {
+        cout << "cell " << cell.first.indices[0] << "," << cell.first.indices[1] << " ";
+        cout << "belongs to group: " << cell.second << '\n';
     }
 }
