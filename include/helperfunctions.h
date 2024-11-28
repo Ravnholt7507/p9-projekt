@@ -15,18 +15,16 @@
 
 using namespace std;
 
-const int maxGroupSize = 2;
-
 pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer>& flexOffers);
 
 bool doesMBRExceedThreshold(const pair<vector<int>, vector<int>>& mbr, const vector<int>& thresholds);
 
-vector<Group> binPackGroup(const Group& group, int max_size, GroupHash& group_hash, ChangesList& change_list);
+vector<Group> binPackGroup(const Group& group, int max_size, GroupHash& group_hash);
 
-vector<Group> clusterHierarch(const set<Cell>& cells, Grid& grid, GroupHash& group_hash, 
-    const vector<int>& thresholds, const unordered_map<int, Flexoffer>& flexOffers);
+// vector<Group> clusterHierarch(const set<Cell>& cells, Grid& grid, GroupHash& group_hash, 
+//     const vector<int>& thresholds, const unordered_map<int, Flexoffer>& flexOffers);
 
-void optimizeGroup(int group_id, GroupHash &gh, vector<int>& thresholds, vector<Flexoffer> &flexOffers);
+void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers);
 
 void deltaProcess(const Flexoffer& offer, char action, GroupHash& group_hash);
 

@@ -7,6 +7,7 @@
 #include <functional>
 
 //#include "../include/ChangesList.h"
+#include "../include/helperfunctions.h"
 #include "../include/flexoffer.h"
 #include "../include/group.h"
 #include "../include/grid.h"
@@ -14,6 +15,7 @@
 using namespace std;
 
 const int maxGroupSize = 2;
+
 pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer> &offers) 
 {
     // Initialize MBR values
@@ -61,8 +63,8 @@ bool doesMBRExceedThreshold(
 vector<Group> binPackGroup(
     const Group& group, 
     int max_size, 
-    GroupHash& group_hash, 
-    ChangesList& change_list
+    GroupHash& group_hash
+   // ChangesList& change_list
 ) {
     vector<Group> bins;
     vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
@@ -76,9 +78,6 @@ vector<Group> binPackGroup(
             bin.flexOfferIDs.insert(offer_ids[index]);
         }
         bins.push_back(bin);
-
-        // Register the addition of the new bin
-        change_list.registerChange(bin.id, '+', vector<int>(bin.flexOfferIDs.begin(), bin.flexOfferIDs.end()));
     }
     return bins;
 }
@@ -152,7 +151,7 @@ vector<Group> clusterHierarch(
 
 
 // Optimize group to meet thresholds or size constraints
-void optimizeGroup(int group_id, GroupHash& gh, const vector<int> &thresholds, vector<Flexoffer> &flexOffers) {
+void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers) {
     auto it = gh.groups.find(group_id);
     if (it == gh.groups.end()) return; // Group not found
 

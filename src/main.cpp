@@ -22,19 +22,13 @@ int main(){
         gh.addFlexOffer(flexOffers[i]);
     }
 
-    // grid.prettyprint();
-    // gh.prettyprint();
-
     vector<int> thresholds = {2, 2};
 
     optimizeGroup(1, gh, thresholds, flexOffers);
 
-    // auto mbr = calculateMBR(flexOffers);
+    return 0;
+}
 
-    // cout << "Min values: [" << mbr.first[0] << ", " << mbr.first[1] << "]\n";
-    // cout << "Max values: [" << mbr.second[0] << ", " << mbr.second[1] << "]\n";
-
-    // cout << doesMBRExceedThreshold(mbr, thresholds);
 
     // AggregatedFlexOffer obj(0, flexOffers);
     // obj.pretty_print();
@@ -42,5 +36,9 @@ int main(){
     // SFO.print_schedule();
     // SFO.n_to_1_disaggregation(obj.individual_offers, obj);
 
-    return 0;
-}
+    // auto mbr = calculateMBR(flexOffers);
+
+    // cout << "Min values: [" << mbr.first[0] << ", " << mbr.first[1] << "]\n";
+    // cout << "Max values: [" << mbr.second[0] << ", " << mbr.second[1] << "]\n";
+
+    // cout << doesMBRExceedThreshold(mbr, thresholds);
