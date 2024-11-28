@@ -26,7 +26,7 @@ vector<Flexoffer> getFlexOffersById(set<int>& ids, vector<Flexoffer>& flexOffers
     for (int id : ids) {
         bool found = false;
         for (const auto& flexOffer : flexOffers) {
-            if (flexOffer.offer_id == id) {
+            if (flexOffer.get_offer_id() == id) {
                 result.push_back(flexOffer);
                 found = true;
                 break; // Exit the inner loop once the flexOffer is found
