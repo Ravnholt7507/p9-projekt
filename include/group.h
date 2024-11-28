@@ -45,4 +45,7 @@ public:
     void removeGroup(int groupID);
     void prettyprint();
 };
+
+vector<Flexoffer> getFlexOffersById(set<int> &ids, vector<Flexoffer> &flexOffers);
+
 #endif

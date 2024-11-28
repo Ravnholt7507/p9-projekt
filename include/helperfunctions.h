@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <functional>
 
-#include "ChangesList.h"
+//#include "ChangesList.h"
 #include "flexoffer.h"
 #include "group.h"
 #include "grid.h"
@@ -26,8 +26,7 @@ vector<Group> binPackGroup(const Group& group, int max_size, GroupHash& group_ha
 vector<Group> clusterHierarch(const set<Cell>& cells, Grid& grid, GroupHash& group_hash, 
     const vector<int>& thresholds, const unordered_map<int, Flexoffer>& flexOffers);
 
-void optimizeGroup(int group_id, Grid& grid, GroupHash& group_hash, const vector<int>& thresholds, 
-                    ChangesList& change_list, const unordered_map<int, Flexoffer>& flexOffers);
+void optimizeGroup(int group_id, GroupHash &gh, vector<int>& thresholds, vector<Flexoffer> &flexOffers);
 
 void deltaProcess(const Flexoffer& offer, char action, GroupHash& group_hash);
 

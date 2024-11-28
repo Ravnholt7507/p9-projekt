@@ -24,6 +24,30 @@ vector<int> Group::getFlexOfferIDs() {
     return vector<int>(flexOfferIDs.begin(), flexOfferIDs.end());
 }
 
+vector<Flexoffer> getFlexOffersById(set<int>& ids, vector<Flexoffer>& flexOffers) {
+    vector<Flexoffer> result;
+
+    for (int id : ids) {
+        bool found = false;
+        for (const auto& flexOffer : flexOffers) {
+            if (flexOffer.offer_id == id) {
+                result.push_back(flexOffer);
+                found = true;
+                break; // Exit the inner loop once the flexOffer is found
+            }
+        }
+        if (!found) {
+            throw runtime_error("Flexoffer ID not found: " + to_string(id));
+        }
+    }
+
+    return result;
+}
+
+
+
+
+
 int GroupHash::generateUniqueGroupID() {
     return currentGroupID++;
 }
