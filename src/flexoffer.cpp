@@ -18,46 +18,18 @@ Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice
 };
 
 //Getters
-int Flexoffer::get_offer_id() const {
-    return offer_id;
-};
-
-time_t Flexoffer::get_est() const {
-    return earliest_start_time;
-};
-
-time_t Flexoffer::get_lst() const {
-    return latest_start_time;
-};
-
-time_t Flexoffer::get_et() const {
-    return end_time;
-};
-
-int Flexoffer::get_duration() const {
-    return duration;
-};
-
-vector<TimeSlice> Flexoffer::get_profile() const{
-    return profile;
-};
-
-vector<double> Flexoffer::get_scheduled_allocation() const{
-   return scheduled_allocation; 
-};
-
-time_t Flexoffer::get_scheduled_start_time() const{
-    return scheduled_start_time;
-};
+int Flexoffer::get_offer_id() const {return offer_id;};
+time_t Flexoffer::get_est() const {return earliest_start_time;};
+time_t Flexoffer::get_lst() const {return latest_start_time;};
+time_t Flexoffer::get_et() const {return end_time;};
+int Flexoffer::get_duration() const {return duration;};
+vector<TimeSlice> Flexoffer::get_profile() const {return profile;};
+vector<double> Flexoffer::get_scheduled_allocation() const {return scheduled_allocation;};
+time_t Flexoffer::get_scheduled_start_time() const {return scheduled_start_time;};
 
 //Setters
-void Flexoffer::set_scheduled_allocation(vector<double> new_sa){
-    scheduled_allocation = new_sa;
-};
-
-void Flexoffer::set_scheduled_start_time(time_t new_st){
-    scheduled_start_time = new_st;
-};
+void Flexoffer::set_scheduled_allocation(vector<double> new_sa) {scheduled_allocation = new_sa;};
+void Flexoffer::set_scheduled_start_time(time_t new_st) {scheduled_start_time = new_st;};
 
 //Utils
 void Flexoffer::print_flexoffer() {

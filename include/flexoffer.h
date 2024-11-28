@@ -22,7 +22,7 @@ class Flexoffer{
         vector<double> scheduled_allocation;
         time_t scheduled_start_time;
     public:
-        //ctor
+        //Constructor
         Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d);
 
         // Getters

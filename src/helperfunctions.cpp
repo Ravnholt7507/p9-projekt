@@ -64,16 +64,16 @@ vector<Group> binPackGroup(
    // ChangesList& change_list
 ) {
     vector<Group> bins;
-    vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
+    vector<int> offer_ids(group.get_flexOfferIDs().begin(), group.get_flexOfferIDs().end());
 
     size_t index = 0;
     while (index < offer_ids.size()) {
         Group bin(group_hash.generateUniqueGroupID());
-        bin.cells = group.cells; // All bins share the same cells
-
+        bin.set_cells(group.get_cells()); // All bins share the same cells
         for (int i = 0; i < max_size && index < offer_ids.size(); ++i, ++index) {
-            bin.flexOfferIDs.insert(offer_ids[index]);
+            bin.get_flexOfferIDs().insert(offer_ids[index]);
         }
+
         bins.push_back(bin);
     }
     return bins;
@@ -149,13 +149,14 @@ vector<Group> clusterHierarch(
 
 // Optimize group to meet thresholds or size constraints
 void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers) {
-    auto it = gh.groups.find(group_id);
-    if (it == gh.groups.end()) return; // Group not found
+    auto it = gh.get_groups().find(group_id);
+    if (it == gh.get_groups().end()) return; // Group not found
 
     Group group_copy = it->second; // Copy for processing
-    vector<Flexoffer> FlexOffersInGroup = getFlexOffersById(group_copy.flexOfferIDs, flexOffers); //get FOs in group
+    set<int> ids = group_copy.get_flexOfferIDs();
+    vector<Flexoffer> FlexOffersInGroup = getFlexOffersById(ids, flexOffers); //get FOs in group
     auto mbr = calculateMBR(FlexOffersInGroup);
-    if (doesMBRExceedThreshold(mbr, thresholds) || group_copy.flexOfferIDs.size() > maxGroupSize) {
+    if (doesMBRExceedThreshold(mbr, thresholds) || ids.size() > maxGroupSize) {
         cout << "\n" << "exceeded" << "\n";
 
         // gh.removeGroup(group_id);
