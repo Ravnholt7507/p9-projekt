@@ -40,7 +40,7 @@ class Flexoffer{
         void set_scheduled_start_time(time_t);
 
         //Utils
-        void print_flexoffer();
+        virtual void print_flexoffer();
 
 };
 

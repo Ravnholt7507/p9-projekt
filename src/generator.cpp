@@ -4,6 +4,7 @@
 #include <random>
 
 #include "../include/flexoffer.h"
+#include "../include/tec.h"
 
 time_t generateRandomTimestampToday(); 
 void printTimestamp(time_t timestamp); 
@@ -42,10 +43,55 @@ Flexoffer generateFlexOffer(int id) {
     return obj;
 }
 
+
+Tec_flexoffer generateTecFlexOffer(int id) {
+    time_t earliest_start_time = generateRandomTimestampToday();
+    int time_flex = randomInt(1, 4);
+    time_t latest_start_time = earliest_start_time + (time_flex * 3600);
+    int duration = randomInt(1, 4);
+    time_t end_time = latest_start_time + (duration * 3600);
+
+    if (latest_start_time + (duration * 3600) > end_time) {
+        latest_start_time = end_time - (duration * 3600);
+    }
+
+    tm *lst_tm = localtime(&latest_start_time);
+    int latest_hour = lst_tm->tm_hour;
+
+    if (latest_hour > (23 - duration)) {
+        latest_hour = 23 - duration;
+    }
+
+    vector<TimeSlice> profile(duration);
+    
+
+    for (int i = 0; i < duration; i++) {
+        profile[i].min_power = randomDouble(0.5, 1.0);
+        profile[i].max_power = randomDouble(1.0, 3.0);
+    }
+
+    double min = 0;
+    double max = 14;
+    
+    // Create and return the Flexoffer object
+    Tec_flexoffer obj(min, max, id, earliest_start_time, latest_start_time, end_time, profile, duration);
+
+    return obj;
+}
+
 vector<Flexoffer> generateMultipleFlexOffers(int numOffers) {
     vector<Flexoffer> flexOffers;
     for (int i = 1; i <= numOffers; i++) {
         Flexoffer flexOffer = generateFlexOffer(i); // ID starts from 1
+        flexOffers.push_back(flexOffer); // Add each Flexoffer to the vector
+    }
+    return flexOffers;
+}
+
+vector<Tec_flexoffer> generateMultipleTecFlexOffers(int numOffers) {
+    vector<Tec_flexoffer> flexOffers;
+    for (int i = 1; i <= numOffers; i++) {
+        Tec_flexoffer flexOffer = generateTecFlexOffer(i); // ID starts from 1
         flexOffers.push_back(flexOffer); // Add each Flexoffer to the vector
     }
     return flexOffers;
