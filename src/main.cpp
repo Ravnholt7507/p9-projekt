@@ -10,17 +10,17 @@
 using namespace std;
 
 int main(){
-    int numOffers = 50;
+    int numOffers = 100;
     Grid grid;
     GroupHash gh(grid);
 
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
 
     for(int i = 0; i < numOffers; i++){
-        flexOffers[i].print_flexoffer();
+        //flexOffers[i].print_flexoffer();
         gh.addFlexOffer(flexOffers[i]);
     }
-
+    
     vector<int> thresholds = {2, 2};
 
     optimizeGroup(1, gh, thresholds, flexOffers);

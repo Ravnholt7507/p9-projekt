@@ -80,42 +80,41 @@ vector<Group> binPackGroup(
 }
 
 
-/*
-
 // Hierarchical clustering with MBR checks
-vector<Group> clusterHierarch(
-    const set<Cell>& cells, 
-    Grid& grid, 
-    GroupHash& group_hash, 
-    const vector<int>& thresholds, 
-    const unordered_map<int, Flexoffer>& flexOffers
-) {
+vector<Group> clusterHierarch(Group& group, GroupHash& gh, vector<int>& thresholds, vector<Flexoffer>& flexOffers) {
     vector<Group> clusters;
+    auto cells = group.cells;
+
+    cout << cells.size();
+
+    //dividing group into multiple groups
     for (const auto& cell : cells) {
-        int group_id = group_hash.generateUniqueGroupID();
+        int group_id = gh.generateUniqueGroupID();
         Group group(group_id);
         group.cells.insert(cell);
-        if (grid.hasCell(cell)) {
-            const auto& ids = grid.getFlexOffersInCell(cell);
+        if (gh.grid.hasCell(cell)) {
+            const auto& ids = gh.grid.getFlexOffersInCell(cell);
             group.flexOfferIDs.insert(ids.begin(), ids.end());
         }
         clusters.push_back(group);
     }
 
+    // Joining groups together
+    bool merged = false;
+    vector<Group> new_clusters;
     while (clusters.size() > 1) {
-        bool merged = false;
-        vector<Group> new_clusters;
-
         for (size_t i = 0; i < clusters.size(); ++i) {
             if (i < clusters.size() - 1) {
                 Group merged_group;
-                merged_group.id = group_hash.generateUniqueGroupID();
+                merged_group.id = gh.generateUniqueGroupID();
                 merged_group.cells.insert(clusters[i].cells.begin(), clusters[i].cells.end());
                 merged_group.cells.insert(clusters[i + 1].cells.begin(), clusters[i + 1].cells.end());
                 merged_group.flexOfferIDs.insert(clusters[i].flexOfferIDs.begin(), clusters[i].flexOfferIDs.end());
                 merged_group.flexOfferIDs.insert(clusters[i + 1].flexOfferIDs.begin(), clusters[i + 1].flexOfferIDs.end());
 
-                auto mbr = calculateMBR(merged_group.flexOfferIDs, grid.featureExtractors, flexOffers);
+                vector<Flexoffer> merged_flexoffers = getFlexOffersById(merged_group.flexOfferIDs, flexOffers);
+
+                auto mbr = calculateMBR(merged_flexoffers);
                 if (!doesMBRExceedThreshold(mbr, thresholds)) {
                     new_clusters.push_back(merged_group);
                     ++i;
@@ -131,20 +130,8 @@ vector<Group> clusterHierarch(
         clusters = move(new_clusters);
     }
 
-    // Apply bin packing to adjust group sizes
-    vector<Group> final_groups;
-    for (const auto& cluster : clusters) {
-        if (cluster.flexOfferIDs.size() > maxGroupSize) {
-            auto bins = binPackGroup(cluster, maxGroupSize, group_hash, group_hash.changeList);
-            final_groups.insert(final_groups.end(), bins.begin(), bins.end());
-        } else {
-            final_groups.push_back(cluster);
-        }
-    }
-
-    return final_groups;
+    return new_clusters;
 }
-*/
 
 
 // Optimize group to meet thresholds or size constraints
@@ -155,18 +142,26 @@ void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<F
     Group group_copy = it->second; // Copy for processing
     vector<Flexoffer> FlexOffersInGroup = getFlexOffersById(group_copy.flexOfferIDs, flexOffers); //get FOs in group
     auto mbr = calculateMBR(FlexOffersInGroup);
-    if (doesMBRExceedThreshold(mbr, thresholds) || group_copy.flexOfferIDs.size() > maxGroupSize) {
+    if (doesMBRExceedThreshold(mbr, thresholds)) { //|| group_copy.flexOfferIDs.size() > maxGroupSize
         cout << "\n" << "exceeded" << "\n";
+        cout << "groupID: " << group_copy.id << "\n";
+        for (const auto& id : group_copy.flexOfferIDs) {
+            cout << "FO_ID: " << id << "\n" ;
+        }
 
-        // gh.removeGroup(group_id);
+        gh.removeGroup(group_id);
 
-        // auto new_clusters = clusterHierarch(group_copy.cells, grid, gh, thresholds, flexOffers);
-        // for (Group& new_group : new_clusters) {
-        //     gh.groups[new_group.id] = new_group;
-        //     for (const auto& cell : new_group.cells) {
-        //         gh.cellToGroupMap[cell] = new_group.id;
-        //     }
-        // }
+        auto new_clusters = clusterHierarch(group_copy, gh, thresholds, flexOffers);
+        for (Group& new_group : new_clusters) {
+            gh.groups[new_group.id] = new_group;
+            for (const auto& cell : new_group.cells) {
+                gh.cellToGroupMap[cell] = new_group.id;
+            }
+        }
+    }
+    cout << "groupID: " << group_copy.id << "\n";
+    for (const auto& id : group_copy.flexOfferIDs) {
+        cout << "FO_ID: " << id << "\n" ;
     }
 }
 

@@ -55,9 +55,6 @@ void GroupHash::addFlexOffer(const Flexoffer& f) {
     groups[groupID].addFlexOffer(f.get_offer_id(), cell);
     cellToGroupMap[cell] = groupID;
     grid.addFlexOffer(f);
-
-    // Register change
-   // changeList.registerChange(groupID, '+', {f.offer_id});
 }
 
 void GroupHash::removeFlexOffer(const Flexoffer& f) {
@@ -66,9 +63,6 @@ void GroupHash::removeFlexOffer(const Flexoffer& f) {
         int groupID = cellToGroupMap[cell];
         groups[groupID].removeFlexOffer(f.get_offer_id());
         grid.removeFlexOffer(f);
-
-        // Register change
-        // changeList.registerChange(groupID, '-', {f.offer_id});
 
         if (groups[groupID].flexOfferIDs.empty()) {
             for (const auto& c : groups[groupID].cells) {
