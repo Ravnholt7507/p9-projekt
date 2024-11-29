@@ -11,6 +11,10 @@ class Tec_flexoffer : public Flexoffer {
     public:
         //Constructor
         Tec_flexoffer(double min, double max, int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d);
+
+        //Destructor
+        ~Tec_flexoffer();
+
         //Getters
         double get_min_overall_kw() const;
         double get_max_overall_kw() const;

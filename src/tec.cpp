@@ -14,6 +14,11 @@ Tec_flexoffer::Tec_flexoffer(double min, double max, int oi, time_t est, time_t 
     min_overall_kw = min;     
     max_overall_kw = max;
 };
+//Deconstructor
+Tec_flexoffer::~Tec_flexoffer(){
+   min_overall_kw = 0;
+   max_overall_kw = 0; 
+};
 
 //Getters
 double Tec_flexoffer::get_min_overall_kw() const {return min_overall_kw;};

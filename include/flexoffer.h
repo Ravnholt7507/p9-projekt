@@ -25,6 +25,9 @@ class Flexoffer{
         //Constructor
         Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d);
 
+        //Destructor
+        virtual ~Flexoffer();
+
         // Getters
         int get_offer_id() const;
         time_t get_est() const;
@@ -41,7 +44,6 @@ class Flexoffer{
 
         //Utils
         virtual void print_flexoffer();
-
 };
 
 #endif
