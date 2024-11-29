@@ -17,6 +17,16 @@ Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice
     end_time = et;
 };
 
+//Destructor
+Flexoffer::~Flexoffer(){
+   offer_id = 0;
+   earliest_start_time = 0;
+   latest_start_time = 0; 
+   end_time = 0;
+   profile.clear();
+   duration = 0;
+};
+
 //Getters
 int Flexoffer::get_offer_id() const {return offer_id;};
 time_t Flexoffer::get_est() const {return earliest_start_time;};
