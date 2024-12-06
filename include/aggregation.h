@@ -5,8 +5,9 @@
 #include <vector>
 #include <chrono>
 
-#include "flexoffer.h"
+#include "../include/flexoffer.h"
 
+using namespace std;
 
 class AggregatedFlexOffer{
     public:

@@ -1,51 +1,31 @@
 #ifndef GROUP_H
 #define GROUP_H
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <set>
-#include <climits>
-#include <algorithm>
-#include <functional>
 
-#include "grid.h"
-#include "ChangesList.h"
+#include <vector>
 #include "flexoffer.h"
 #include "aggregation.h"
 
-// Group class
 class Group {
-public:
+private:
     int id;
-    set<int> flexOfferIDs;
-    set<Cell> cells;
-    Group(int id = -1) : id(id) {}
-    void addFlexOffer(int flexOfferID, const Cell& cell);
-    void removeFlexOffer(int flexOfferID);
-    vector<int> getFlexOfferIDs();
-};
+    std::vector<Flexoffer> flexoffers;
+    AggregatedFlexOffer aggregatedOffer;
 
+    // Method to update the aggregated flex offer
+    void updateAggregatedOffer();
 
-
-// GroupHash class
-class GroupHash {
 public:
-    unordered_map<int, Group> groups;
-    unordered_map<Cell, int> cellToGroupMap;
-    Grid& grid;
-    //ChangesList& changeList;
-    int currentGroupID = 0;
+    Group(int group_id);
 
-    GroupHash(Grid& gridRef) : grid(gridRef) {}
-    int generateUniqueGroupID();
-    void addFlexOffer(const Flexoffer& f);
-    void removeFlexOffer(const Flexoffer& f);
-    Group& getGroup(int groupID);
-    int getGroupIDForCell(const Cell& cell);
-    void removeGroup(int groupID);
-    void prettyprint();
+    void addFlexOffer(const Flexoffer& fo);
+
+    const std::vector<Flexoffer>& getFlexOffers() const;
+
+    const AggregatedFlexOffer& getAggregatedOffer() const;
+
+    void printAggregatedOffer();
+
+    int getGroupId() const;
 };
 
-vector<Flexoffer> getFlexOffersById(set<int> &ids, vector<Flexoffer> &flexOffers);
-
-#endif
+#endif // GROUP_H

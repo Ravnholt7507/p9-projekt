@@ -1,180 +1,113 @@
-#include <vector>
-#include <set>
-#include <algorithm>
-
-//#include "../include/ChangesList.h"
 #include "../include/helperfunctions.h"
-#include "../include/flexoffer.h"
-#include "../include/group.h"
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
-using namespace std;
+// Helper function to compute the MBR of a group
+void createMBR(const Group& group, MBR& mbr) {
+    const auto& flexoffers = group.getFlexOffers();
+    if (flexoffers.empty()) return;
 
-const int maxGroupSize = 2;
+    mbr.min_est_hour = flexoffers.front().get_est_hour();
+    mbr.max_est_hour = flexoffers.front().get_est_hour();
+    mbr.min_lst_hour = flexoffers.front().get_lst_hour();
+    mbr.max_lst_hour = flexoffers.front().get_lst_hour();
 
-pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer> &offers) 
-{
-    // Initialize MBR values
-    int minEarliestStartTime = numeric_limits<int>::max();
-    int maxEarliestStartTime = numeric_limits<int>::min();
-    int minLatestStartTime = numeric_limits<int>::max();
-    int maxLatestStartTime = numeric_limits<int>::min();
+    for (const auto& fo : flexoffers) {
+        int est_hour = fo.get_est_hour();
+        int lst_hour = fo.get_lst_hour();
 
-    // Iterate over the set of offer IDs
-    for (Flexoffer& f : offers) {
-        // Convert time_t to integer
-        time_t offer_est = f.get_est();
-        time_t offer_lst = f.get_lst();
-        int est = localtime(&offer_est)->tm_hour;
-        int lst = localtime(&offer_lst)->tm_hour;
-
-        // Update MBR values
-        minEarliestStartTime = min(minEarliestStartTime, est);
-        maxEarliestStartTime = max(maxEarliestStartTime, est);
-        minLatestStartTime = min(minLatestStartTime, lst);
-        maxLatestStartTime = max(maxLatestStartTime, lst);
+        if (est_hour < mbr.min_est_hour) mbr.min_est_hour = est_hour;
+        if (est_hour > mbr.max_est_hour) mbr.max_est_hour = est_hour;
+        if (lst_hour < mbr.min_lst_hour) mbr.min_lst_hour = lst_hour;
+        if (lst_hour > mbr.max_lst_hour) mbr.max_lst_hour = lst_hour;
     }
-
-    // Prepare the result as a pair of vectors
-    vector<int> minValues = {minEarliestStartTime, minLatestStartTime};
-    vector<int> maxValues = {maxEarliestStartTime, maxLatestStartTime};
-
-    return {minValues, maxValues};
 }
 
-// Check if MBR exceeds thresholds
-bool doesMBRExceedThreshold(
-    const pair<vector<int>, vector<int>>& mbr, 
-    const vector<int>& thresholds
-) {
-    for (size_t i = 0; i < mbr.first.size(); ++i) {
-        if (mbr.second[i] - mbr.first[i] > thresholds[i]) {
-            return true;
-        }
-    }
-    return false;
+bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold) {
+    int est_range = mbr.max_est_hour - mbr.min_est_hour;
+    int lst_range = mbr.max_lst_hour - mbr.min_lst_hour;
+    return est_range > est_threshold || lst_range > lst_threshold;
 }
 
+// Compute the "distance" between two groups based on their MBR centroids
+static double groupDistance(const Group& g1, const Group& g2) {
+    MBR m1, m2;
+    createMBR(g1, m1);
+    createMBR(g2, m2);
 
+    double c1_est = (m1.min_est_hour + m1.max_est_hour) / 2.0;
+    double c1_lst = (m1.min_lst_hour + m1.max_lst_hour) / 2.0;
+    double c2_est = (m2.min_est_hour + m2.max_est_hour) / 2.0;
+    double c2_lst = (m2.min_lst_hour + m2.max_lst_hour) / 2.0;
 
-// Bin packing algorithm
-vector<Group> binPackGroup(
-    const Group& group, 
-    int max_size, 
-    GroupHash& group_hash
-   // ChangesList& change_list
-) {
-    vector<Group> bins;
-    vector<int> offer_ids(group.flexOfferIDs.begin(), group.flexOfferIDs.end());
-
-    size_t index = 0;
-    while (index < offer_ids.size()) {
-        Group bin(group_hash.generateUniqueGroupID());
-        bin.cells = group.cells; // All bins share the same cells
-
-        for (int i = 0; i < max_size && index < offer_ids.size(); ++i, ++index) {
-            bin.flexOfferIDs.insert(offer_ids[index]);
-        }
-        bins.push_back(bin);
-    }
-    return bins;
+    double dx = c2_est - c1_est;
+    double dy = c2_lst - c1_lst;
+    return std::sqrt(dx*dx + dy*dy);
 }
 
-
-// Hierarchical clustering with MBR checks
-vector<Group> clusterHierarch(Group& group, GroupHash& gh, vector<int>& thresholds, vector<Flexoffer>& flexOffers) {
-    vector<Group> clusters;
-    auto cells = group.cells;
-
-    cout << cells.size();
-
-    //dividing group into multiple groups
-    for (const auto& cell : cells) {
-        int group_id = gh.generateUniqueGroupID();
-        Group group(group_id);
-        group.cells.insert(cell);
-        if (gh.grid.hasCell(cell)) {
-            const auto& ids = gh.grid.getFlexOffersInCell(cell);
-            group.flexOfferIDs.insert(ids.begin(), ids.end());
-        }
-        clusters.push_back(group);
+// Merge two groups into a new group
+static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
+    Group merged(newGroupId);
+    // Add all Flexoffers from g1 and g2
+    for (const auto& fo : g1.getFlexOffers()) {
+        merged.addFlexOffer(fo);
     }
+    for (const auto& fo : g2.getFlexOffers()) {
+        merged.addFlexOffer(fo);
+    }
+    return merged;
+}
 
-    // Joining groups together
-    bool merged = false;
-    vector<Group> new_clusters;
-    while (clusters.size() > 1) {
-        for (size_t i = 0; i < clusters.size(); ++i) {
-            if (i < clusters.size() - 1) {
-                Group merged_group;
-                merged_group.id = gh.generateUniqueGroupID();
-                merged_group.cells.insert(clusters[i].cells.begin(), clusters[i].cells.end());
-                merged_group.cells.insert(clusters[i + 1].cells.begin(), clusters[i + 1].cells.end());
-                merged_group.flexOfferIDs.insert(clusters[i].flexOfferIDs.begin(), clusters[i].flexOfferIDs.end());
-                merged_group.flexOfferIDs.insert(clusters[i + 1].flexOfferIDs.begin(), clusters[i + 1].flexOfferIDs.end());
+// Bottom-up hierarchical clustering
+void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold) {
+    if (groups.size() <= 1) return;
 
-                vector<Flexoffer> merged_flexoffers = getFlexOffersById(merged_group.flexOfferIDs, flexOffers);
+    // Keep merging until no merges are possible
+    bool merged = true;
+    int nextGroupId = 1000; // Arbitrary start for new group IDs
 
-                auto mbr = calculateMBR(merged_flexoffers);
-                if (!doesMBRExceedThreshold(mbr, thresholds)) {
-                    new_clusters.push_back(merged_group);
-                    ++i;
-                    merged = true;
-                } else {
-                    new_clusters.push_back(clusters[i]);
+    while (merged && groups.size() > 1) {
+        merged = false;
+        double minDist = std::numeric_limits<double>::max();
+        int bestA = -1, bestB = -1;
+
+        // Find the two closest groups
+        for (size_t i = 0; i < groups.size(); ++i) {
+            for (size_t j = i+1; j < groups.size(); ++j) {
+                double dist = groupDistance(groups[i], groups[j]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestA = (int)i;
+                    bestB = (int)j;
                 }
-            } else {
-                new_clusters.push_back(clusters[i]);
             }
         }
-        if (!merged) break;
-        clusters = move(new_clusters);
-    }
 
-    return new_clusters;
-}
-
-
-// Optimize group to meet thresholds or size constraints
-void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers) {
-    auto it = gh.groups.find(group_id);
-    if (it == gh.groups.end()) return; // Group not found
-
-    Group group_copy = it->second; // Copy for processing
-    vector<Flexoffer> FlexOffersInGroup = getFlexOffersById(group_copy.flexOfferIDs, flexOffers); //get FOs in group
-    auto mbr = calculateMBR(FlexOffersInGroup);
-    if (doesMBRExceedThreshold(mbr, thresholds)) { //|| group_copy.flexOfferIDs.size() > maxGroupSize
-        cout << "\n" << "exceeded" << "\n";
-        cout << "groupID: " << group_copy.id << "\n";
-        for (const auto& id : group_copy.flexOfferIDs) {
-            cout << "FO_ID: " << id << "\n" ;
+        if (bestA == -1 || bestB == -1) {
+            // No pairs found
+            break;
         }
 
-        gh.removeGroup(group_id);
+        // Attempt to merge the two closest groups
+        Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
+        MBR candidateMBR;
+        createMBR(candidate, candidateMBR);
 
-        auto new_clusters = clusterHierarch(group_copy, gh, thresholds, flexOffers);
-        for (Group& new_group : new_clusters) {
-            gh.groups[new_group.id] = new_group;
-            for (const auto& cell : new_group.cells) {
-                gh.cellToGroupMap[cell] = new_group.id;
-            }
+        if (!exceedsThreshold(candidateMBR, est_threshold, lst_threshold)) {
+            // Merge is acceptable
+            // Remove groups bestB and bestA and add candidate
+            if (bestA > bestB) std::swap(bestA, bestB);
+            groups.erase(groups.begin() + bestB);
+            groups.erase(groups.begin() + bestA);
+            groups.push_back(candidate);
+            merged = true;
+        } else {
+            // Can't merge these two without exceeding threshold. 
+            // Remove them from consideration by not merging. 
+            // If no merges possible, loop ends.
+            // If you want to try other merges, you simply continue.
+            // If no merge at all is found in this iteration, merged = false and we stop.
         }
-    }
-    cout << "groupID: " << group_copy.id << "\n";
-    for (const auto& id : group_copy.flexOfferIDs) {
-        cout << "FO_ID: " << id << "\n" ;
-    }
-}
-
-
-// Handle delta updates for FlexOffers
-void deltaProcess(
-    const Flexoffer& offer, 
-    char action, 
-    GroupHash& group_hash
-) {
-    if (action == '+') {
-        group_hash.addFlexOffer(offer);
-    } else if (action == '-') {
-        group_hash.removeFlexOffer(offer);
     }
 }
