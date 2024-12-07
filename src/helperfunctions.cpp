@@ -3,7 +3,8 @@
 #include <cmath>
 #include <limits>
 
-// Helper function to compute the MBR of a group
+using namespace std;
+
 void createMBR(const Group& group, MBR& mbr) {
     const auto& flexoffers = group.getFlexOffers();
     if (flexoffers.empty()) return;
@@ -43,7 +44,7 @@ static double groupDistance(const Group& g1, const Group& g2) {
 
     double dx = c2_est - c1_est;
     double dy = c2_lst - c1_lst;
-    return std::sqrt(dx*dx + dy*dy);
+    return sqrt(dx * dx + dy * dy);
 }
 
 // Merge two groups into a new group
@@ -59,22 +60,21 @@ static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
     return merged;
 }
 
-// Bottom-up hierarchical clustering
-void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold) {
+// Bottom-up hierarchical clustering with group size constraint
+void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
     if (groups.size() <= 1) return;
 
-    // Keep merging until no merges are possible
     bool merged = true;
     int nextGroupId = 1000; // Arbitrary start for new group IDs
 
     while (merged && groups.size() > 1) {
         merged = false;
-        double minDist = std::numeric_limits<double>::max();
+        double minDist = numeric_limits<double>::max();
         int bestA = -1, bestB = -1;
 
         // Find the two closest groups
         for (size_t i = 0; i < groups.size(); ++i) {
-            for (size_t j = i+1; j < groups.size(); ++j) {
+            for (size_t j = i + 1; j < groups.size(); ++j) {
                 double dist = groupDistance(groups[i], groups[j]);
                 if (dist < minDist) {
                     minDist = dist;
@@ -94,20 +94,17 @@ void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_thresho
         MBR candidateMBR;
         createMBR(candidate, candidateMBR);
 
-        if (!exceedsThreshold(candidateMBR, est_threshold, lst_threshold)) {
+        // Check both MBR threshold and max_group_size constraint
+        if (!exceedsThreshold(candidateMBR, est_threshold, lst_threshold) &&
+            (int)candidate.getFlexOffers().size() <= max_group_size) {
             // Merge is acceptable
-            // Remove groups bestB and bestA and add candidate
-            if (bestA > bestB) std::swap(bestA, bestB);
+            if (bestA > bestB) swap(bestA, bestB);
             groups.erase(groups.begin() + bestB);
             groups.erase(groups.begin() + bestA);
             groups.push_back(candidate);
             merged = true;
         } else {
-            // Can't merge these two without exceeding threshold. 
-            // Remove them from consideration by not merging. 
-            // If no merges possible, loop ends.
-            // If you want to try other merges, you simply continue.
-            // If no merge at all is found in this iteration, merged = false and we stop.
+            merged = false;
         }
     }
 }

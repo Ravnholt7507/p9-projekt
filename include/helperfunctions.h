@@ -15,7 +15,7 @@ struct MBR {
 void createMBR(const Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 
-// New function: clusterGroup now uses bottom-up hierarchical clustering
-void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold);
+// Now includes max_group_size
+void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 
 #endif // HELPERFUNCTION_H

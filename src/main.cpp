@@ -13,25 +13,24 @@ int main() {
     int numOffers = 20;
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
 
-    int est_threshold = 2;
-    int lst_threshold = 2;
-
-    int nextGroupId = 1;
 
     // Create one group per Flexoffer
     std::vector<Group> groups;
     int groupId = 1;
-    for (auto& fo : flexOffers) {
+    for (const auto& fo : flexOffers) {
         Group g(groupId++);
         g.addFlexOffer(fo);
         groups.push_back(g);
     }
 
-    // Perform bottom-up hierarchical clustering
-    clusterGroup(groups, est_threshold, lst_threshold);
+    int est_threshold = 2; // 1 hour
+    int lst_threshold = 2; // 1 hour
+    int max_group_size = 3; // For example, no more than 3 Flexoffers per group
 
-    // After clustering, we have a set of groups that do not exceed thresholds
-    // Print their aggregated offers
+    // Perform bottom-up hierarchical clustering with max_group_size constraint
+    clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
+
+    // Print final groups
     for (auto& g : groups) {
         g.printAggregatedOffer();
     }
