@@ -1,7 +1,3 @@
-#include <vector>
-#include <unordered_map>
-#include <iostream>
-
 #include "../include/flexoffer.h"
 #include "../include/generator.h"
 #include "../include/group.h"
@@ -33,6 +29,5 @@ int main() {
     for (auto& g : groups) {
         g.printAggregatedOffer();
     }
-
     return 0;
 }

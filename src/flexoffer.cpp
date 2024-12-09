@@ -2,48 +2,39 @@
 #include <iostream>
 #include <iomanip>
 
-Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, const std::vector<TimeSlice>& p, int d)
-    : offer_id(oi), earliest_start_time(est), latest_start_time(lst), end_time(et), duration(d), profile(p) {}
+//Constructor
+Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d){
+    offer_id = oi;
+    earliest_start_time = est;
+    latest_start_time = lst;
+    duration = d;
+    profile = p;
+    end_time = et;
+};
 
-int Flexoffer::get_offer_id() const {
-    return offer_id;
-}
+//Destructor
+Flexoffer::~Flexoffer(){
+   offer_id = 0;
+   earliest_start_time = 0;
+   latest_start_time = 0; 
+   end_time = 0;
+   profile.clear();
+   duration = 0;
+};
 
-time_t Flexoffer::get_est() const {
-    return earliest_start_time;
-}
+//Getters
+int Flexoffer::get_offer_id() const {return offer_id;};
+time_t Flexoffer::get_est() const {return earliest_start_time;};
+time_t Flexoffer::get_lst() const {return latest_start_time;};
+time_t Flexoffer::get_et() const {return end_time;};
+int Flexoffer::get_duration() const {return duration;};
+vector<TimeSlice> Flexoffer::get_profile() const {return profile;};
+vector<double> Flexoffer::get_scheduled_allocation() const {return scheduled_allocation;};
+time_t Flexoffer::get_scheduled_start_time() const {return scheduled_start_time;};
 
-time_t Flexoffer::get_lst() const {
-    return latest_start_time;
-}
-
-time_t Flexoffer::get_et() const {
-    return end_time;
-}
-
-int Flexoffer::get_duration() const {
-    return duration;
-}
-
-const std::vector<TimeSlice>& Flexoffer::get_profile() const {
-    return profile;
-}
-
-const std::vector<double>& Flexoffer::get_scheduled_allocation() const {
-    return scheduled_allocation;
-}
-
-time_t Flexoffer::get_scheduled_start_time() const {
-    return scheduled_start_time;
-}
-
-void Flexoffer::set_scheduled_allocation(const std::vector<double>& new_sa) {
-    scheduled_allocation = new_sa;
-}
-
-void Flexoffer::set_scheduled_start_time(time_t new_st) {
-    scheduled_start_time = new_st;
-}
+//Setters
+void Flexoffer::set_scheduled_allocation(vector<double> new_sa) {scheduled_allocation = new_sa;};
+void Flexoffer::set_scheduled_start_time(time_t new_st) {scheduled_start_time = new_st;};
 
 void Flexoffer::print_flexoffer() {
     // Helper lambda to convert time_t to readable format

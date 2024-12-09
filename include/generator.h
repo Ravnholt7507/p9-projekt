@@ -1,6 +1,8 @@
 #include "../include/flexoffer.h"
 #ifndef GENERATOR_H
 #define GENERATOR_H
-
-std::vector<Flexoffer> generateMultipleFlexOffers(int num);
+#include "flexoffer.h"
+#include "tec.h"
+vector<Flexoffer> generateMultipleFlexOffers(int num);
+vector<Tec_flexoffer> generateMultipleTecFlexOffers(int numOffers);
 #endif

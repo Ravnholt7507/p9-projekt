@@ -7,10 +7,10 @@ using namespace std;
 
 double calculateFlexibilityLoss(AggregatedFlexOffer offer){
     double originalTimeFlexibility = 0.0, aggregatedTimeFlexibility = 0.0;
-    for (unsigned int i=0; i < offer.individual_offers.size(); i++){
-        originalTimeFlexibility += difftime(offer.individual_offers[i].get_lst(), offer.individual_offers[i].get_est());
+    for (unsigned int i=0; i < offer.get_individual_offers().size(); i++){
+        originalTimeFlexibility += difftime(offer.get_individual_offers()[i].get_lst(), offer.get_individual_offers()[i].get_est());
     }
-    aggregatedTimeFlexibility = difftime(offer.aggregated_earliest, offer.aggregated_earliest);
+    aggregatedTimeFlexibility = difftime(offer.get_aggregated_earliest(), offer.get_aggregated_earliest());
     return 1.0 - (aggregatedTimeFlexibility / originalTimeFlexibility);
 }
 
