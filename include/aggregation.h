@@ -7,6 +7,8 @@
 
 #include "flexoffer.h"
 
+using namespace std;
+
 
 class AggregatedFlexOffer{
     private: 

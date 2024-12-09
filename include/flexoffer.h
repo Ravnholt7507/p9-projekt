@@ -1,10 +1,10 @@
 #ifndef FLEXOFFER_H
 #define FLEXOFFER_H
+
 #include <ctime>
 #include <vector>
 
 using namespace std;
-
 
 struct TimeSlice {
     double min_power; // Minimum power in kW
@@ -38,12 +38,17 @@ class Flexoffer{
         vector<double> get_scheduled_allocation() const;
         time_t get_scheduled_start_time() const;
 
-        //Setters
-        void set_scheduled_allocation(vector<double>);
+        // Setters
+        void set_scheduled_allocation(std::vector<double>);
         void set_scheduled_start_time(time_t);
 
+        // Additional methods
+        int get_est_hour() const;
+        int get_lst_hour() const;
+        double get_total_energy() const;
+        
         //Utils
         virtual void print_flexoffer();
 };
 
-#endif
+#endif // FLEXOFFER_H

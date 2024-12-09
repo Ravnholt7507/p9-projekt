@@ -1,10 +1,13 @@
 #include <iostream>
 #include <iomanip>
+#include <vector>
 #include <chrono>
 #include <random>
 
 #include "../include/flexoffer.h"
 #include "../include/tec.h"
+
+using namespace std;
 
 time_t generateRandomTimestampToday(); 
 void printTimestamp(time_t timestamp); 

@@ -1,31 +1,21 @@
-#ifndef HELPER_FUNCTIONS
-#define HELPER_FUNCTIONS
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <set>
-#include <climits>
-#include <algorithm>
-#include <functional>
+#ifndef HELPERFUNCTION_H
+#define HELPERFUNCTION_H
 
-//#include "ChangesList.h"
+#include <vector>
 #include "flexoffer.h"
 #include "group.h"
-#include "grid.h"
 
-using namespace std;
+struct MBR {
+    int min_est_hour; // Minimum earliest start hour
+    int max_est_hour; // Maximum earliest start hour
+    int min_lst_hour; // Minimum latest start hour
+    int max_lst_hour; // Maximum latest start hour
+};
 
-pair<vector<int>, vector<int>> calculateMBR(vector<Flexoffer>& flexOffers);
+void createMBR(const Group& group, MBR& mbr);
+bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 
-bool doesMBRExceedThreshold(const pair<vector<int>, vector<int>>& mbr, const vector<int>& thresholds);
+// Now includes max_group_size
+void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 
-vector<Group> binPackGroup(const Group& group, int max_size, GroupHash& group_hash);
-
-// vector<Group> clusterHierarch(const set<Cell>& cells, Grid& grid, GroupHash& group_hash, 
-//     const vector<int>& thresholds, const unordered_map<int, Flexoffer>& flexOffers);
-
-void optimizeGroup(int group_id, GroupHash &gh, vector<int> thresholds, vector<Flexoffer> &flexOffers);
-
-void deltaProcess(const Flexoffer& offer, char action, GroupHash& group_hash);
-
-#endif
+#endif // HELPERFUNCTION_H

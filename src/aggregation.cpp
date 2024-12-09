@@ -6,6 +6,7 @@
 #include "../include/aggregation.h"
 #include "../include/flexoffer.h"
 using namespace std;
+
 //Constructor
 AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers){
   //  individual_offers = offers;
@@ -15,7 +16,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers
     for (unsigned int i=0; i < offers.size(); i++){
         aggregated_earliest = min(aggregated_earliest, offers[i].get_est());
         aggregated_latest = min(aggregated_latest, offers[i].get_lst() - offers[i].get_est());
-        aggregated_end_time = max(aggregated_end_time, offers[i].get_est()+ (offers[i].get_duration() * 3600));
+        aggregated_end_time = max(aggregated_end_time, offers[i].get_est() + (offers[i].get_duration() * 3600));
     }
     aggregated_latest += aggregated_earliest;
 
