@@ -2,8 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-
-using namespace std;
+#include <iostream> // For logging
 
 void createMBR(const Group& group, MBR& mbr) {
     const auto& flexoffers = group.getFlexOffers();
@@ -31,7 +30,6 @@ bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold) {
     return est_range > est_threshold || lst_range > lst_threshold;
 }
 
-// Compute the "distance" between two groups based on their MBR centroids
 static double groupDistance(const Group& g1, const Group& g2) {
     MBR m1, m2;
     createMBR(g1, m1);
@@ -44,13 +42,11 @@ static double groupDistance(const Group& g1, const Group& g2) {
 
     double dx = c2_est - c1_est;
     double dy = c2_lst - c1_lst;
-    return sqrt(dx * dx + dy * dy);
+    return std::sqrt(dx*dx + dy*dy);
 }
 
-// Merge two groups into a new group
 static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
     Group merged(newGroupId);
-    // Add all Flexoffers from g1 and g2
     for (const auto& fo : g1.getFlexOffers()) {
         merged.addFlexOffer(fo);
     }
@@ -60,16 +56,18 @@ static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
     return merged;
 }
 
-// Bottom-up hierarchical clustering with group size constraint
-void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
+void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
     if (groups.size() <= 1) return;
 
     bool merged = true;
-    int nextGroupId = 1000; // Arbitrary start for new group IDs
+    int nextGroupId = 1000;
+
+    std::cout << "[DEBUG] Starting bottom-up hierarchical clustering...\n";
+    std::cout << "[DEBUG] Initial number of groups: " << groups.size() << "\n";
 
     while (merged && groups.size() > 1) {
         merged = false;
-        double minDist = numeric_limits<double>::max();
+        double minDist = std::numeric_limits<double>::max();
         int bestA = -1, bestB = -1;
 
         // Find the two closest groups
@@ -85,26 +83,36 @@ void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, i
         }
 
         if (bestA == -1 || bestB == -1) {
-            // No pairs found
+            std::cout << "[DEBUG] No pairs found for merging.\n";
             break;
         }
 
-        // Attempt to merge the two closest groups
+        std::cout << "[DEBUG] Closest groups to merge: Group " << groups[bestA].getGroupId()
+                  << " and Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
+
         Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
         MBR candidateMBR;
         createMBR(candidate, candidateMBR);
 
-        // Check both MBR threshold and max_group_size constraint
-        if (!exceedsThreshold(candidateMBR, est_threshold, lst_threshold) &&
-            (int)candidate.getFlexOffers().size() <= max_group_size) {
-            // Merge is acceptable
-            if (bestA > bestB) swap(bestA, bestB);
+        bool thresholdOK = !exceedsThreshold(candidateMBR, est_threshold, lst_threshold);
+        bool sizeOK = (int)candidate.getFlexOffers().size() <= max_group_size;
+
+        if (thresholdOK && sizeOK) {
+            std::cout << "[DEBUG] Merging groups " << groups[bestA].getGroupId() << " and " << groups[bestB].getGroupId() << " into new Group " << candidate.getGroupId() << "\n";
+            if (bestA > bestB) std::swap(bestA, bestB);
             groups.erase(groups.begin() + bestB);
             groups.erase(groups.begin() + bestA);
             groups.push_back(candidate);
             merged = true;
         } else {
+            std::cout << "[DEBUG] Cannot merge these two groups due to " 
+                      << (thresholdOK ? "" : "threshold violation ") 
+                      << (thresholdOK && !sizeOK ? "and " : "") 
+                      << (!sizeOK ? "max group size exceeded" : "")
+                      << ". Stopping.\n";
             merged = false;
         }
     }
+
+    std::cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
 }

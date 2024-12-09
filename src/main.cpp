@@ -10,9 +10,8 @@
 using namespace std;
 
 int main() {
-    int numOffers = 20;
+    int numOffers = 2;
     vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
-
 
     // Create one group per Flexoffer
     std::vector<Group> groups;
