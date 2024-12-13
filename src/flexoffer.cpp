@@ -26,7 +26,7 @@ Flexoffer::~Flexoffer(){
 int Flexoffer::get_offer_id() const {return offer_id;};
 time_t Flexoffer::get_est() const {return earliest_start_time;};
 time_t Flexoffer::get_lst() const {return latest_start_time;};
-time_t Flexoffer::get_et() const {return end_time;};
+time_t Flexoffer::get_et() const {return end_time;} // Now implemented
 int Flexoffer::get_duration() const {return duration;};
 vector<TimeSlice> Flexoffer::get_profile() const {return profile;};
 vector<double> Flexoffer::get_scheduled_allocation() const {return scheduled_allocation;};

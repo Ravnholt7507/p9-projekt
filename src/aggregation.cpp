@@ -2,75 +2,97 @@
 #include <ctime>
 #include <iomanip>
 #include <vector>
+#include <cmath>
 
-#include "../include/aggregation.h"
-#include "../include/flexoffer.h"
+#include "aggregation.h"
+#include "flexoffer.h"
+
 using namespace std;
 
-//Constructor
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, vector<Flexoffer> &offers){
-  //  individual_offers = offers;
+static int time_to_hour(time_t t) {
+    struct tm * timeinfo = localtime(&t);
+    return timeinfo->tm_hour;
+}
+
+// Constructor
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const std::vector<Flexoffer> &offers) {
+    if (offers.empty()) {
+        throw invalid_argument("No FlexOffers provided for aggregation.");
+    }
+
     id = offer_id;
 
-    //step 1. Assign earliest and latest times of aggregated flex offer. (by looking at the min/max of individual offers)
-    for (unsigned int i=0; i < offers.size(); i++){
-        aggregated_earliest = min(aggregated_earliest, offers[i].get_est());
-        aggregated_latest = min(aggregated_latest, offers[i].get_lst() - offers[i].get_est());
-        aggregated_end_time = max(aggregated_end_time, offers[i].get_est() + (offers[i].get_duration() * 3600));
+    aggregated_earliest = std::numeric_limits<time_t>::max();
+    aggregated_latest = 0;
+    aggregated_end_time = 0;
+
+    // Determine earliest, latest, and end times
+    for (const auto& offer : offers) {
+        aggregated_earliest = std::min(aggregated_earliest, offer.get_est());
+        aggregated_latest = std::max(aggregated_latest, offer.get_lst());
+        aggregated_end_time = std::max(aggregated_end_time, offer.get_et());
     }
-    aggregated_latest += aggregated_earliest;
 
-    // Conversion to hours instead of seconds, needed in the nested loop below
-    int aggregated_end_time_hour = localtime(&aggregated_end_time)->tm_hour;
-    int aggregated_earliest_hour = localtime(&aggregated_earliest)->tm_hour;
-    duration = aggregated_end_time_hour - aggregated_earliest_hour;
+    double total_seconds = difftime(aggregated_end_time, aggregated_earliest);
+    duration = static_cast<int>(std::ceil(total_seconds / 3600.0));
 
+    aggregated_profile.resize(duration, TimeSlice{0.0, 0.0});
 
-    aggregated_profile.resize(24);
-    //step 2. Loop through our offers and aggregate on each timeslice.
-    for (int j = aggregated_earliest_hour; j < aggregated_end_time_hour; j++) {
-        TimeSlice slice = {0.0, 0.0};
+    // Aggregate profiles
+    for (const auto& offer : offers) {
+        time_t est = offer.get_est();
+        double diff_sec = difftime(est, aggregated_earliest);
+        int start_hour = static_cast<int>(std::floor(diff_sec / 3600.0));
 
-        for (auto& offer : offers) {
-            time_t est = offer.get_est();
-            int offer_start_hour = localtime(&est)->tm_hour;
-            if (j >= offer_start_hour && j < offer_start_hour + offer.get_duration()) {
-                int relative_index = j - offer_start_hour;
-                slice.min_power += offer.get_profile()[relative_index].min_power;
-                slice.max_power += offer.get_profile()[relative_index].max_power;
+        for (int h = 0; h < offer.get_duration(); ++h) {
+            int idx = start_hour + h;
+            if (idx >= 0 && idx < duration) {
+                aggregated_profile[idx].min_power += offer.get_profile()[h].min_power;
+                aggregated_profile[idx].max_power += offer.get_profile()[h].max_power;
             }
         }
-        // Assign the aggregated time slice to the profile
-        aggregated_profile[j] = slice;
     }
-};
 
-//Getters
-int AggregatedFlexOffer::get_id() const {return id;};
-time_t AggregatedFlexOffer::get_aggregated_earliest() const {return aggregated_earliest;};
-time_t AggregatedFlexOffer::get_aggregated_latest() const {return aggregated_latest;};
-time_t AggregatedFlexOffer::get_aggregated_end_time() const {return aggregated_end_time;};
-vector<TimeSlice> AggregatedFlexOffer::get_aggregated_profile() const {return aggregated_profile;};
-double* AggregatedFlexOffer::get_scheduled_allocation() {return scheduled_allocation;};
-int AggregatedFlexOffer::get_duration() const {return duration;}; 
-vector<Flexoffer> AggregatedFlexOffer::get_individual_offers() const {return individual_offers;};
+    scheduled_allocation.resize(duration, 0.0);
+    individual_offers = offers;
+}
 
-//Setters
-void AggregatedFlexOffer::set_id(int value) {id = value;};
-void AggregatedFlexOffer::set_aggregated_earliest(time_t value) {aggregated_earliest = value;};
-void AggregatedFlexOffer::set_aggregated_latest(time_t value) {aggregated_latest = value;};
-void AggregatedFlexOffer::set_aggregated_end_time(time_t value) {aggregated_end_time = value;};
-void AggregatedFlexOffer::set_aggregated_profile(vector<TimeSlice> value) {aggregated_profile = value;};
-void AggregatedFlexOffer::set_scheduled_allocation(double value[24]) {
-    for(int i = 0; i < 24; i++){
-        scheduled_allocation[i] = value[i];
-    } 
-};
-void AggregatedFlexOffer::set_duration(int value) {duration = value;}; 
-void AggregatedFlexOffer::set_individual_offers(vector<Flexoffer> value) {individual_offers = value;};
+// Getters
+int AggregatedFlexOffer::get_id() const { return id; }
+time_t AggregatedFlexOffer::get_aggregated_earliest() const { return aggregated_earliest; }
+time_t AggregatedFlexOffer::get_aggregated_latest() const { return aggregated_latest; }
+time_t AggregatedFlexOffer::get_aggregated_end_time() const { return aggregated_end_time; }
+std::vector<TimeSlice> AggregatedFlexOffer::get_aggregated_profile() const { return aggregated_profile; }
+const std::vector<double>& AggregatedFlexOffer::get_scheduled_allocation() const { return scheduled_allocation; }
+int AggregatedFlexOffer::get_duration() const { return duration; }
+std::vector<Flexoffer> AggregatedFlexOffer::get_individual_offers() const { return individual_offers; }
 
-//Utils
-void AggregatedFlexOffer::pretty_print(){
+// Hour-based getters
+int AggregatedFlexOffer::get_aggregated_earliest_hour() const {
+    return time_to_hour(aggregated_earliest);
+}
+int AggregatedFlexOffer::get_aggregated_latest_hour() const {
+    return time_to_hour(aggregated_latest);
+}
+int AggregatedFlexOffer::get_aggregated_end_time_hour() const {
+    return time_to_hour(aggregated_end_time);
+}
+
+// Setters
+void AggregatedFlexOffer::set_id(int value) { id = value; }
+void AggregatedFlexOffer::set_aggregated_earliest(time_t value) { aggregated_earliest = value; }
+void AggregatedFlexOffer::set_aggregated_latest(time_t value) { aggregated_latest = value; }
+void AggregatedFlexOffer::set_aggregated_end_time(time_t value) { aggregated_end_time = value; }
+void AggregatedFlexOffer::set_aggregated_profile(const std::vector<TimeSlice>& value) { aggregated_profile = value; scheduled_allocation.resize(value.size(),0.0); duration = (int)value.size(); }
+void AggregatedFlexOffer::set_scheduled_allocation(const std::vector<double>& value) { 
+    scheduled_allocation.clear();
+    scheduled_allocation.insert(scheduled_allocation.end(), value.begin(), value.begin() + std::min(value.size(), (size_t)duration));
+}
+void AggregatedFlexOffer::set_duration(int value) { duration = value; scheduled_allocation.resize(value,0.0); }
+void AggregatedFlexOffer::set_individual_offers(const std::vector<Flexoffer>& value) { individual_offers = value; }
+
+// Utils
+void AggregatedFlexOffer::pretty_print() const {
     // Helper lambda to convert time_t to readable format
     auto to_readable = [](time_t timestamp) -> string {
         char buffer[20];
@@ -82,35 +104,49 @@ void AggregatedFlexOffer::pretty_print(){
     cout << "=== Aggregated FlexOffer Details ===" << endl;
     cout << "Offer ID: " << id << endl;
     cout << "Earliest Start Time: " << to_readable(aggregated_earliest) << endl;
-    cout << "Latest Start Time: " << to_readable(aggregated_latest) << endl;
+    cout << "Latest Start Time:   " << to_readable(aggregated_latest) << endl;
     cout << "Latest End Time:     " << to_readable(aggregated_end_time) << endl;
     cout << "Duration:            " << duration << " hour(s)" << endl;
     cout << "Profile Elements:" << endl;
 
-    // int aggregated_end_time_hour = localtime(&aggregated_end_time)->tm_hour;
-    // int aggregated_earliest_hour = localtime(&aggregated_earliest)->tm_hour;    
-
-    for(int i = 0; i < 24; i++) {
+    for(int i = 0; i < duration; i++) {
         if(aggregated_profile[i].min_power > 0.0 || aggregated_profile[i].max_power > 0.0) {
-        cout << "  Hour " << i << ": Min Power = " << fixed << setprecision(2) 
-            << aggregated_profile[i].min_power << " kW, Max Power = " 
-            << aggregated_profile[i].max_power << " kW" << endl;
+            cout << "  Hour " << i << ": Min Power = " << fixed << setprecision(2) 
+                 << aggregated_profile[i].min_power << " kW, Max Power = " 
+                 << aggregated_profile[i].max_power << " kW" << endl;
         }
     }
-    cout << "==========================" << endl;
-};
 
-
-
-void AggregatedFlexOffer::schedule(){
-    for (int i=0; i < 24; i++){
-        scheduled_allocation[i] = (aggregated_profile[i].min_power + aggregated_profile[i].max_power) / 2.0;
-    }
-
-    cout << "Scheduled allocation: " << "\n";
-    for(int i = 0; i < 24; i++) {
+    cout << "Scheduled Allocation:" << endl;
+    for(int i = 0; i < duration; i++) {
         if(aggregated_profile[i].min_power > 0 || aggregated_profile[i].max_power > 0) {
-            cout << "  Hour " << i << ": scheduled Power = " << fixed << setprecision(2) << scheduled_allocation[i] << "\n";
+            cout << "  Hour " << i << ": Scheduled Power = " << fixed << setprecision(2) 
+                 << scheduled_allocation[i] << " kW" << endl;
         }
     }
-};
+
+    cout << "==============================" << endl;
+}
+
+void AggregatedFlexOffer::apply_schedule(const std::vector<double>& allocations) {
+    size_t n = std::min(allocations.size(), static_cast<size_t>(duration));
+    for (size_t i = 0; i < n; i++) {
+        scheduled_allocation[i] = allocations[i];
+    }
+}
+
+// Method to pad the profile to a given duration
+void AggregatedFlexOffer::pad_profile(int target_duration) {
+    if (duration >= target_duration) {
+        return; // No padding needed
+    }
+
+    int slices_to_add = target_duration - duration;
+
+    for (int i = 0; i < slices_to_add; ++i) {
+        aggregated_profile.push_back({0.0, 0.0});
+        scheduled_allocation.push_back(0.0);
+    }
+
+    duration = target_duration;
+}
