@@ -29,10 +29,6 @@ link_directories($ENV{CPLEX_STUDIO_DIR2211}/cplex/lib/x86-64_linux/static_pic)
 # Linker flags
 set(LINK_LIBRARIES -lconcert -lilocplex -lcplex -ldl -lpthread -lm)
 
-# ============================
-# End of CPLEX Configuration
-# ============================
-
 # Source files
 file(GLOB SOURCE_FILES "${SRC_DIR}/*.cpp")
 
