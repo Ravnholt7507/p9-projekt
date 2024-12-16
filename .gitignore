@@ -34,3 +34,8 @@ output
 *.exe
 *.out
 *.app
+
+#cmake stuff
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
