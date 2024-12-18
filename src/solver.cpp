@@ -8,6 +8,7 @@
 
 ILOSTLBEGIN
 
+//Opitimization based on NordPool for normal flexOffers
 std::vector<std::vector<double>> Solver::solve(std::vector<AggregatedFlexOffer> &afos, const std::vector<double> &prices) {
     if (afos.empty()) {
         std::cerr << "No AggregatedFlexOffers to solve." << std::endl;
@@ -85,7 +86,7 @@ std::vector<std::vector<double>> Solver::solve(std::vector<AggregatedFlexOffer> 
 
 
 
-
+//FCR for normal flexOffers
 std::vector<std::vector<double>> Solver::solveCostMinimization(std::vector<AggregatedFlexOffer> &afos,
                                                                const std::vector<double> &energy_prices,
                                                                double deviation_cost) {
