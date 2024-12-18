@@ -1,113 +1,196 @@
 #include "solver.h"
+#include "aggregation.h"
 #include <ilcplex/ilocplex.h>
 #include <iostream>
+#include <vector>
 #include <algorithm>
+#include <limits>
 
 ILOSTLBEGIN
 
-std::vector<std::vector<double>> Solver::solve(std::vector<AggregatedFlexOffer> &afos,
-                                              const std::vector<double> &prices,
-                                              double grid_capacity) {
-    IloEnv env;
-    std::vector<std::vector<double>> solution;
-
+std::vector<std::vector<double>> Solver::solve(std::vector<AggregatedFlexOffer> &afos, const std::vector<double> &prices) {
     if (afos.empty()) {
-        // No offers to solve
-        return solution;
+        std::cerr << "No AggregatedFlexOffers to solve." << std::endl;
+        return {};
     }
 
-    // Determine the maximum duration among all AFOs
+    IloEnv env;
+    IloModel model(env);
+
+    int A = afos.size();
+    std::vector<IloNumVarArray> powerVars(A);
+    IloExpr obj(env);
+
+    // Ensure prices cover the longest duration
     int max_duration = 0;
     for (const auto &afo : afos) {
-        if (afo.get_duration() > max_duration) {
-            max_duration = afo.get_duration();
-        }
+        max_duration = std::max(max_duration, afo.get_duration());
     }
-
-    // Pad all AFOs to have the same duration
-    for (auto &afo : afos) {
-        if (afo.get_duration() < max_duration) {
-            afo.pad_profile(max_duration);
-        }
-    }
-
-    // Adjust the price vector to match the maximum duration
     std::vector<double> adjusted_prices = prices;
-    if (adjusted_prices.size() < static_cast<size_t>(max_duration)) {
-        // Extend the prices with the last known price or a default value
-        double last_price = adjusted_prices.empty() ? 0.10 : adjusted_prices.back();
-        adjusted_prices.resize(max_duration, last_price);
-    } else if (adjusted_prices.size() > static_cast<size_t>(max_duration)) {
-        adjusted_prices.resize(max_duration);
+    if ((int)adjusted_prices.size() < max_duration) {
+        adjusted_prices.resize(max_duration, 0.0);
     }
 
-    try {
-        IloModel model(env);
+    // Create decision variables with valid bounds
+    for (int a = 0; a < A; a++) {
+        int duration = afos[a].get_duration();
+        powerVars[a] = IloNumVarArray(env, duration);
 
-        // Number of AFOs and Time Horizon
-        int A = afos.size();
-        int T = max_duration;
+        auto profile = afos[a].get_aggregated_profile();
+        for (int t = 0; t < duration; t++) {
+            double lb = profile[t].min_power;
+            double ub = profile[t].max_power;
+            powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
 
-        // Decision variables: power[a][t]
-        std::vector<IloNumVarArray> powerVars(A, IloNumVarArray(env, T));
-
-        for (int a = 0; a < A; a++) {
-            auto profile = afos[a].get_aggregated_profile();
-            for (int t = 0; t < T; t++) {
-                double lb = profile[t].min_power;
-                double ub = profile[t].max_power;
-                // If both min and max are 0, fix the variable to 0
-                if (ub <= 0.0 && lb <= 0.0) {
-                    powerVars[a][t] = IloNumVar(env, 0.0, 0.0, ILOFLOAT);
-                } else {
-                    powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
-                }
-            }
+            // Objective function: add only valid durations
+            obj += adjusted_prices[t] * powerVars[a][t];
         }
+    }
 
-        // Objective: minimize sum of prices[t] * power[a][t] over all AFOs and hours
-        IloExpr obj(env);
-        for (int a = 0; a < A; a++) {
-            for (int t = 0; t < T; t++) {
-                obj += adjusted_prices[t] * powerVars[a][t];
-            }
+    model.add(IloMinimize(env, obj));
+    obj.end();
+
+    // Solve the model
+    IloCplex cplex(model);
+    cplex.setOut(env.getNullStream());
+
+    if (!cplex.solve()) {
+        std::cerr << "No optimal solution found." << std::endl;
+        env.end();
+        return {};
+    }
+
+    // Extract solution
+    std::vector<std::vector<double>> solution(A);
+    for (int a = 0; a < A; a++) {
+        int duration = afos[a].get_duration();
+        solution[a].resize(duration);
+        for (int t = 0; t < duration; t++) {
+            solution[a][t] = cplex.getValue(powerVars[a][t]);
         }
-        model.add(IloMinimize(env, obj));
-        obj.end();
+        afos[a].apply_schedule(solution[a]);
+    }
 
-        // Grid capacity constraints: sum of power across all AFOs at hour t <= grid_capacity
-        for (int t = 0; t < T; t++) {
-            IloExpr sumPower(env);
-            for (int a = 0; a < A; a++) {
-                sumPower += powerVars[a][t];
-            }
-            model.add(sumPower <= grid_capacity);
-            sumPower.end();
+    // Print results
+    for (int a = 0; a < A; a++) {
+        std::cout << "AggregatedFlexOffer " << a << " scheduled power:" << std::endl;
+        for (int t = 0; t < afos[a].get_duration(); t++) {
+            std::cout << "  Hour " << t << ": " << solution[a][t] << " kW" << std::endl;
         }
-
-        // Solve the model
-        IloCplex cplex(model);
-        cplex.setOut(env.getNullStream()); // Suppress CPLEX output
-
-        if (!cplex.solve()) {
-            std::cerr << "No optimal solution found." << std::endl;
-            return solution; // Empty solution
-        }
-
-        // Extract solution
-        solution.resize(A, std::vector<double>(T, 0.0));
-        for (int a = 0; a < A; a++) {
-            for (int t = 0; t < T; t++) {
-                solution[a][t] = cplex.getValue(powerVars[a][t]);
-            }
-        }
-
-    } catch (IloException &e) {
-        std::cerr << "CPLEX Exception: " << e.getMessage() << std::endl;
-    } catch (...) {
-        std::cerr << "Unknown exception caught." << std::endl;
     }
 
     env.end();
     return solution;
+}
+
+
+
+
+std::vector<std::vector<double>> Solver::solveCostMinimization(std::vector<AggregatedFlexOffer> &afos,
+                                                               const std::vector<double> &energy_prices,
+                                                               double deviation_cost) {
+    if (afos.empty()) {
+        std::cerr << "No AggregatedFlexOffers to solve." << std::endl;
+        return {};
+    }
+
+    IloEnv env;
+    try {
+        IloModel model(env);
+
+        int A = (int)afos.size();
+        int max_duration = 0;
+        for (const auto &afo : afos) {
+            max_duration = std::max(max_duration, afo.get_duration());
+        }
+
+        // Adjust prices if not long enough
+        std::vector<double> adjusted_prices = energy_prices;
+        if ((int)adjusted_prices.size() < max_duration) {
+            adjusted_prices.resize(max_duration, adjusted_prices.empty()? 0.0 : adjusted_prices.back());
+        }
+
+        // Decision variables:
+        // powerVars[a][t]: Power allocation for AFO a at hour t
+        // devVars[a][t]: Absolute deviation from baseline at hour t
+        std::vector<IloNumVarArray> powerVars(A), devVars(A);
+
+        IloExpr obj(env);
+
+        for (int a = 0; a < A; a++) {
+            int duration = afos[a].get_duration();
+            auto profile = afos[a].get_aggregated_profile();
+
+            powerVars[a] = IloNumVarArray(env, duration);
+            devVars[a]   = IloNumVarArray(env, duration);
+
+            for (int t = 0; t < duration; t++) {
+                double lb = profile[t].min_power;
+                double ub = profile[t].max_power;
+
+                // Baseline: midpoint between min and max
+                double baseline = 0.5 * (profile[t].min_power + profile[t].max_power);
+
+                // Create power variable
+                powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
+
+                // Create deviation variable: devVars[a][t] >= |powerVars[a][t] - baseline|
+                // devVars[a][t] must be nonnegative
+                devVars[a][t] = IloNumVar(env, 0.0, IloInfinity, ILOFLOAT);
+
+                // Add constraints to model absolute deviation:
+                // devVars[a][t] >= powerVars[a][t] - baseline
+                // devVars[a][t] >= baseline - powerVars[a][t]
+                model.add(devVars[a][t] >= powerVars[a][t] - baseline);
+                model.add(devVars[a][t] >= baseline - powerVars[a][t]);
+
+                // Objective contribution:
+                // 1) Energy cost: price[t] * powerVars[a][t]
+                // 2) Deviation cost: deviation_cost * devVars[a][t]
+                obj += adjusted_prices[t] * powerVars[a][t] + deviation_cost * devVars[a][t];
+            }
+        }
+
+        model.add(IloMinimize(env, obj));
+        obj.end();
+
+        IloCplex cplex(model);
+        cplex.setOut(env.getNullStream());
+
+        if (!cplex.solve()) {
+            std::cerr << "No optimal solution found." << std::endl;
+            env.end();
+            return {};
+        }
+
+        // Extract solution
+        std::vector<std::vector<double>> solution(A);
+        for (int a = 0; a < A; a++) {
+            int duration = afos[a].get_duration();
+            solution[a].resize(duration);
+            for (int t = 0; t < duration; t++) {
+                solution[a][t] = cplex.getValue(powerVars[a][t]);
+            }
+            afos[a].apply_schedule(solution[a]);
+        }
+
+        // Print results
+        for (int a = 0; a < A; a++) {
+            std::cout << "AggregatedFlexOffer " << a << " optimal schedule:" << std::endl;
+            for (int t = 0; t < afos[a].get_duration(); t++) {
+                std::cout << "  Hour " << t << ": " << solution[a][t] << " kW" << std::endl;
+            }
+        }
+
+        env.end();
+        return solution;
+
+    } catch (IloException &e) {
+        std::cerr << "CPLEX Exception: " << e.getMessage() << std::endl;
+        env.end();
+    } catch (std::exception &e) {
+        std::cerr << "Standard Exception: " << e.what() << std::endl;
+        env.end();
+    }
+    return {};
 }

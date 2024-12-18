@@ -12,3 +12,5 @@
 - TEC skal udvides
 - Open source data for elbiler + andet hvis muligt
 - Få styr på Up and down regulation price and volume
+- open source data for nordpool, tariffer, og elbiler
+- Lav computational evaluation i c++

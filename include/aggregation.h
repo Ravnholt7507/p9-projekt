@@ -4,15 +4,10 @@
 #include <ctime>
 #include <limits>
 #include <vector>
-#include <chrono>
-#include <algorithm>
 #include <stdexcept>
+#include <algorithm>
+#include <cmath>
 #include "flexoffer.h"
-
-// struct TimeSlice {
-//     double min_power;
-//     double max_power;
-// };
 
 class AggregatedFlexOffer {
 private:
@@ -39,6 +34,7 @@ public:
     int get_duration() const; 
     std::vector<Flexoffer> get_individual_offers() const;
 
+    // Hour-based getters
     int get_aggregated_earliest_hour() const;
     int get_aggregated_latest_hour() const;
     int get_aggregated_end_time_hour() const;
@@ -58,9 +54,6 @@ public:
 
     // Method to apply a given schedule allocation
     void apply_schedule(const std::vector<double> &allocations);
-
-    // Method to pad the profile to a given duration
-    void pad_profile(int target_duration);
 };
 
 #endif
