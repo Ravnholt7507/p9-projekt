@@ -51,7 +51,7 @@ Tec_flexoffer generateTecFlexOffer(int id) {
     time_t earliest_start_time = generateRandomTimestampToday();
     int time_flex = randomInt(1, 4);
     time_t latest_start_time = earliest_start_time + (time_flex * 3600);
-    int duration = randomInt(1, 4);
+    int duration = randomInt(4, 8);
     time_t end_time = latest_start_time + (duration * 3600);
 
     if (latest_start_time + (duration * 3600) > end_time) {
@@ -73,8 +73,8 @@ Tec_flexoffer generateTecFlexOffer(int id) {
         profile[i].max_power = randomDouble(1.0, 3.0);
     }
 
-    double min = 1;
-    double max = 2;
+    double min = 8;
+    double max = 14;
     
     // Create and return the Flexoffer object
     Tec_flexoffer obj(min, max, id, earliest_start_time, latest_start_time, end_time, profile, duration);
