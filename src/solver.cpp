@@ -1,5 +1,6 @@
 #include "solver.h"
 #include "aggregation.h"
+#include "DFO.h"
 #include <ilcplex/ilocplex.h>
 #include <iostream>
 #include <vector>
@@ -194,4 +195,58 @@ std::vector<std::vector<double>> Solver::solveCostMinimization(std::vector<Aggre
         env.end();
     }
     return {};
+}
+
+
+void Solver::DFO_Optimization(const DFO& dfo, const std::vector<double>& cost_per_unit) {
+    IloEnv env;
+    try {
+        IloModel model(env);
+        IloNumVarArray energy(env, dfo.polygons.size(), 0.0, IloInfinity, ILOFLOAT);
+        IloExpr totalCost(env);
+
+        // Objective: Minimize total cost
+        for (size_t t = 0; t < dfo.polygons.size(); ++t) {
+            totalCost += cost_per_unit[t] * energy[t];
+        }
+        model.add(IloMinimize(env, totalCost));
+        totalCost.end();
+
+        // Constraints: Ensure scheduling adheres to dependency polygons
+        for (size_t t = 0; t < dfo.polygons.size(); ++t) {
+            const auto& polygon = dfo.polygons[t];
+            IloExpr dependency(env);
+
+            for (size_t i = 0; i < t; ++i) {
+                dependency += energy[i];
+            }
+
+            for (const auto& point : polygon.points) {
+                if (point.x >= 0 && point.y >= 0) {
+                    model.add(dependency <= point.x);
+                    model.add(energy[t] >= point.y);
+                    model.add(energy[t] <= point.x);
+                }
+            }
+            dependency.end();
+        }
+
+        // Solve the model
+        IloCplex cplex(model);
+        cplex.setOut(env.getNullStream()); // Suppress output for performance
+        if (cplex.solve()) {
+            std::cout << "Optimal solution found!" << std::endl;
+            for (size_t t = 0; t < dfo.polygons.size(); ++t) {
+                std::cout << "Energy at time " << t + 1 << ": " << cplex.getValue(energy[t]) << std::endl;
+            }
+        } else {
+            std::cerr << "Failed to find optimal solution." << std::endl;
+        }
+
+    } catch (const IloException& e) {
+        std::cerr << "Error: " << e.getMessage() << std::endl;
+    } catch (...) {
+        std::cerr << "Unknown error occurred." << std::endl;
+    }
+    env.end();
 }
