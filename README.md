@@ -1,6 +1,6 @@
 # p9-projekt
 # TODO-list
-- [ ] [TEC should make sure the constraints are upheld](https://github.com/Ravnholt7507/p9-projekt/issues/23)
+- [X] [TEC should make sure the constraints are upheld](https://github.com/Ravnholt7507/p9-projekt/issues/23)
 - [ ] [Preprocessing of price data and ev data](https://github.com/Ravnholt7507/p9-projekt/issues/27)
 - [X] [Solver should be implemented for DFO](https://github.com/Ravnholt7507/p9-projekt/issues/30)
 - [ ] [Disaggregation of FO's](https://github.com/Ravnholt7507/p9-projekt/issues/32)
