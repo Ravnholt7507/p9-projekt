@@ -116,6 +116,8 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const std::vector<Tec_fle
 
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
+        overall_min += offer.get_min_overall_kw();
+        overall_max += offer.get_max_overall_kw();
         individual_offers.push_back(offer);
     }
 }
@@ -129,6 +131,8 @@ std::vector<TimeSlice> AggregatedFlexOffer::get_aggregated_profile() const { ret
 const std::vector<double>& AggregatedFlexOffer::get_scheduled_allocation() const { return scheduled_allocation; }
 int AggregatedFlexOffer::get_duration() const { return duration; }
 std::vector<variant<Flexoffer, Tec_flexoffer>> AggregatedFlexOffer::get_individual_offers() const {return individual_offers;}
+double AggregatedFlexOffer::get_min_overall() const {return overall_min;}
+double AggregatedFlexOffer::get_max_overall() const {return overall_max;}
 
 
 // Hour-based getters

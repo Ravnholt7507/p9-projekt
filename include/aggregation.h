@@ -19,6 +19,8 @@ private:
     vector<double> scheduled_allocation;
     vector<variant<Flexoffer, Tec_flexoffer>> individual_offers; 
     int duration; 
+    double overall_min{0};
+    double overall_max{0};
 
 public:
     // Constructor
@@ -34,6 +36,8 @@ public:
     const vector<double>& get_scheduled_allocation() const;
     int get_duration() const; 
     vector<variant<Flexoffer, Tec_flexoffer>> get_individual_offers() const;
+    double get_min_overall() const;
+    double get_max_overall() const;
 
     // Hour-based getters
     int get_aggregated_earliest_hour() const;
