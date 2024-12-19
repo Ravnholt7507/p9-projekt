@@ -29,12 +29,6 @@ int main() {
     std::vector<AggregatedFlexOffer> afos = {agg1, agg2};
     std::vector<std::vector<double>> solution = Solver::solve(afos, prices);
 
-    // 5. The solver updates the afos inside `solve()` if we allowed that.
-    // If not, apply schedules manually:
-    // for (size_t a = 0; a < afos.size(); a++) {
-    //     afos[a].apply_schedule(solution[a]);
-    // }
-
     std::cout << "\n=== Results ===\n";
     std::cout << "--- Optimized ---\n";
     for (auto &afo : afos) {
