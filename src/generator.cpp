@@ -73,8 +73,8 @@ Tec_flexoffer generateTecFlexOffer(int id) {
         profile[i].max_power = randomDouble(1.0, 3.0);
     }
 
-    double min = 0;
-    double max = 14;
+    double min = 1;
+    double max = 2;
     
     // Create and return the Flexoffer object
     Tec_flexoffer obj(min, max, id, earliest_start_time, latest_start_time, end_time, profile, duration);
