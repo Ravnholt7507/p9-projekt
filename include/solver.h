@@ -2,6 +2,7 @@
 #define SOLVER_H
 
 #include "aggregation.h"
+#include "DFO.h"
 #include <vector>
 
 class Solver {
@@ -13,6 +14,8 @@ public:
     std::vector<std::vector<double>> solveCostMinimization(std::vector<AggregatedFlexOffer> &afos,
                                                            const std::vector<double> &energy_prices,
                                                            double deviation_cost);
+
+    static void DFO_Optimization(const DFO& dfo, const std::vector<double>& cost_per_unit);
 
 };
 
