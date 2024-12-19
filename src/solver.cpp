@@ -1,10 +1,10 @@
-#include "solver.h"
-#include "aggregation.h"
 #include <ilcplex/ilocplex.h>
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <limits>
+
+#include "../include/solver.h"
+#include "../include/aggregation.h"
 
 ILOSTLBEGIN
 

@@ -1,35 +1,41 @@
 #include <iostream>
 #include <vector>
 
-#include "../include/flexoffer.h"
+#include "../include/tec.h"
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/generator.h"
 
+using namespace std;
+
 int main() {
     int numOffers = 2;
-    vector<Flexoffer> flexOffers = generateMultipleFlexOffers(numOffers);
+    vector<Tec_flexoffer> flexOffers = generateMultipleTecFlexOffers(numOffers);
 
-    std::vector<Flexoffer> set1 = {flexOffers[0]};
-    std::vector<Flexoffer> set2 = {flexOffers[1]};
+    for(auto& offer : flexOffers){
+        offer.print_flexoffer();
+    }
+
+    vector<Tec_flexoffer> set1 = {flexOffers[0]};
+    vector<Tec_flexoffer> set2 = {flexOffers[1]};
 
     AggregatedFlexOffer agg1(1, set1);
     AggregatedFlexOffer agg2(2, set2);
 
-    std::cout << "\n=== Aggregated FlexOffer 1 (Before Scheduling) ===\n";
+    cout << "\n=== Aggregated TEC 1 (Before Scheduling) ===\n";
     agg1.pretty_print();
 
-    std::cout << "\n=== Aggregated FlexOffer 2 (Before Scheduling) ===\n";
+    cout << "\n=== Aggregated TEC 2 (Before Scheduling) ===\n";
     agg2.pretty_print();
 
-    int max_duration = std::max(agg1.get_duration(), agg2.get_duration());
-    std::vector<double> prices(max_duration, 0.10);
+    int max_duration = max(agg1.get_duration(), agg2.get_duration());
+    vector<double> prices(max_duration, 0.10);
 
-    std::vector<AggregatedFlexOffer> afos = {agg1, agg2};
-    std::vector<std::vector<double>> solution = Solver::solve(afos, prices);
+    vector<AggregatedFlexOffer> afos = {agg1, agg2};
+    vector<vector<double>> solution = Solver::solve(afos, prices);
 
-    std::cout << "\n=== Results ===\n";
-    std::cout << "--- Optimized ---\n";
+    cout << "\n=== Results ===\n";
+    cout << "--- Optimized ---\n";
     for (auto &afo : afos) {
         afo.pretty_print();
     }
@@ -43,8 +49,8 @@ int main() {
         }
     }
 
-    std::cout << "Total Cost (Optimized): " << total_cost << " €/kWh\n";
-    std::cout << "=== Done ===" << std::endl;
+    cout << "Total Cost (Optimized): " << total_cost << " €/kWh\n";
+    cout << "=== Done ===" << endl;
 
     return 0;
 }

@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.16)
 # Project name and language
 project(output LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Set C++ Standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
