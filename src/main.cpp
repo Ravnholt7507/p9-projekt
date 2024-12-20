@@ -1,28 +1,24 @@
 #include <iostream>
 #include <vector>
 
-#include "../include/tec.h"
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/generator.h"
+#include "../include/helperfunctions.h"
 
 using namespace std;
 
 int main() {
-    int numOffers = 2;
-    vector<Tec_flexoffer> flexOffers = generateMultipleTecFlexOffers(numOffers);
+    string filename = "../data/spotprices.csv";
+    vector<double> spotPrices = readSpotPricesFromCSV(filename);
 
-    vector<Tec_flexoffer> set1 = {flexOffers[0]};
-    vector<Tec_flexoffer> set2 = {flexOffers[1]};
+    string evDataFile = "../data/ev_data.csv"; // Path to your EV data CSV file
+    vector<Flexoffer> flexOffers = parseEVDataToFlexOffers(evDataFile);
 
-    AggregatedFlexOffer agg1(1, set1);
-    AggregatedFlexOffer agg2(2, set2);
+    AggregatedFlexOffer agg1(1, flexOffers);
 
-    int max_duration = max(agg1.get_duration(), agg2.get_duration());
-    vector<double> prices(max_duration, 0.10);
-
-    vector<AggregatedFlexOffer> afos = {agg1, agg2};
-    vector<vector<double>> solution = Solver::solve_tec(afos, prices);
+    vector<AggregatedFlexOffer> afos = {agg1};
+    vector<vector<double>> solution = Solver::solve(afos, spotPrices);
 
     cout << "\n=== Results ===\n";
     cout << "--- Optimized ---\n";
@@ -35,7 +31,7 @@ int main() {
     for (size_t a = 0; a < afos.size(); a++) {
         const auto &sched = afos[a].get_scheduled_allocation();
         for (size_t t = 0; t < sched.size(); t++) {
-            total_cost += sched[t] * prices[t];
+            total_cost += sched[t] * spotPrices[t];
         }
     }
 

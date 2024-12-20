@@ -22,7 +22,6 @@ set(HEADER_DIR "${CMAKE_SOURCE_DIR}/include")
 include_directories(${HEADER_DIR})
 
 set(cplex_dir "$ENV{CPLEX_STUDIO_DIR2211}")
-message("THING:" ${cplex_dir})
 
 # CPLEX Include Directories
 include_directories(${cplex_dir}/concert/include ${cplex_dir}/cplex/include)

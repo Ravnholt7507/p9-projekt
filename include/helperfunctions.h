@@ -2,8 +2,11 @@
 #define HELPERFUNCTION_H
 
 #include <vector>
+#include <string>
 #include "flexoffer.h"
 #include "group.h"
+
+using namespace std;
 
 struct MBR {
     int min_est_hour; // Minimum earliest start hour
@@ -15,7 +18,7 @@ struct MBR {
 void createMBR(const Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
-std::vector<double> readSpotPricesFromCSV(const std::string& filename);
+std::vector<double> readSpotPricesFromCSV(const string& filename);
 vector<Flexoffer> parseEVDataToFlexOffers(const string& filename);
 
 #endif // HELPERFUNCTION_H

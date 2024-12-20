@@ -4,9 +4,14 @@
 #include <sstream>
 #include <cmath>
 #include <limits>
-#include <iostream> // For logging
+#include <iostream>
+#include <vector>
+#include <string>
+#include <iomanip>
+#include <ctime>
+#include <utility>
 
-
+using namespace std;
 
 void createMBR(const Group& group, MBR& mbr) {
     const auto& flexoffers = group.getFlexOffers();
@@ -46,7 +51,7 @@ static double groupDistance(const Group& g1, const Group& g2) {
 
     double dx = c2_est - c1_est;
     double dy = c2_lst - c1_lst;
-    return std::sqrt(dx*dx + dy*dy);
+    return sqrt(dx*dx + dy*dy);
 }
 
 static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
@@ -60,18 +65,18 @@ static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
     return merged;
 }
 
-void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
+void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
     if (groups.size() <= 1) return;
 
     bool merged = true;
     int nextGroupId = 1000;
 
-    std::cout << "[DEBUG] Starting bottom-up hierarchical clustering...\n";
-    std::cout << "[DEBUG] Initial number of groups: " << groups.size() << "\n";
+    cout << "[DEBUG] Starting bottom-up hierarchical clustering...\n";
+    cout << "[DEBUG] Initial number of groups: " << groups.size() << "\n";
 
     while (merged && groups.size() > 1) {
         merged = false;
-        double minDist = std::numeric_limits<double>::max();
+        double minDist = numeric_limits<double>::max();
         int bestA = -1, bestB = -1;
 
         // Find the two closest groups
@@ -87,11 +92,11 @@ void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_thresho
         }
 
         if (bestA == -1 || bestB == -1) {
-            std::cout << "[DEBUG] No pairs found for merging.\n";
+            cout << "[DEBUG] No pairs found for merging.\n";
             break;
         }
 
-        std::cout << "[DEBUG] Closest groups to merge: Group " << groups[bestA].getGroupId()
+        cout << "[DEBUG] Closest groups to merge: Group " << groups[bestA].getGroupId()
                   << " and Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
 
         Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
@@ -102,14 +107,14 @@ void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_thresho
         bool sizeOK = (int)candidate.getFlexOffers().size() <= max_group_size;
 
         if (thresholdOK && sizeOK) {
-            std::cout << "[DEBUG] Merging groups " << groups[bestA].getGroupId() << " and " << groups[bestB].getGroupId() << " into new Group " << candidate.getGroupId() << "\n";
-            if (bestA > bestB) std::swap(bestA, bestB);
+            cout << "[DEBUG] Merging groups " << groups[bestA].getGroupId() << " and " << groups[bestB].getGroupId() << " into new Group " << candidate.getGroupId() << "\n";
+            if (bestA > bestB) swap(bestA, bestB);
             groups.erase(groups.begin() + bestB);
             groups.erase(groups.begin() + bestA);
             groups.push_back(candidate);
             merged = true;
         } else {
-            std::cout << "[DEBUG] Cannot merge these two groups due to " 
+            cout << "[DEBUG] Cannot merge these two groups due to " 
                       << (thresholdOK ? "" : "threshold violation ") 
                       << (thresholdOK && !sizeOK ? "and " : "") 
                       << (!sizeOK ? "max group size exceeded" : "")
@@ -118,30 +123,30 @@ void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_thresho
         }
     }
 
-    std::cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
+    cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
 }
 
-std::vector<double> readSpotPricesFromCSV(const std::string& filename) {
-    std::vector<double> spotPrices;
-    std::ifstream inFile(filename);
+vector<double> readSpotPricesFromCSV(const string& filename) {
+    vector<double> spotPrices;
+    ifstream inFile(filename);
     if (!inFile.is_open()) {
-        std::cerr << "Error opening file for reading: " << filename << std::endl;
+        cerr << "Error opening file for reading: " << filename << endl;
         return spotPrices;
     }
 
-    std::string line;
+    string line;
     // Skip header line
-    if (!std::getline(inFile, line)) {
-        std::cerr << "Error reading header from file: " << filename << std::endl;
+    if (!getline(inFile, line)) {
+        cerr << "Error reading header from file: " << filename << endl;
         return spotPrices;
     }
 
     // Read data lines
-    while (std::getline(inFile, line)) {
+    while (getline(inFile, line)) {
         try {
-            spotPrices.push_back(std::stod(line));
-        } catch (const std::invalid_argument& e) {
-            std::cerr << "Invalid data in file: " << line << std::endl;
+            spotPrices.push_back(stod(line));
+        } catch (const invalid_argument& e) {
+            cerr << "Invalid data in file: " << line << endl;
         }
     }
 
@@ -149,16 +154,6 @@ std::vector<double> readSpotPricesFromCSV(const std::string& filename) {
     return spotPrices;
 }
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <iomanip>
-#include <ctime>
-#include <utility>
-
-using namespace std;
 
 // Helper to trim quotes from a string
 string trimQuotes(const string& str) {
