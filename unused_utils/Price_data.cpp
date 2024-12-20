@@ -98,7 +98,7 @@ int main() {
                     "filter={\"PriceArea\":[\"DK1\"]}&"
                     "limit=24";
 
-    string outputFilePath = "converted_prices.csv";
+    string outputFilePath = "../data/spotprices.csv";
 
     downloadAndConvertPrices(apiURL, outputFilePath);
 

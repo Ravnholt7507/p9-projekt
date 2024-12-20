@@ -79,7 +79,7 @@ void downloadData(const string &url, const string &outputFilePath)
 int main() {
 std::string apiURL = "https://ev.caltech.edu/api/v1/sessions/caltech?%20where=connectionTime%3E=%22Wed,%201%20May%202019%2000:00:00%20GMT%22%20and%20connectionTime%3C=%22Thu,%202%20May%202019%2000:00:00%20GMT%22%20&pretty";
 
-    string outputfilePath = "ev_data.csv";
+    string outputfilePath = "../data/ev_data.csv";
 
     downloadData(apiURL, outputfilePath);
     return 0;
