@@ -1,8 +1,12 @@
 #include "../include/helperfunctions.h"
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 #include <cmath>
 #include <limits>
 #include <iostream> // For logging
+
+
 
 void createMBR(const Group& group, MBR& mbr) {
     const auto& flexoffers = group.getFlexOffers();
@@ -115,4 +119,131 @@ void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_thresho
     }
 
     std::cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
+}
+
+std::vector<double> readSpotPricesFromCSV(const std::string& filename) {
+    std::vector<double> spotPrices;
+    std::ifstream inFile(filename);
+    if (!inFile.is_open()) {
+        std::cerr << "Error opening file for reading: " << filename << std::endl;
+        return spotPrices;
+    }
+
+    std::string line;
+    // Skip header line
+    if (!std::getline(inFile, line)) {
+        std::cerr << "Error reading header from file: " << filename << std::endl;
+        return spotPrices;
+    }
+
+    // Read data lines
+    while (std::getline(inFile, line)) {
+        try {
+            spotPrices.push_back(std::stod(line));
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Invalid data in file: " << line << std::endl;
+        }
+    }
+
+    inFile.close();
+    return spotPrices;
+}
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <iomanip>
+#include <ctime>
+#include <utility>
+
+using namespace std;
+
+// Helper to trim quotes from a string
+string trimQuotes(const string& str) {
+    return (str.size() >= 2 && str.front() == '"' && str.back() == '"') ? str.substr(1, str.size() - 2) : str;
+}
+
+// Convert a date-time string to time_t
+time_t parseDateTime(const string& datetime) {
+    istringstream ss(datetime);
+    tm timeinfo = {};
+    ss >> get_time(&timeinfo, "%a, %d %b %Y %H:%M:%S GMT");
+    if (ss.fail()) throw runtime_error("Invalid date-time format: " + datetime);
+    return timegm(&timeinfo);
+}
+
+// Calculate duration in hours
+int calculateDuration(time_t start, time_t end) {
+    return max(0, static_cast<int>(difftime(end, start) / 3600));
+}
+
+// Calculate min and max power
+pair<double, double> calculatePowerRange(double kWhDelivered, int duration) {
+    if (duration <= 0) return {0.0, 0.0};
+    double avgPower = kWhDelivered / duration;
+    return {avgPower * 0.8, avgPower * 1.2};
+}
+
+// Parse CSV line into fields
+vector<string> parseCSVLine(const string& line) {
+    vector<string> fields;
+    string field;
+    bool inQuotes = false;
+
+    for (char ch : line) {
+        if (ch == '"') inQuotes = !inQuotes;
+        else if (ch == ',' && !inQuotes) {
+            fields.push_back(trimQuotes(field));
+            field.clear();
+        } else field += ch;
+    }
+    fields.push_back(trimQuotes(field));
+    return fields;
+}
+
+time_t roundToNearestHour(time_t raw_time) {
+    tm *timeinfo = gmtime(&raw_time);
+    timeinfo->tm_min = 0;
+    timeinfo->tm_sec = 0;
+
+    return timegm(timeinfo); // Convert back to time_t
+}
+
+// Parse EV data into Flexoffer objects
+vector<Flexoffer> parseEVDataToFlexOffers(const string& filename) {
+    ifstream file(filename);
+    vector<Flexoffer> flexOffers;
+    string line;
+    getline(file, line); 
+
+    int offerID = 1;
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+
+        auto fields = parseCSVLine(line);
+
+        // Parse times and kWhDelivered
+        time_t connectionTime = parseDateTime(fields[2]);
+        time_t disconnectTime = parseDateTime(fields[3]);
+        time_t doneChargingTime = fields[4].empty() ? disconnectTime : parseDateTime(fields[4]);
+        double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
+
+        // removed minutes and seconds
+        connectionTime = roundToNearestHour(connectionTime);
+        doneChargingTime = roundToNearestHour(doneChargingTime);
+
+        // Calculate duration and power range
+        int duration = calculateDuration(connectionTime, doneChargingTime);
+        auto [minPower, maxPower] = calculatePowerRange(kWhDelivered, duration);
+
+        time_t latestStartTime = doneChargingTime - static_cast<time_t>(duration * 3600);
+        latestStartTime = roundToNearestHour(latestStartTime);
+
+        // Create profile and Flexoffer
+        vector<TimeSlice> profile(duration, {minPower, maxPower});
+        flexOffers.emplace_back(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration);
+    }
+    return flexOffers;
 }

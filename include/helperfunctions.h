@@ -14,8 +14,8 @@ struct MBR {
 
 void createMBR(const Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
-
-// Now includes max_group_size
 void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
+std::vector<double> readSpotPricesFromCSV(const std::string& filename);
+vector<Flexoffer> parseEVDataToFlexOffers(const string& filename);
 
 #endif // HELPERFUNCTION_H
