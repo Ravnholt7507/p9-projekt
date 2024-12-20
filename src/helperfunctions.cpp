@@ -206,39 +206,68 @@ time_t roundToNearestHour(time_t raw_time) {
     return timegm(timeinfo); // Convert back to time_t
 }
 
-// Parse EV data into Flexoffer objects
-vector<Flexoffer> parseEVDataToFlexOffers(const string& filename) {
+vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type) {
     ifstream file(filename);
-    vector<Flexoffer> flexOffers;
+    if (!file.is_open()) throw runtime_error("Error: Could not open file " + filename);
+
+    vector<variant<Flexoffer, Tec_flexoffer>> flexOffers;
     string line;
-    getline(file, line); 
+    getline(file, line); // Skip header line
 
     int offerID = 1;
     while (getline(file, line)) {
         if (line.empty()) continue;
 
         auto fields = parseCSVLine(line);
+        if (fields.size() < 6) {
+            cerr << "Skipping invalid line: " << line << endl;
+            continue;
+        }
 
-        // Parse times and kWhDelivered
-        time_t connectionTime = parseDateTime(fields[2]);
-        time_t disconnectTime = parseDateTime(fields[3]);
-        time_t doneChargingTime = fields[4].empty() ? disconnectTime : parseDateTime(fields[4]);
-        double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
+        try {
+            // Parse times and kWhDelivered
+            time_t connectionTime = parseDateTime(fields[2]);
+            time_t doneChargingTime = fields[4].empty() ? parseDateTime(fields[3]) : parseDateTime(fields[4]);
+            double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
 
-        // removed minutes and seconds
-        connectionTime = roundToNearestHour(connectionTime);
-        doneChargingTime = roundToNearestHour(doneChargingTime);
+            // Round connection and end times
+            connectionTime = roundToNearestHour(connectionTime);
+            doneChargingTime = roundToNearestHour(doneChargingTime);
 
-        // Calculate duration and power range
-        int duration = calculateDuration(connectionTime, doneChargingTime);
-        auto [minPower, maxPower] = calculatePowerRange(kWhDelivered, duration);
+            // Calculate required charging duration in hours
+            double requiredHours = ceil(kWhDelivered / 7.2); // Assuming an average charging power of 7.2 kW
+            int duration = static_cast<int>(requiredHours); // Duration in hours
+            time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
 
-        time_t latestStartTime = doneChargingTime - static_cast<time_t>(duration * 3600);
-        latestStartTime = roundToNearestHour(latestStartTime);
+            // Calculate latestStartTime
+            time_t latestStartTime = doneChargingTime - durationInSeconds;
+            if (latestStartTime < connectionTime) {
+                latestStartTime = connectionTime; // Ensure latestStartTime respects connectionTime
+            }
 
-        // Create profile and Flexoffer
-        vector<TimeSlice> profile(duration, {minPower, maxPower});
-        flexOffers.emplace_back(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration);
+            // Calculate profile for the duration
+            auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
+            vector<TimeSlice> profile(duration, {minPower, maxPower});
+
+            // Calculate actual min and max energy for the profile
+            double actualMinEnergy = minPower * duration;
+            double actualMaxEnergy = maxPower * duration;
+
+            // Calculate TEC constraints
+            double totalMinEnergy = actualMinEnergy * 0.9; // Example: 90% of actual minimum energy
+            double totalMaxEnergy = actualMaxEnergy * 1.1; // Example: 110% of actual maximum energy
+
+            // Create Flexoffer or Tec_flexoffer based on type
+            if (type == 0) { // Normal Flexoffer
+                flexOffers.emplace_back(Flexoffer(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
+            } else if (type == 1) { // TEC Flexoffer
+                flexOffers.emplace_back(Tec_flexoffer(totalMinEnergy, totalMaxEnergy, offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
+            }
+
+        } catch (const exception& e) {
+            cerr << "Error processing line: " << line << " - " << e.what() << endl;
+        }
     }
+
     return flexOffers;
 }

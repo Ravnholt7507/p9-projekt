@@ -1,10 +1,12 @@
 #include <iostream>
 #include <vector>
+#include <variant> 
 
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/generator.h"
 #include "../include/helperfunctions.h"
+#include "../include/tec.h"
 
 using namespace std;
 
@@ -13,7 +15,18 @@ int main() {
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
 
     string evDataFile = "../data/ev_data.csv"; // Path to your EV data CSV file
-    vector<Flexoffer> flexOffers = parseEVDataToFlexOffers(evDataFile);
+    vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
+    vector<Flexoffer> flexOffers;
+
+    if(holds_alternative<Flexoffer>(ParsedOffers.front())) {
+        for (auto offer : ParsedOffers){
+            flexOffers.push_back(get<Flexoffer>(offer));
+        }
+    } else {
+        for (auto offer : ParsedOffers){
+            flexOffers.push_back(get<Tec_flexoffer>(offer));
+        }
+    }
 
     AggregatedFlexOffer agg1(1, flexOffers);
 
