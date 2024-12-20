@@ -6,6 +6,7 @@
 
 #include "flexoffer.h"
 #include "tec.h"
+#include "alignments.h"
 
 using namespace std;
 
@@ -24,8 +25,8 @@ private:
 
 public:
     // Constructor
-    AggregatedFlexOffer(const int offer_id, const vector<Flexoffer> &offers);
-    AggregatedFlexOffer(const int offer_id, const vector<Tec_flexoffer> &offers);
+    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Flexoffer> &offers);
+    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Tec_flexoffer> &offers);
 
     // Getters
     int get_id() const;

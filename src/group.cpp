@@ -1,6 +1,6 @@
 #include "../include/group.h"
 
-Group::Group(int group_id) : id(group_id), aggregatedOffer(group_id, flexoffers) {
+Group::Group(int group_id) : id(group_id), aggregatedOffer(group_id, Alignments::start, flexoffers) {
     // Initially, aggregatedOffer is constructed with an empty vector of flexoffers
 }
 
@@ -20,7 +20,7 @@ const AggregatedFlexOffer& Group::getAggregatedOffer() const {
 
 void Group::updateAggregatedOffer() {
     // Reconstruct the aggregatedOffer with the updated flexoffers vector
-    aggregatedOffer = AggregatedFlexOffer(id, flexoffers);
+    aggregatedOffer = AggregatedFlexOffer(id, Alignments::start, flexoffers);
 }
 
 void Group::printAggregatedOffer() {

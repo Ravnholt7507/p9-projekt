@@ -15,7 +15,7 @@ int main() {
     string evDataFile = "../data/ev_data.csv"; // Path to your EV data CSV file
     vector<Flexoffer> flexOffers = parseEVDataToFlexOffers(evDataFile);
 
-    AggregatedFlexOffer agg1(1, flexOffers);
+    AggregatedFlexOffer agg1(1, Alignments::start, flexOffers);
 
     vector<AggregatedFlexOffer> afos = {agg1};
     vector<vector<double>> solution = Solver::solve(afos, spotPrices);
