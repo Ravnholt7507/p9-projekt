@@ -7,10 +7,10 @@
 #include <variant>
 
 #include "../include/aggregation.h"
+#include "../include/helperfunctions.h"
 #include "../include/flexoffer.h"
 
 using namespace std;
-
 
 static int time_to_hour(time_t t) {
     struct tm * timeinfo = localtime(&t);
@@ -38,7 +38,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const std::vector<Flexoff
     }
 
     // Duration: from aggregated_latest to aggregated_end_time
-    double diff_sec = difftime(aggregated_end_time, aggregated_latest);
+    double diff_sec = difftime(aggregated_end_time, aggregated_earliest);
     duration = (int) std::ceil(diff_sec / 3600.0);
 
     aggregated_profile.resize(duration, TimeSlice{0.0, 0.0});
@@ -46,7 +46,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const std::vector<Flexoff
     // Aggregate profiles: hour 0 in aggregated profile = aggregated_latest
     for (const auto &fo : offers) {
         // Align FO's LST with aggregated_latest
-        double start_diff_sec = difftime(fo.get_lst(), aggregated_latest);
+        double start_diff_sec = difftime(fo.get_lst(), aggregated_earliest);
         int start_hour = (int) std::floor(start_diff_sec / 3600.0);
 
         cout << "  FlexOffer ID " << fo.get_offer_id() << " alignment: start_hour = " << start_hour << endl;
@@ -200,4 +200,64 @@ void AggregatedFlexOffer::pretty_print() const {
              << "Power=" << scheduled_allocation[i] << " kW" << endl;
     }
     cout << "==============================" << endl;
+}
+
+#include <stdexcept>
+#include <cmath>
+
+vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
+    
+    // Compute fraction of allocation for each aggregated timeslice
+    std::vector<double> fraction(duration, 0.0);
+    for (int i = 0; i < duration; i++) {
+        double denom = aggregated_profile[i].max_power - aggregated_profile[i].min_power;
+        fraction[i] = (scheduled_allocation[i] - aggregated_profile[i].min_power) / denom;
+        if (fraction[i] < 0.0) fraction[i] = 0.0;
+        if (fraction[i] > 1.0) fraction[i] = 1.0;
+    }
+
+    // Disaggregate to each original Flexoffer
+    std::vector<Flexoffer> result;
+
+    // Assume that the aggregated schedule start aligns at aggregated_latest.
+    // This is a chosen reference point. Another approach could be chosen.
+    time_t aggregated_schedule_start = aggregated_earliest;
+
+    for (auto &vof : individual_offers) {
+        if (holds_alternative<Flexoffer>(vof)) {
+            Flexoffer f = get<Flexoffer>(vof);
+
+            // Compute the start offset for this FO relative to the aggregated latest
+            double start_diff_sec = difftime(f.get_lst(), aggregated_latest);
+            int start_hour = (int)std::floor(start_diff_sec / 3600.0);
+
+            // create a scheduled allocation for f based on fraction
+            std::vector<double> f_scheduled_allocation((size_t)f.get_duration(), 0.0);
+
+            auto f_profile = f.get_profile();
+            for (int h = 0; h < f.get_duration(); h++) {
+                int idx = start_hour + h;
+                if (idx >= 0 && idx < duration) {
+                    double f_min = f_profile[h].min_power;
+                    double f_max = f_profile[h].max_power;
+                    double denom = f_max - f_min;
+                    // If denom is zero, no flexibility -> just set to min_power
+                    if (std::fabs(denom) < 1e-9) {
+                        f_scheduled_allocation[h] = f_min;
+                    } else {
+                        f_scheduled_allocation[h] = f_min + denom * fraction[idx];
+                    }
+                }
+            }
+
+            time_t f_scheduled_start = aggregated_schedule_start + (start_hour * 3600);
+
+            f.set_scheduled_allocation(f_scheduled_allocation);
+            f.set_scheduled_start_time(f_scheduled_start);
+
+            result.push_back(f);
+        }
+    }
+
+    return result;
 }
