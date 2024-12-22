@@ -9,21 +9,16 @@ class Group {
 private:
     int id;
     std::vector<Flexoffer> flexoffers;
-    AggregatedFlexOffer aggregatedOffer;
-
-    // Method to update the aggregated flex offer
-    void updateAggregatedOffer();
 
 public:
     Group(int group_id);
 
-    void addFlexOffer(const Flexoffer& fo);
+    void addFlexOffer(const Flexoffer &fo);
+    const vector<Flexoffer>& getFlexOffers() const;
 
-    const std::vector<Flexoffer>& getFlexOffers() const;
+    AggregatedFlexOffer createAggregatedOffer() const;
 
-    const AggregatedFlexOffer& getAggregatedOffer() const;
-
-    void printAggregatedOffer();
+    void printAggregatedOffer() const;
 
     int getGroupId() const;
 };

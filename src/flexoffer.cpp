@@ -10,6 +10,8 @@ Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice
     duration = d;
     profile = p;
     end_time = et;
+    scheduled_allocation.resize(duration, 0.0);
+    scheduled_start_time = est;
 };
 
 //Destructor
@@ -58,7 +60,14 @@ void Flexoffer::print_flexoffer() {
                   << profile[i].min_power << " kW, Max Power = "
                   << profile[i].max_power << " kW" << std::endl;
     }
-    std::cout << "==========================" << std::endl;
+    cout << "Scheduled Allocation:" << endl;
+    for (int i = 0; i < duration; i++) {
+
+        time_t t = latest_start_time + i * 3600;
+        cout << "  Hour " << i << " (" << to_readable(t) << "): "
+             << "Power=" << scheduled_allocation[i] << " kW" << endl;
+    }
+    cout << "==========================" << std::endl;
 }
 
 // Additional methods
