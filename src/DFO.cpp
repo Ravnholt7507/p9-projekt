@@ -313,6 +313,109 @@ void disagg1to2(
     }
 }
 
+void disagg1toN(
+    const DFO &DA, const std::vector<DFO> &DFOs, 
+    const std::vector<double> &yA_ref, 
+    std::vector<std::vector<double>> &y_refs) {
+
+    size_t T = DA.polygons.size(); // Number of timesteps
+    size_t N = DFOs.size();        // Number of DFOs to disaggregate into
+
+    if (T != yA_ref.size()) {
+        throw std::runtime_error("Mismatch between DA timesteps and yA_ref size. Kind regards disagg1toN function");
+    }
+
+    // Initialize energy dependency amounts for all DFOs
+    std::vector<double> d(N, 0.0);  // Dependency amounts for DFOs
+    double dA = 0.0;                // Dependency amount for aggregated DFO
+
+    // Resize the output vectors to match the number of timesteps
+    y_refs.resize(N, std::vector<double>(T, 0.0));
+
+    for (size_t i = 0; i < T; ++i) {
+        // Get DFO slice for the timestep
+        const auto &polygonA = DA.polygons[i];
+
+        double f = 0.0; // Initialize splitting factor
+        double s_min_A, s_max_A; // Total energy bounds for the aggregated DFO at this timestep
+
+        // Find points with the respective energy dependency for DFO A to calculate allowed min and max energy usage
+        std::vector<Point> matching_pointsA;
+        for (const auto &point : polygonA.points) {
+            if (point.x == dA) {
+                matching_pointsA.push_back(point);
+            }
+        }
+
+        if (matching_pointsA.empty()) {
+            for (size_t k = 1; k + 1 < polygonA.points.size(); k += 2) {
+                const auto &prev_point_min = polygonA.points[k - 1];
+                const auto &prev_point_max = polygonA.points[k];
+                const auto &next_point_min = polygonA.points[k + 1];
+                const auto &next_point_max = polygonA.points[k + 2];
+                if (dA >= prev_point_min.x && dA <= next_point_min.x) {
+                    s_min_A = linear_interpolation(
+                        dA, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                    s_max_A = linear_interpolation(
+                        dA, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                    break;
+                }
+            }
+            matching_pointsA.push_back({dA, s_min_A});
+            matching_pointsA.push_back({dA, s_max_A});
+        }
+
+        const Point &pointA1 = matching_pointsA[0];
+        const Point &pointA2 = matching_pointsA[1];
+        if (s_max_A - s_min_A == 0) {
+            f = 0;
+        } else {
+            f = (yA_ref[i] - pointA1.y) / (pointA2.y - pointA1.y);
+        }
+
+        // Use the scaling factor on all DFOs
+        for (size_t j = 0; j < N; ++j) {
+            const auto &polygon = DFOs[j].polygons[i];
+
+            std::vector<Point> matching_points;
+            for (const auto &point : polygon.points) {
+                if (point.x == d[j]) {
+                    matching_points.push_back(point);
+                }
+            }
+
+            double s_min, s_max;
+            if (matching_points.empty()) {
+                for (size_t k = 1; k + 1 < polygon.points.size(); k += 2) {
+                    const auto &prev_point_min = polygon.points[k - 1];
+                    const auto &prev_point_max = polygon.points[k];
+                    const auto &next_point_min = polygon.points[k + 1];
+                    const auto &next_point_max = polygon.points[k + 2];
+                    if (d[j] >= prev_point_min.x && d[j] <= next_point_min.x) {
+                        s_min = linear_interpolation(
+                            d[j], prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                        s_max = linear_interpolation(
+                            d[j], prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                        break;
+                    }
+                }
+                matching_points.push_back({d[j], s_min});
+                matching_points.push_back({d[j], s_max});
+            }
+
+            const Point &point1 = matching_points[0];
+            const Point &point2 = matching_points[1];
+            y_refs[j][i] = point1.y + f * (point2.y - point1.y);
+
+            // Update dependency amount for the current DFO
+            d[j] += y_refs[j][i];
+        }
+
+        // Update dependency amount for the aggregated DFO
+        dA += yA_ref[i];
+    }
+}
+
 /*
 Example main usage:
 
