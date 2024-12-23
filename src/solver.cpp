@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "../include/solver.h"
+#include "../include/tec.h"
 #include "../include/aggregation.h"
 
 ILOSTLBEGIN

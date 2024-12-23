@@ -60,5 +60,10 @@ public:
 
     // Method to apply a given schedule allocation
     void apply_schedule(const vector<double> &allocations);
+
+    //disaggregation
+    vector<Flexoffer> disaggregate_to_flexoffers();
 };
+
+
 #endif

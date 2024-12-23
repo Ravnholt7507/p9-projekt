@@ -3,8 +3,10 @@
 
 #include <vector>
 #include <string>
+#include <variant>
 #include "flexoffer.h"
 #include "group.h"
+#include "tec.h"
 
 using namespace std;
 
@@ -19,6 +21,6 @@ void createMBR(const Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 void clusterGroup(std::vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 std::vector<double> readSpotPricesFromCSV(const string& filename);
-vector<Flexoffer> parseEVDataToFlexOffers(const string& filename);
+vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type);
 
 #endif // HELPERFUNCTION_H

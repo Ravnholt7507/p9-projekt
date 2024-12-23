@@ -72,12 +72,14 @@ double linear_interpolation(double x, double x1, double y1, double x2, double y2
 }
 
 // Function to aggregate two DFOs
-DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) {
+DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilon1, double &epsilon2
     if (dfo1.polygons.size() != dfo2.polygons.size()) {
         throw runtime_error("DFOs must have the same number of timesteps to aggregate. Kind Regards, agg2to1 function");
     }
 
     vector<DependencyPolygon> aggregated_polygons;
+    //epsilon1 = 1.0;
+    //epsilon2 = 1.0;
 
     for (size_t i = 0; i < dfo1.polygons.size(); ++i) {
         const auto &polygon1 = dfo1.polygons[i];
@@ -142,6 +144,18 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) {
 
             aggregated_polygon.add_point(current_prev_energy, min_current_energy);
             aggregated_polygon.add_point(current_prev_energy, max_current_energy);
+
+            /*double min_total_energy1 = current_prev_energy1 + dfo1_min_energy; // Some temporary code. 
+            double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
+            double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
+            double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
+            double used1_min;
+            double used1_max;
+            double used2_min;
+            double used2_min;
+
+            used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
+            used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))*/
         }
 
         aggregated_polygons.push_back(aggregated_polygon);
@@ -167,6 +181,136 @@ DFO aggnto1(const vector<DFO> &dfos, int numsamples) {
     }
 
     return aggregated_dfo;
+}
+
+void disagg1to2(
+    const DFO &D1, const DFO &D2, const DFO &DA, 
+    const std::vector<double> &yA_ref, 
+    std::vector<double> &y1_ref, std::vector<double> &y2_ref) {
+
+    size_t T = DA.polygons.size(); // Number of timesteps
+    if (T != yA_ref.size()) {
+        throw std::runtime_error("Mismatch between DA timesteps and yA_ref size. Kind regards disagg1to2 function");
+    }
+
+    // Initialize energy dependency amounts
+    double dA = 0.0, d1 = 0.0, d2 = 0.0;
+
+    // Resize the output vectors to match the number of timesteps
+    y1_ref.resize(T, 0.0);
+    y2_ref.resize(T, 0.0);
+
+    for (size_t i = 0; i < DA.polygons.size(); ++i) {
+        // Get DFO slice for that timestep
+        const auto &polygonA = DA.polygons[i];
+        const auto &polygon1 = D1.polygons[i];
+        const auto &polygon2 = D2.polygons[i];
+
+        double f = 0.0; // Initialize splitting factor
+        double s_min_A, s_max_A, s_min_1, s_max_1, s_min_2, s_max_2; // Total energy bounds for the DFOs at this timestep
+
+        // Find points with the respective energy dependency for DFO A, 1 and 2 to calculate allowed min and max energy usage for each
+        vector<Point> matching_pointsA, matching_points1, matching_points2;
+        // For the aggregated DFO
+        for (const auto &point : polygonA.points) { // Try to find if there points for that exact amount of dependece energy
+            if (point.x == dA) { // Check if the x-coordinate matches
+                matching_pointsA.push_back(point);
+            }
+        }
+
+        if(matching_pointsA.empty()) { // If there is no points with that exact amount of dependence energy, use linear interpolation between point before and after
+            for (size_t k = 1; k + 1 < polygonA.points.size(); k += 2) {
+                    const auto &prev_point_min = polygonA.points[k - 1];
+                    const auto &prev_point_max = polygonA.points[k];
+                    const auto &next_point_min = polygonA.points[k + 1];
+                    const auto &next_point_max = polygonA.points[k + 2];
+                    if (dA >= prev_point_min.x && dA <= next_point_min.x) {
+                        s_min_A = linear_interpolation(
+                            dA, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                        s_max_A = linear_interpolation(
+                            dA, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                        break;
+                    }
+            }
+            matching_pointsA.push_back({dA, s_min_A});
+            matching_pointsA.push_back({dA, s_max_A});
+        }
+
+        // For DFO 1
+        for (const auto &point : polygon1.points) { // Try to find if there points for that exact amount of dependece energy
+            if (point.x == d1) { // Check if the x-coordinate matches
+                matching_points1.push_back(point);
+            }
+        }
+
+        if(matching_points1.empty()) { // If there is no points with that exact amount of dependence energy, use linear interpolation between point before and after
+            for (size_t k = 1; k + 1 < polygon1.points.size(); k += 2) {
+                    const auto &prev_point_min = polygon1.points[k - 1];
+                    const auto &prev_point_max = polygon1.points[k];
+                    const auto &next_point_min = polygon1.points[k + 1];
+                    const auto &next_point_max = polygon1.points[k + 2];
+                    if (d1 >= prev_point_min.x && d1 <= next_point_min.x) {
+                        s_min_1 = linear_interpolation(
+                            d1, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                        s_max_1 = linear_interpolation(
+                            d1, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                        break;
+                    }
+            }
+            matching_points1.push_back({d1, s_min_1});
+            matching_points1.push_back({d1, s_max_1});
+        }
+
+        // For DFO 2
+        for (const auto &point : polygon2.points) { // Try to find if there points for that exact amount of dependece energy
+            if (point.x == d2) { // Check if the x-coordinate matches
+                matching_points2.push_back(point);
+            }
+        }
+
+        if(matching_points2.empty()) { // If there is no points with that exact amount of dependence energy, use linear interpolation between point before and after
+            for (size_t k = 1; k + 1 < polygon2.points.size(); k += 2) {
+                    const auto &prev_point_min = polygon2.points[k - 1];
+                    const auto &prev_point_max = polygon2.points[k];
+                    const auto &next_point_min = polygon2.points[k + 1];
+                    const auto &next_point_max = polygon2.points[k + 2];
+                    if (d2 >= prev_point_min.x && d2 <= next_point_min.x) {
+                        s_min_2 = linear_interpolation(
+                            d2, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                        s_max_2 = linear_interpolation(
+                            d2, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                        break;
+                    }
+            }
+            matching_points2.push_back({d2, s_min_2});
+            matching_points2.push_back({d2, s_max_2});
+        }
+
+        // Calculate scaling factor between min and max energy used for this timestep in aggregated DFO based on reference schedule
+        const Point &point1 = matching_pointsA[0];
+        const Point &point2 = matching_pointsA[1];
+        if (s_max_A - s_min_A == 0) {
+            f = 0;
+        } else {
+            f = (yA_ref[i] - point1.y) / (point2.y - point1.y);
+        }
+
+        // Use same scaling factor on DFO 1 and 2 respectively, to get their corresponding energy usage
+        // DFO1
+        const Point &point1 = matching_points1[0];
+        const Point &point2 = matching_points1[1];
+        y1_ref[i] = point1.y + f * (point2.y - point1.y);
+
+        // DFO2 
+        const Point &point1 = matching_points2[0];
+        const Point &point2 = matching_points2[1];
+        y2_ref[i] = point1.y + f * (point2.y - point1.y);
+
+        //Update dependency amounts
+        dA += yA_ref[i];
+        d1 += y1_ref[i];
+        d2 += y2_ref[i];
+    }
 }
 
 /*

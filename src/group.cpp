@@ -1,30 +1,24 @@
 #include "../include/group.h"
 
-Group::Group(int group_id) : id(group_id), aggregatedOffer(group_id, Alignments::start, flexoffers) {
-    // Initially, aggregatedOffer is constructed with an empty vector of flexoffers
+
+Group::Group(int group_id) : id(group_id) {
 }
 
 void Group::addFlexOffer(const Flexoffer& fo) {
     flexoffers.push_back(fo);
-    // Update the aggregated flex offer
-    updateAggregatedOffer();
 }
 
 const std::vector<Flexoffer>& Group::getFlexOffers() const {
     return flexoffers;
 }
 
-const AggregatedFlexOffer& Group::getAggregatedOffer() const {
-    return aggregatedOffer;
+AggregatedFlexOffer Group::createAggregatedOffer() const {
+    return AggregatedFlexOffer(id, flexoffers);
 }
 
-void Group::updateAggregatedOffer() {
-    // Reconstruct the aggregatedOffer with the updated flexoffers vector
-    aggregatedOffer = AggregatedFlexOffer(id, Alignments::start, flexoffers);
-}
-
-void Group::printAggregatedOffer() {
-    aggregatedOffer.pretty_print();
+void Group::printAggregatedOffer() const {
+    auto agg = createAggregatedOffer();
+    agg.pretty_print();
 }
 
 int Group::getGroupId() const {
