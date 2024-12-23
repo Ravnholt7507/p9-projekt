@@ -74,15 +74,20 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             aggregated_earliest = least_flexible.get_lst();
             duration = aggregated_profile.size();
         } else {
+            double offsetMinSec = difftime(least_flexible.get_est(), aggregated_earliest);
+            double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
+            int offsetMin = (int)std::floor(offsetMinSec / 3600.0);
+            int offsetMax = (int)std::floor(offsetMaxSec / 3600.0);
             vector<TimeSlice> tmp;
-            for(size_t i = 0; i < aggregated_profile.size(); i++){
+            int counter = 0;
+            for(int i = offsetMin; i < offsetMax; i++){
                 int best_result = 0;
-                time_t est_check = aggregated_earliest + (i * 3600);
-                if(est_check <= least_flexible.get_est() && !(est_check > least_flexible.get_lst())){
-                     
-                } 
-
-                tmp.clear();
+                if(i < 0){
+                    for(size_t j = 0; j < least_flexible.get_profile().size(); j++){
+                        tmp.push_back(least_flexible.get_profile()[counter]); 
+                        counter++;
+                    }
+                }
             }
         }
     }
@@ -97,7 +102,7 @@ Flexoffer least_flexible_object(vector<Flexoffer> &offers){
         avg_flex = 0; 
 
         for(const auto& slice : offers[i].get_profile()){
-            avg_flex += (slice.max_power - slice.min_power); 
+            avg_flex += slice.max_power/2; 
         }        
 
         if(avg_flex < min_flex){
