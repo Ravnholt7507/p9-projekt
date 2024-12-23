@@ -40,5 +40,9 @@ void disagg1to2(
     const DFO &D1, const DFO &D2, const DFO &DA, 
     const std::vector<double> &yA_ref, 
     std::vector<double> &y1_ref, std::vector<double> &y2_ref);
+void disagg1toN(
+    const DFO &DA, const std::vector<DFO> &DFOs, 
+    const std::vector<double> &yA_ref, 
+    std::vector<std::vector<double>> &y_refs);
 
 #endif
