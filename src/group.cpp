@@ -1,5 +1,5 @@
 #include "../include/group.h"
-
+#include "../include/alignments.h"
 
 Group::Group(int group_id) : id(group_id) {
 }
@@ -13,9 +13,8 @@ const std::vector<Flexoffer>& Group::getFlexOffers() const {
 }
 
 AggregatedFlexOffer Group::createAggregatedOffer() const {
-    return AggregatedFlexOffer(id, flexoffers);
+    return AggregatedFlexOffer(id, Alignments::balance, flexoffers);
 }
-
 
 void Group::printAggregatedOffer() const {
     auto agg = createAggregatedOffer();
