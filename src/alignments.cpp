@@ -6,7 +6,8 @@
 
 using namespace std;
 
-Flexoffer least_flexible_object(vector<Flexoffer> &offers);
+Flexoffer least_flexible_object(vector<Flexoffer>&);
+void calc_alignment(vector<TimeSlice>&, Flexoffer, int, double&, time_t&, time_t&, time_t&, int&);
 
 void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time,
                      vector<TimeSlice> &aggregated_profile, int &duration, const vector<Flexoffer> &offers){
@@ -76,20 +77,59 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
         } else {
             double offsetMinSec = difftime(least_flexible.get_est(), aggregated_earliest);
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
-            int offsetMin = (int)std::floor(offsetMinSec / 3600.0);
-            int offsetMax = (int)std::floor(offsetMaxSec / 3600.0);
-            vector<TimeSlice> tmp;
-            int counter = 0;
+            int offsetMin = floor(offsetMinSec / 3600.0);
+            int offsetMax = floor(offsetMaxSec / 3600.0);
             for(int i = offsetMin; i < offsetMax; i++){
-                int best_result = 0;
-                if(i < 0){
-                    for(size_t j = 0; j < least_flexible.get_profile().size(); j++){
-                        tmp.push_back(least_flexible.get_profile()[counter]); 
-                        counter++;
-                    }
-                }
+                double best_result = 0;
+                calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration);
             }
         }
+    }
+}
+
+void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexible, int offset, double &best_result,
+                    time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, int &duration){
+    vector<TimeSlice> tmp{};    
+    vector<TimeSlice> least_profile = least_flexible.get_profile();
+    int i{offset};
+    while(i < 0 && !least_profile.empty()){
+        tmp.push_back(least_profile[0]); 
+        least_profile.erase(least_profile.begin());
+        i++;
+    }
+    while(i > 0 && !aggregated_profile.empty()){
+        tmp.push_back(aggregated_profile[0]);
+        aggregated_profile.erase(aggregated_profile.begin()); 
+        i--;
+    }
+    while(!least_profile.empty() && !aggregated_profile.empty()){
+        tmp.push_back({aggregated_profile[0].min_power + least_profile[0].min_power, aggregated_profile[0].max_power + least_profile[0].max_power}); 
+        least_profile.erase(least_profile.begin());
+        aggregated_profile.erase(aggregated_profile.begin());
+    }
+    while(!least_profile.empty()){
+        tmp.push_back(least_profile[0]); 
+        least_profile.erase(least_profile.begin());
+    }
+    while(!aggregated_profile.empty()){
+        tmp.push_back(aggregated_profile[0]);
+        aggregated_profile.erase(aggregated_profile.begin()); 
+    }
+
+    double result{0};
+    for(auto& element : tmp){
+        result += element.max_power - element.min_power;
+    } 
+    result /= tmp.size();
+
+    if(result > best_result){
+        best_result = result;
+        aggregated_earliest = min(aggregated_earliest, least_flexible.get_est());
+        aggregated_latest = max(aggregated_latest, least_flexible.get_lst());
+        duration = tmp.size();
+        aggregated_end_time = aggregated_latest + (duration*3600);
+        aggregated_profile.clear();
+        aggregated_profile = tmp;
     }
 }
 

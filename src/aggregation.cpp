@@ -7,7 +7,6 @@
 #include <variant>
 
 #include "../include/aggregation.h"
-#include "../include/helperfunctions.h"
 #include "../include/flexoffer.h"
 #include "../include/alignments.h"
 
@@ -31,7 +30,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     if(align == Alignments::start){
         start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
     } else if (align == Alignments::balance){
-             
+        balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
     }
 
     scheduled_allocation.resize(duration, 0.0);
