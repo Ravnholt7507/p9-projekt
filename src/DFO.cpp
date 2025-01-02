@@ -287,24 +287,24 @@ void disagg1to2(
         }
 
         // Calculate scaling factor between min and max energy used for this timestep in aggregated DFO based on reference schedule
-        const Point &point1 = matching_pointsA[0];
-        const Point &point2 = matching_pointsA[1];
+        const Point &pointA_1 = matching_pointsA[0];
+        const Point &pointA_2 = matching_pointsA[1];
         if (s_max_A - s_min_A == 0) {
             f = 0;
         } else {
-            f = (yA_ref[i] - point1.y) / (point2.y - point1.y);
+            f = (yA_ref[i] - pointA_1.y) / (pointA_2.y - pointA_1.y);
         }
 
         // Use same scaling factor on DFO 1 and 2 respectively, to get their corresponding energy usage
         // DFO1
-        const Point &point1 = matching_points1[0];
-        const Point &point2 = matching_points1[1];
-        y1_ref[i] = point1.y + f * (point2.y - point1.y);
+        const Point &point1_1 = matching_points1[0];
+        const Point &point1_2 = matching_points1[1];
+        y1_ref[i] = point1_1.y + f * (point1_2.y - point1_1.y);
 
         // DFO2 
-        const Point &point1 = matching_points2[0];
-        const Point &point2 = matching_points2[1];
-        y2_ref[i] = point1.y + f * (point2.y - point1.y);
+        const Point &point2_1 = matching_points2[0];
+        const Point &point2_2 = matching_points2[1];
+        y2_ref[i] = point2_1.y + f * (point2_2.y - point2_1.y);
 
         //Update dependency amounts
         dA += yA_ref[i];
