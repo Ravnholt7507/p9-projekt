@@ -31,7 +31,6 @@ vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFle
     std::vector<AggregatedFlexOffer> finalAggregates;
     finalAggregates.reserve(groups.size());
     for (auto &g : groups) {
-        // Now each group has at least one Flexoffer, so aggregator won't throw
         finalAggregates.push_back(g.createAggregatedOffer());
     }
 
@@ -54,7 +53,7 @@ int main() {
     vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
     vector<Flexoffer> flexOffers;
 
-    AggregatedFlexOffer agg1(1, Alignments::start, flexOffers);
+    // AggregatedFlexOffer agg1(0, Alignments::start, flexOffers);
     int est_threshold  = 2;
     int lst_threshold  = 2;
     int max_group_size = 3;
@@ -75,10 +74,6 @@ int main() {
 
     vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size);
 
-
-    // AggregatedFlexOffer agg1(1, flexOffers);
-
-    // vector<AggregatedFlexOffer> afos = {agg1};
     vector<vector<double>> solution = Solver::solve(afos, spotPrices);
 
 
@@ -102,18 +97,12 @@ int main() {
     cout << "Total Cost (Optimized): " << total_cost << " €/kWh\n";
     cout << "=== Done ===" << endl;
     
-    auto [powerVars, upVars, downVars, totalRevenue] = Solver::solveFCRRevenueMaximization(afos, fcr_up_prices, fcr_down_prices, spotPrices);
-    dumpFCRDataToCSV(powerVars, upVars, downVars, totalRevenue, "../data/FCR_Solution.csv");
+    //auto [powerVars, upVars, downVars, totalRevenue] = Solver::solveFCRRevenueMaximization(afos, fcr_up_prices, fcr_down_prices, spotPrices);
+    //dumpFCRDataToCSV(powerVars, upVars, downVars, totalRevenue, "../data/FCR_Solution.csv");
 
-    prepareAndDumpMetrics(spotPrices, afos, "../data/metrics.csv", "../visuals/plot_metrics.py");
+    //prepareAndDumpMetrics(spotPrices, afos, "../data/metrics.csv", "../visuals/plot_metrics.py");
 
-
-    vector<Flexoffer> dis_FOs = afos[0].disaggregate_to_flexoffers();
-
-    cout << "after disaggregation";
-    for (auto &fo : dis_FOs) {
-        fo.print_flexoffer();
-    }
+    dumpSolverAndDisaggResults(afos, spotPrices, "../data/aggregator_solutions.csv", "../data/disaggregated_flexoffers.csv");
 
     return 0;
 }
