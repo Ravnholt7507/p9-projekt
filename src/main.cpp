@@ -11,33 +11,6 @@
 
 using namespace std;
 
-
-vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, 
-                                            int est_threshold, 
-                                            int lst_threshold, 
-                                            int max_group_size, 
-                                            int startGroupId=1)
-{
-    vector<Group> groups;
-    int groupId = startGroupId;
-    for (const auto &fo : allFlexoffers) {
-        Group g(groupId++);
-        g.addFlexOffer(fo);
-        groups.push_back(g);
-    }
-
-    clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
-
-    std::vector<AggregatedFlexOffer> finalAggregates;
-    finalAggregates.reserve(groups.size());
-    for (auto &g : groups) {
-        finalAggregates.push_back(g.createAggregatedOffer());
-    }
-
-    return finalAggregates;
-}
-
-
 int main() {
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
@@ -72,7 +45,7 @@ int main() {
         fo.print_flexoffer();
     }
 
-    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size);
+    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, 0);
 
     vector<vector<double>> solution = Solver::solve(afos, spotPrices);
 
