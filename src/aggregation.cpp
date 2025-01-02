@@ -1,10 +1,9 @@
 #include <iostream>
-#include <algorithm>
 #include <cmath>
-#include <limits>
 #include <ctime>
 #include <vector>
 #include <variant>
+#include <stdexcept>
 
 #include "../include/aggregation.h"
 #include "../include/flexoffer.h"
@@ -18,6 +17,7 @@ static int time_to_hour(time_t t) {
 }
 
 //Constructors
+//for fo
 AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
@@ -39,6 +39,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     } 
 }
 
+//for tec
 AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
@@ -47,49 +48,17 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     id = offer_id;
 
     cout << "=== Aggregating FlexOffers for AFO ID " << id << " ===" << endl;
-    // Determine aggregated earliest, latest start, and end times
-    aggregated_earliest = numeric_limits<time_t>::max();
-    aggregated_latest = 0;
-    aggregated_end_time = 0;
 
-    for (const auto &fo : offers) {
-        aggregated_earliest = min(aggregated_earliest, fo.get_est());
-        aggregated_latest = max(aggregated_latest, fo.get_lst());
-        aggregated_end_time = max(aggregated_end_time, fo.get_et());
-    }
-
-    // Duration: from aggregated_latest to aggregated_end_time
-    double diff_sec = difftime(aggregated_end_time, aggregated_latest);
-    duration = (int) ceil(diff_sec / 3600.0);
-
-    aggregated_profile.resize(duration, TimeSlice{0.0, 0.0});
-
-    // Aggregate profiles: hour 0 in aggregated profile = aggregated_latest
-    for (const auto &fo : offers) {
-        // Align FO's LST with aggregated_latest
-        double start_diff_sec = difftime(fo.get_lst(), aggregated_latest);
-        int start_hour = (int) floor(start_diff_sec / 3600.0);
-
-        cout << "  FlexOffer ID " << fo.get_offer_id() << " alignment: start_hour = " << start_hour << endl;
-
-        auto p = fo.get_profile();
-        for (int h = 0; h < fo.get_duration(); h++) {
-            int idx = start_hour + h;
-            if (idx >= 0 && idx < duration) {
-                aggregated_profile[idx].min_power += p[h].min_power;
-                aggregated_profile[idx].max_power += p[h].max_power;
-            } else {
-                // Out of range - skip
-            }
-        }
+    if(align == Alignments::start){
+        start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
+    } else if (align == Alignments::balance){
+        balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
     }
 
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
-        overall_min += offer.get_min_overall_kw();
-        overall_max += offer.get_max_overall_kw();
         individual_offers.push_back(offer);
-    }
+    } 
 }
 
 // Getters
@@ -173,7 +142,6 @@ void AggregatedFlexOffer::pretty_print() const {
 }
 
 vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
-    
     // Compute fraction of allocation for each aggregated timeslice
     std::vector<double> fraction(duration, 0.0);
     for (int i = 0; i < duration; i++) {
