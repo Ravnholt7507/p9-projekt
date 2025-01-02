@@ -2,6 +2,15 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include <ostream> // Required for std::ostream
+
+// Overload the << operator for the Point struct
+std::ostream &operator<<(std::ostream &os, const Point &point) {
+    os << "(" << point.x << ", " << point.y << ")";
+    return os;
+}
+
+
 using namespace std;
 
 // DependencyPolygon Constructor
@@ -20,8 +29,8 @@ void DependencyPolygon::generate_polygon() {
     for (int i = 0; i < numsamples; i++) {
         double current_prev_energy = min_prev_energy + i * step;
 
-        double min_current_energy = 6.0 - 0.3 * current_prev_energy;
-        double max_current_energy = 9.0 - 0.3 * current_prev_energy;
+        double min_current_energy = 3.0 - 0.3 * current_prev_energy;
+        double max_current_energy = 14.0 - 0.3 * current_prev_energy;
 
         // Ensure energy values are valid
         min_current_energy = max(min_current_energy, 0.0);
@@ -90,72 +99,81 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilo
 
         DependencyPolygon aggregated_polygon(aggregated_min_prev, aggregated_max_prev, numsamples);
 
-        double step1 = (polygon1.max_prev_energy - polygon1.min_prev_energy) / (numsamples - 1);
-        double step2 = (polygon2.max_prev_energy - polygon2.min_prev_energy) / (numsamples - 1);
-        double step = (aggregated_max_prev - aggregated_min_prev) / (numsamples - 1);
+        if (polygon1.points.size() == 2 && polygon2.points.size() == 2) { // Special case - For example if 1st timestep and the dependency min/max is 0. Then there are only 2 points
+            double min_current_energy = polygon1.points[0].y + polygon2.points[0].y;
+            double max_current_energy = polygon1.points[1].y + polygon2.points[1].y;
+            double dependency_Amount = polygon1.points[1].x + polygon2.points[1].x;
 
-        for (int j = 0; j < numsamples; ++j) {
-            double current_prev_energy1 = polygon1.min_prev_energy + j * step1;
-            double current_prev_energy2 = polygon2.min_prev_energy + j * step2;
-            double current_prev_energy = aggregated_min_prev + j * step;
-
-            double dfo1_min_energy = 0.0, dfo1_max_energy = 0.0;
-            if (polygon1.numsamples == numsamples) {
-                dfo1_min_energy = polygon1.points[j * 2].y;
-                dfo1_max_energy = polygon1.points[j * 2 + 1].y;
-            } else {
-                for (size_t k = 1; k + 1 < polygon1.points.size(); k += 2) {
-                    const auto &prev_point_min = polygon1.points[k - 1];
-                    const auto &prev_point_max = polygon1.points[k];
-                    const auto &next_point_min = polygon1.points[k + 1];
-                    const auto &next_point_max = polygon1.points[k + 2];
-                    if (current_prev_energy1 >= prev_point_min.x && current_prev_energy1 <= next_point_min.x) {
-                        dfo1_min_energy = linear_interpolation(
-                            current_prev_energy1, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
-                        dfo1_max_energy = linear_interpolation(
-                            current_prev_energy1, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
-                        break;
+            aggregated_polygon.add_point(dependency_Amount, min_current_energy);
+            aggregated_polygon.add_point(dependency_Amount, max_current_energy);
+        } else { // Not special case. Loop through from dependency min to dependency max with step size based on numSamples
+            double step1 = (polygon1.max_prev_energy - polygon1.min_prev_energy) / (numsamples - 1);
+            double step2 = (polygon2.max_prev_energy - polygon2.min_prev_energy) / (numsamples - 1);
+            double step = (aggregated_max_prev - aggregated_min_prev) / (numsamples - 1);
+            
+            for (int j = 0; j < numsamples; ++j) {
+                double current_prev_energy1 = polygon1.min_prev_energy + j * step1;
+                double current_prev_energy2 = polygon2.min_prev_energy + j * step2;
+                double current_prev_energy = aggregated_min_prev + j * step;
+                
+                double dfo1_min_energy = 0.0, dfo1_max_energy = 0.0;
+                if (polygon1.numsamples == numsamples) {
+                    dfo1_min_energy = polygon1.points[j * 2].y;
+                    dfo1_max_energy = polygon1.points[j * 2 + 1].y;
+                } else {
+                    for (size_t k = 1; k + 1 < polygon1.points.size(); k += 2) {
+                        const auto &prev_point_min = polygon1.points[k - 1];
+                        const auto &prev_point_max = polygon1.points[k];
+                        const auto &next_point_min = polygon1.points[k + 1];
+                        const auto &next_point_max = polygon1.points[k + 2];
+                        if (current_prev_energy1 >= prev_point_min.x && current_prev_energy1 <= next_point_min.x) {
+                            dfo1_min_energy = linear_interpolation(
+                                current_prev_energy1, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                            dfo1_max_energy = linear_interpolation(
+                                current_prev_energy1, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                            break;
+                        }
                     }
                 }
-            }
-
-            double dfo2_min_energy = 0.0, dfo2_max_energy = 0.0;
-            if (polygon2.numsamples == numsamples) {
-                dfo2_min_energy = polygon2.points[j * 2].y;
-                dfo2_max_energy = polygon2.points[j * 2 + 1].y;
-            } else {
-                for (size_t k = 1; k + 1 < polygon2.points.size(); k += 2) {
-                    const auto &prev_point_min = polygon2.points[k - 1];
-                    const auto &prev_point_max = polygon2.points[k];
-                    const auto &next_point_min = polygon2.points[k + 1];
-                    const auto &next_point_max = polygon2.points[k + 2];
-                    if (current_prev_energy2 >= prev_point_min.x && current_prev_energy2 <= next_point_min.x) {
-                        dfo2_min_energy = linear_interpolation(
-                            current_prev_energy2, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
-                        dfo2_max_energy = linear_interpolation(
-                            current_prev_energy2, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
-                        break;
+                
+                double dfo2_min_energy = 0.0, dfo2_max_energy = 0.0;
+                if (polygon2.numsamples == numsamples) {
+                    dfo2_min_energy = polygon2.points[j * 2].y;
+                    dfo2_max_energy = polygon2.points[j * 2 + 1].y;  
+                } else {
+                    for (size_t k = 1; k + 1 < polygon2.points.size(); k += 2) {
+                        const auto &prev_point_min = polygon2.points[k - 1];
+                        const auto &prev_point_max = polygon2.points[k];
+                        const auto &next_point_min = polygon2.points[k + 1];
+                        const auto &next_point_max = polygon2.points[k + 2];
+                        if (current_prev_energy2 >= prev_point_min.x && current_prev_energy2 <= next_point_min.x) {
+                            dfo2_min_energy = linear_interpolation(
+                                current_prev_energy2, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
+                            dfo2_max_energy = linear_interpolation(
+                                current_prev_energy2, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
+                            break;
+                        }
                     }
                 }
+                
+                double min_current_energy = dfo1_min_energy + dfo2_min_energy;
+                double max_current_energy = dfo1_max_energy + dfo2_max_energy;
+                
+                aggregated_polygon.add_point(current_prev_energy, min_current_energy);
+                aggregated_polygon.add_point(current_prev_energy, max_current_energy);
+
+                /*double min_total_energy1 = current_prev_energy1 + dfo1_min_energy; // Some temporary code. 
+                double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
+                double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
+                double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
+                double used1_min;
+                double used1_max;
+                double used2_min;
+                double used2_min;
+
+                used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
+                used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))*/
             }
-
-            double min_current_energy = dfo1_min_energy + dfo2_min_energy;
-            double max_current_energy = dfo1_max_energy + dfo2_max_energy;
-
-            aggregated_polygon.add_point(current_prev_energy, min_current_energy);
-            aggregated_polygon.add_point(current_prev_energy, max_current_energy);
-
-            /*double min_total_energy1 = current_prev_energy1 + dfo1_min_energy; // Some temporary code. 
-            double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
-            double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
-            double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
-            double used1_min;
-            double used1_max;
-            double used2_min;
-            double used2_min;
-
-            used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
-            used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))*/
         }
 
         aggregated_polygons.push_back(aggregated_polygon);
@@ -212,7 +230,7 @@ void disagg1to2(
         // Find points with the respective energy dependency for DFO A, 1 and 2 to calculate allowed min and max energy usage for each
         vector<Point> matching_pointsA, matching_points1, matching_points2;
         // For the aggregated DFO
-        for (const auto &point : polygonA.points) { // Try to find if there points for that exact amount of dependece energy
+        for (const auto &point : polygonA.points) { // Try to find if there are points for that exact amount of dependence energy
             if (point.x == dA) { // Check if the x-coordinate matches
                 matching_pointsA.push_back(point);
             }
@@ -237,7 +255,7 @@ void disagg1to2(
         }
 
         // For DFO 1
-        for (const auto &point : polygon1.points) { // Try to find if there points for that exact amount of dependece energy
+        for (const auto &point : polygon1.points) { // Try to find if there are points for that exact amount of dependence energy
             if (point.x == d1) { // Check if the x-coordinate matches
                 matching_points1.push_back(point);
             }
@@ -289,21 +307,24 @@ void disagg1to2(
         // Calculate scaling factor between min and max energy used for this timestep in aggregated DFO based on reference schedule
         const Point &pointA_1 = matching_pointsA[0];
         const Point &pointA_2 = matching_pointsA[1];
-        if (s_max_A - s_min_A == 0) {
+        if (pointA_2.y - pointA_1.y == 0) {
             f = 0;
         } else {
             f = (yA_ref[i] - pointA_1.y) / (pointA_2.y - pointA_1.y);
         }
+        std::cout << "f: " << f << std::endl;
 
         // Use same scaling factor on DFO 1 and 2 respectively, to get their corresponding energy usage
         // DFO1
         const Point &point1_1 = matching_points1[0];
         const Point &point1_2 = matching_points1[1];
+        std::cout << "DFO 1 min / max: " << point1_1 << point1_2 << std::endl;
         y1_ref[i] = point1_1.y + f * (point1_2.y - point1_1.y);
 
         // DFO2 
         const Point &point2_1 = matching_points2[0];
         const Point &point2_2 = matching_points2[1];
+        std::cout << "DFO 2 min / max: " << point2_1 << point2_2 << std::endl;
         y2_ref[i] = point2_1.y + f * (point2_2.y - point2_1.y);
 
         //Update dependency amounts
@@ -341,13 +362,13 @@ void disagg1toN(
 
         // Find points with the respective energy dependency for DFO A to calculate allowed min and max energy usage
         std::vector<Point> matching_pointsA;
-        for (const auto &point : polygonA.points) {
+        for (const auto &point : polygonA.points) { // Try to find if there are points for that exact amount of dependence energy
             if (point.x == dA) {
                 matching_pointsA.push_back(point);
             }
         }
 
-        if (matching_pointsA.empty()) {
+        if (matching_pointsA.empty()) { // If there is no points with that exact amount of dependence energy, use linear interpolation between point before and after
             for (size_t k = 1; k + 1 < polygonA.points.size(); k += 2) {
                 const auto &prev_point_min = polygonA.points[k - 1];
                 const auto &prev_point_max = polygonA.points[k];
@@ -365,27 +386,28 @@ void disagg1toN(
             matching_pointsA.push_back({dA, s_max_A});
         }
 
+        // Calculate scaling factor between min and max energy used for this timestep in aggregated DFO based on reference schedule
         const Point &pointA1 = matching_pointsA[0];
         const Point &pointA2 = matching_pointsA[1];
-        if (s_max_A - s_min_A == 0) {
+        if (pointA2.y - pointA1.y == 0) {
             f = 0;
         } else {
             f = (yA_ref[i] - pointA1.y) / (pointA2.y - pointA1.y);
         }
 
         // Use the scaling factor on all DFOs
-        for (size_t j = 0; j < N; ++j) {
+        for (size_t j = 0; j < N; ++j) { // Loop through all original non-aggregated DFOs
             const auto &polygon = DFOs[j].polygons[i];
 
             std::vector<Point> matching_points;
-            for (const auto &point : polygon.points) {
+            for (const auto &point : polygon.points) { // Try to find if there are points for that exact amount of dependence energy
                 if (point.x == d[j]) {
                     matching_points.push_back(point);
                 }
             }
 
             double s_min, s_max;
-            if (matching_points.empty()) {
+            if (matching_points.empty()) { // If there is no points with that exact amount of dependence energy, use linear interpolation between point before and after
                 for (size_t k = 1; k + 1 < polygon.points.size(); k += 2) {
                     const auto &prev_point_min = polygon.points[k - 1];
                     const auto &prev_point_max = polygon.points[k];
@@ -446,4 +468,76 @@ int main(){
 
     return 0;
 }
+
+or
+
+int main() {
+    // Initialize DFO 1
+    std::vector<double> min_prev_1 = {0.0, 2.0, 4.0};
+    std::vector<double> max_prev_1 = {2.0, 4.0, 6.0};
+    int numsamples = 3; // Number of samples per polygon
+    // Manually define DFO 1
+    DFO dfo1(1, {}, {}, numsamples);
+    dfo1.polygons = {
+        DependencyPolygon(0.0, 0.0, numsamples),  // Timestep 1
+        DependencyPolygon(2.0, 4.0, numsamples),  // Timestep 2
+        DependencyPolygon(4.0, 6.0, numsamples)   // Timestep 3
+    };
+
+    dfo1.polygons[0].points = {{0.0, 2.0}, {0.0, 4.0}};
+    dfo1.polygons[1].points = {{2.0, 2.0}, {2.0, 4.0}, {3.0, 1.0},  {3.0, 3.0}, {4.0, 0.0}, {4.0, 2.0}};
+    dfo1.polygons[2].points = {{4.0, 3.0}, {4.0, 6.0}, {5.0, 2.0}, {5.0, 3.0}, {6.0, 1.0}, {6.0, 4.0}};
+
+    // Manually define DFO 2
+    DFO dfo2(2, {}, {}, numsamples);
+    dfo2.polygons = {
+        DependencyPolygon(0.0, 0.0, numsamples),  // Timestep 1
+        DependencyPolygon(3.0, 5.0, numsamples),  // Timestep 2
+        DependencyPolygon(5.0, 7.0, numsamples)   // Timestep 3
+    };
+
+    dfo2.polygons[0].points = {{0.0, 3.0}, {0.0, 5.0}};
+    dfo2.polygons[1].points = {{3.0, 2.0}, {3.0, 4.0}, {4.0, 1.0}, {4.0, 3.0}, {5.0, 0.0}, {5.0, 2.0}};
+    dfo2.polygons[2].points = {{5.0, 4.0}, {5.0, 6.0}, {6.0, 3.0}, {6.0, 5.0}, {7.0, 2.0}, {7.0, 4.0}};
+    // Aggregate DFO 1 and DFO 2
+    DFO aggregated_dfo = agg2to1(dfo1, dfo2, numsamples);
+    std::cout << "Aggregated DFO:" << std::endl;
+    aggregated_dfo.print_dfo();
+
+    // Reference schedule for disaggregation
+    std::vector<double> yA_ref = {6.0, 6.0, 8.0}; // Example energy schedule for aggregated DFO
+
+    // Disaggregate aggregated DFO into DFO 1 and DFO 2
+    std::vector<double> y1_ref, y2_ref;
+    disagg1to2(dfo1, dfo2, aggregated_dfo, yA_ref, y1_ref, y2_ref);
+
+    std::cout << "\nDisaggregated energy schedule for DFO 1:" << std::endl;
+    for (const auto &val : y1_ref) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Disaggregated energy schedule for DFO 2:" << std::endl;
+    for (const auto &val : y2_ref) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    // Disaggregate aggregated DFO into multiple DFOs
+    std::vector<DFO> dfos = {dfo1, dfo2};
+    std::vector<std::vector<double>> y_refs;
+    disagg1toN(aggregated_dfo, dfos, yA_ref, y_refs);
+
+    std::cout << "\nDisaggregated energy schedules for multiple DFOs:" << std::endl;
+    for (size_t i = 0; i < y_refs.size(); ++i) {
+        std::cout << "DFO " << i + 1 << ": ";
+        for (const auto &val : y_refs[i]) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    return 0;
+}
+
 */
