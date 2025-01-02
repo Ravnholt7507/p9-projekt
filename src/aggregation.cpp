@@ -141,6 +141,8 @@ void AggregatedFlexOffer::pretty_print() const {
     cout << "==============================" << endl;
 }
 
+
+
 vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
     // Compute fraction of allocation for each aggregated timeslice
     std::vector<double> fraction(duration, 0.0);
@@ -156,37 +158,38 @@ vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
 
     time_t aggregated_schedule_start = aggregated_earliest;
 
-    for (auto &vof : individual_offers) {
-        if (holds_alternative<Flexoffer>(vof)) {
-            Flexoffer f = get<Flexoffer>(vof);
-
-            double start_diff_sec = difftime(f.get_lst(), aggregated_latest);
-            int start_hour = (int)std::floor(start_diff_sec / 3600.0);
-
-            std::vector<double> f_scheduled_allocation((size_t)f.get_duration(), 0.0);
-
-            auto f_profile = f.get_profile();
-            for (int h = 0; h < f.get_duration(); h++) {
-                int idx = start_hour + h;
-                if (idx >= 0 && idx < duration) {
-                    double f_min = f_profile[h].min_power;
-                    double f_max = f_profile[h].max_power;
-                    double denom = f_max - f_min;
-                    f_scheduled_allocation[h] = f_min + denom * fraction[idx];
-                }
-            }
-
-            time_t f_scheduled_start = aggregated_schedule_start + (start_hour * 3600);
-
-            f.set_scheduled_allocation(f_scheduled_allocation);
-            f.set_scheduled_start_time(f_scheduled_start);
-
-            result.push_back(f);
+    for (auto &vfo : individual_offers) {
+        Flexoffer f;
+        if (holds_alternative<Flexoffer>(vfo)) {
+            f = get<Flexoffer>(vfo);
         }
+        else if (holds_alternative<Tec_flexoffer>(vfo)){
+            f = get<Tec_flexoffer>(vfo);
+        }
+
+        double start_diff_sec = difftime(f.get_lst(), aggregated_latest);
+        int start_hour = (int)std::floor(start_diff_sec / 3600.0);
+
+        std::vector<double> f_scheduled_allocation((size_t)f.get_duration(), 0.0);
+
+        auto f_profile = f.get_profile();
+        for (int h = 0; h < f.get_duration(); h++) {
+            int idx = start_hour + h;
+            if (idx >= 0 && idx < duration) {
+                double f_min = f_profile[h].min_power;
+                double f_max = f_profile[h].max_power;
+                double denom = f_max - f_min;
+                f_scheduled_allocation[h] = f_min + denom * fraction[idx];
+            }
+        }
+
+        time_t f_scheduled_start = aggregated_schedule_start + (start_hour * 3600);
+
+        f.set_scheduled_allocation(f_scheduled_allocation);
+        f.set_scheduled_start_time(f_scheduled_start);
+
+        result.push_back(f);
     }
 
     return result;
-}
-
-vector<Tec_flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers_tec() {
 }

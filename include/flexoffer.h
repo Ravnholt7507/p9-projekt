@@ -24,6 +24,7 @@ class Flexoffer{
     public:
         //Constructor
         Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d);
+        Flexoffer();
 
         //Destructor
         virtual ~Flexoffer();

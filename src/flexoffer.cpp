@@ -3,6 +3,7 @@
 #include <iomanip>
 
 //Constructor
+Flexoffer::Flexoffer(){};
 Flexoffer::Flexoffer(int oi, time_t est, time_t lst, time_t et, vector<TimeSlice> &p, int d){
     offer_id = oi;
     earliest_start_time = est;

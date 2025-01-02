@@ -63,8 +63,6 @@ public:
 
     //disaggregation
     vector<Flexoffer> disaggregate_to_flexoffers();
-    vector<Tec_flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers_tec();
 };
-
 
 #endif
