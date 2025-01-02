@@ -201,6 +201,30 @@ src/aggregation.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/aggregation.cpp.s
 .PHONY : src/aggregation.cpp.s
 
+src/alignments.o: src/alignments.cpp.o
+.PHONY : src/alignments.o
+
+# target to build an object file
+src/alignments.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/alignments.cpp.o
+.PHONY : src/alignments.cpp.o
+
+src/alignments.i: src/alignments.cpp.i
+.PHONY : src/alignments.i
+
+# target to preprocess a source file
+src/alignments.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/alignments.cpp.i
+.PHONY : src/alignments.cpp.i
+
+src/alignments.s: src/alignments.cpp.s
+.PHONY : src/alignments.s
+
+# target to generate assembly for a file
+src/alignments.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/alignments.cpp.s
+.PHONY : src/alignments.cpp.s
+
 src/economic.o: src/economic.cpp.o
 .PHONY : src/economic.o
 
@@ -459,6 +483,9 @@ help:
 	@echo "... src/aggregation.o"
 	@echo "... src/aggregation.i"
 	@echo "... src/aggregation.s"
+	@echo "... src/alignments.o"
+	@echo "... src/alignments.i"
+	@echo "... src/alignments.s"
 	@echo "... src/economic.o"
 	@echo "... src/economic.i"
 	@echo "... src/economic.s"

@@ -54,6 +54,7 @@ int main() {
     vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
     vector<Flexoffer> flexOffers;
 
+    AggregatedFlexOffer agg1(1, Alignments::start, flexOffers);
     int est_threshold  = 2;
     int lst_threshold  = 2;
     int max_group_size = 3;

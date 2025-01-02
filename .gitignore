@@ -35,8 +35,11 @@ output
 *.out
 *.app
 
-#cmake stuff
+# Cmake stuff
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 .cache/
+
+#Anoying json header file
+json.hpp
