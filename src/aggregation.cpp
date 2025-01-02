@@ -172,9 +172,6 @@ void AggregatedFlexOffer::pretty_print() const {
     cout << "==============================" << endl;
 }
 
-#include <stdexcept>
-#include <cmath>
-
 vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
     
     // Compute fraction of allocation for each aggregated timeslice
@@ -221,4 +218,7 @@ vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
     }
 
     return result;
+}
+
+vector<Tec_flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers_tec() {
 }
