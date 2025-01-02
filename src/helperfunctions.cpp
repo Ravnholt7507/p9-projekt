@@ -432,3 +432,104 @@ void dumpFCRDataToCSV(const vector<vector<double>> &powerVars,
         cerr << "Failed to execute Python script: " << python_command << endl;
     }
 }
+
+
+
+static int hourOfDay(time_t t) {
+    struct tm* tmInfo = localtime(&t);
+    return tmInfo->tm_hour;
+}
+
+static std::string to_readable_timestamp(time_t t) {
+    char buffer[20];
+    struct tm* timeinfo = localtime(&t);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    return std::string(buffer);
+}
+
+
+void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double> &spotPrices, const string &aggCsvPath, const string &disCsvPath) {
+    ofstream outFile(aggCsvPath);
+    outFile << "AggregatorID,Hour,ScheduledPower,Cost\n";
+
+    for (size_t a = 0; a < afos.size(); a++) {
+        const auto &afo = afos[a];
+        int duration = afo.get_duration();
+        auto schedule = afo.get_scheduled_allocation();
+
+        time_t baseTime = afo.get_aggregated_earliest(); 
+        
+        for (int h = 0; h < duration; h++) {
+            // convert to absolute time
+            time_t currentSlice = baseTime + (h * 3600); 
+            int absHour = hourOfDay(currentSlice);
+            double power = schedule[h];
+            double price =  spotPrices[absHour];
+            double cost  = power * price;
+
+            outFile << afos[a].get_id() << ","
+                    << absHour << ","
+                    << power   << ","
+                    << cost    << "\n";
+        }
+    }
+    outFile.close();
+    cout << "Aggregator-level results written to " << aggCsvPath << "\n";
+
+    ofstream outFile2(disCsvPath);
+    outFile2 << "AggregatorID,FlexOfferID,Hour,ScheduledPower,Cost\n";
+
+    for (int a = 0; a < afos.size(); a++) {
+
+        time_t baseTime = afos[a].get_aggregated_earliest();
+        std::vector<Flexoffer> originalFOs = afos[a].disaggregate_to_flexoffers();
+
+        for (auto &fo : originalFOs) {
+            int fo_duration = fo.get_duration();
+            auto fo_sched   = fo.get_scheduled_allocation();
+            time_t foStart = fo.get_scheduled_start_time();
+
+            for (int h = 0; h < fo_duration; h++) {
+                // actual time = foStart + h*3600
+                time_t currentSlice = foStart + (h * 3600);
+                int absHour = hourOfDay(currentSlice);
+                double power = fo_sched[h];
+                double price = spotPrices[absHour];
+                double cost  = power * price;
+
+                outFile2 << afos[a].get_id()  << ","
+                        << fo.get_offer_id()  << ","
+                        << absHour            << ","
+                        << power              << ","
+                        << cost               << "\n";
+            }
+        }
+    }
+    outFile2.close();
+}
+
+
+vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, 
+                                            int est_threshold, 
+                                            int lst_threshold, 
+                                            int max_group_size, 
+                                            int startGroupId=1)
+{
+    vector<Group> groups;
+    int groupId = startGroupId;
+    for (const auto &fo : allFlexoffers) {
+        Group g(groupId++);
+        g.addFlexOffer(fo);
+        groups.push_back(g);
+    }
+
+    clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
+
+    std::vector<AggregatedFlexOffer> finalAggregates;
+    finalAggregates.reserve(groups.size());
+    for (auto &g : groups) {
+        finalAggregates.push_back(g.createAggregatedOffer());
+    }
+
+    return finalAggregates;
+}

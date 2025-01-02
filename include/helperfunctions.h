@@ -26,5 +26,7 @@ void dumpMetricsToCSV(const std::string& filename, const std::vector<std::string
 void prepareAndDumpMetrics(const std::vector<double>& spotPrices, const std::vector<AggregatedFlexOffer>& afos, const std::string& csvFilePath, const std::string& pythonScriptPath);
 tuple<vector<double>, vector<double>, vector<double>, vector<double>> getFRCprices(const string& filename);
 void dumpFCRDataToCSV(const vector<vector<double>> &powerVars,const vector<vector<double>> &upVars,const vector<vector<double>> &downVars,double totalRevenue,const string &filename);
+void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double> &spotPrices, const string &aggCsvPath, const string &disCsvPath);
+vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, int startGroupId);
 
 #endif // HELPERFUNCTION_H

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <variant> 
+#include <string>
 
-#include "../include/group.h"
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/generator.h"
@@ -13,44 +13,11 @@
 
 using namespace std;
 
-
-vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, 
-                                            int est_threshold, 
-                                            int lst_threshold, 
-                                            int max_group_size, 
-                                            int startGroupId=1)
-{
-    vector<Group> groups;
-    int groupId = startGroupId;
-    for (const auto &fo : allFlexoffers) {
-        Group g(groupId++);
-        g.addFlexOffer(fo);
-        groups.push_back(g);
-    }
-
-    clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
-
-    std::vector<AggregatedFlexOffer> finalAggregates;
-    finalAggregates.reserve(groups.size());
-    for (auto &g : groups) {
-        // Now each group has at least one Flexoffer, so aggregator won't throw
-        finalAggregates.push_back(g.createAggregatedOffer());
-    }
-
-    return finalAggregates;
-}
-
-bool check_unit_test_flag(char** begin, char** end)
-{
-    return std::find(begin, end, "-run_tests") != end;
-}
-
 int main(int argc, char *argv[]) {
-    if(check_unit_test_flag(argv, argv+argc)){
+    if(argc > 1 && find(argv, argv+argc, "--run_tests")){
         runUnitTests();
         return 0;        
     }
-    cout << "im here";
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
     string fcr_prices = "../data/FCRprices.csv";
@@ -65,7 +32,7 @@ int main(int argc, char *argv[]) {
     vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
     vector<Flexoffer> flexOffers;
 
-    AggregatedFlexOffer agg1(1, Alignments::start, flexOffers);
+    // AggregatedFlexOffer agg1(0, Alignments::start, flexOffers);
     int est_threshold  = 2;
     int lst_threshold  = 2;
     int max_group_size = 3;
@@ -84,12 +51,8 @@ int main(int argc, char *argv[]) {
         fo.print_flexoffer();
     }
 
-    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size);
+    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, 0);
 
-
-    // AggregatedFlexOffer agg1(1, flexOffers);
-
-    // vector<AggregatedFlexOffer> afos = {agg1};
     vector<vector<double>> solution = Solver::solve(afos, spotPrices);
 
 
@@ -113,18 +76,12 @@ int main(int argc, char *argv[]) {
     cout << "Total Cost (Optimized): " << total_cost << " €/kWh\n";
     cout << "=== Done ===" << endl;
     
-    auto [powerVars, upVars, downVars, totalRevenue] = Solver::solveFCRRevenueMaximization(afos, fcr_up_prices, fcr_down_prices, spotPrices);
-    dumpFCRDataToCSV(powerVars, upVars, downVars, totalRevenue, "../data/FCR_Solution.csv");
+    //auto [powerVars, upVars, downVars, totalRevenue] = Solver::solveFCRRevenueMaximization(afos, fcr_up_prices, fcr_down_prices, spotPrices);
+    //dumpFCRDataToCSV(powerVars, upVars, downVars, totalRevenue, "../data/FCR_Solution.csv");
 
-    prepareAndDumpMetrics(spotPrices, afos, "../data/metrics.csv", "../visuals/plot_metrics.py");
+    //prepareAndDumpMetrics(spotPrices, afos, "../data/metrics.csv", "../visuals/plot_metrics.py");
 
-
-    vector<Flexoffer> dis_FOs = afos[0].disaggregate_to_flexoffers();
-
-    cout << "after disaggregation";
-    for (auto &fo : dis_FOs) {
-        fo.print_flexoffer();
-    }
+    dumpSolverAndDisaggResults(afos, spotPrices, "../data/aggregator_solutions.csv", "../data/disaggregated_flexoffers.csv");
 
     return 0;
 }
