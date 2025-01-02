@@ -34,6 +34,7 @@ link_directories(${cplex_dir}/cplex/lib/x86-64_linux/static_pic)
 set(LINK_LIBRARIES -lconcert -lilocplex -lcplex -ldl -lpthread -lm)
 
 # Source files
+file(GLOB SOURCE_FILES "${SRC_DIR}/unit_tests.cpp")
 file(GLOB SOURCE_FILES "${SRC_DIR}/*.cpp")
 
 # Add executable

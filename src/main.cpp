@@ -8,6 +8,8 @@
 #include "../include/generator.h"
 #include "../include/helperfunctions.h"
 #include "../include/tec.h"
+#include "../include/unit_test.h"
+
 
 using namespace std;
 
@@ -38,8 +40,17 @@ vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFle
     return finalAggregates;
 }
 
+bool check_unit_test_flag(char** begin, char** end)
+{
+    return std::find(begin, end, "-run_tests") != end;
+}
 
-int main() {
+int main(int argc, char *argv[]) {
+    if(check_unit_test_flag(argv, argv+argc)){
+        runUnitTests();
+        return 0;        
+    }
+    cout << "im here";
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
     string fcr_prices = "../data/FCRprices.csv";
