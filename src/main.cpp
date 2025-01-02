@@ -12,8 +12,6 @@
 using namespace std;
 
 
-
-
 vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
@@ -44,6 +42,13 @@ vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFle
 int main() {
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
+    string fcr_prices = "../data/FCRprices.csv";
+    auto result = getFRCprices(fcr_prices);
+
+    vector<double> fcr_up_prices = get<0>(result);
+    vector<double> fcr_down_prices = get<1>(result);
+    vector<double> fcr_up_volumes = get<2>(result);
+    vector<double> fcr_down_volumes = get<3>(result);
 
     string evDataFile = "../data/ev_data.csv"; // Path to your EV data CSV file
     vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
@@ -75,6 +80,9 @@ int main() {
     // vector<AggregatedFlexOffer> afos = {agg1};
     vector<vector<double>> solution = Solver::solve(afos, spotPrices);
 
+
+
+
     cout << "\n=== Results ===\n";
     cout << "--- Optimized ---\n";
     for (auto &afo : afos) {
@@ -92,6 +100,12 @@ int main() {
 
     cout << "Total Cost (Optimized): " << total_cost << " €/kWh\n";
     cout << "=== Done ===" << endl;
+    
+    auto [powerVars, upVars, downVars, totalRevenue] = Solver::solveFCRRevenueMaximization(afos, fcr_up_prices, fcr_down_prices, spotPrices);
+    dumpFCRDataToCSV(powerVars, upVars, downVars, totalRevenue, "../data/FCR_Solution.csv");
+
+    prepareAndDumpMetrics(spotPrices, afos, "../data/metrics.csv", "../visuals/plot_metrics.py");
+
 
     vector<Flexoffer> dis_FOs = afos[0].disaggregate_to_flexoffers();
 

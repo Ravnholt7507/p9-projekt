@@ -5,19 +5,28 @@
 #include "DFO.h"
 #include <vector>
 
+using namespace std;
+
 class Solver {
 public:
     // Existing method
-    static std::vector<std::vector<double>> solve(std::vector<AggregatedFlexOffer> &afos, const std::vector<double> &prices);
+    static vector<vector<double>> solve(vector<AggregatedFlexOffer> &afos, const vector<double> &prices);
 
-    // New method for cost minimization with deviation penalties
-    std::vector<std::vector<double>> solveCostMinimization(std::vector<AggregatedFlexOffer> &afos,
-                                                           const std::vector<double> &energy_prices,
-                                                           double deviation_cost);
+    static tuple<vector<vector<double>>, vector<vector<double>>, vector<vector<double>>, double> solveFCRRevenueMaximization(
+    vector<AggregatedFlexOffer> &afos,
+    const vector<double> &up_prices,
+    const vector<double> &down_prices,
+    const vector<double> &energy_cost);
 
-    static std::vector<std::vector<double>> solve_tec(std::vector<AggregatedFlexOffer> &afos, const std::vector<double> &prices);
+    static tuple<vector<vector<double>>, double>
+    solveVolumeReductionMultiple(
+    vector<AggregatedFlexOffer> &allAFOs,
+    const vector<vector<double>> &allOrigVolumes,
+    const vector<vector<double>> &allEsch);
 
-    static void DFO_Optimization(const DFO& dfo, const std::vector<double>& cost_per_unit);
+    static vector<vector<double>> solve_tec(vector<AggregatedFlexOffer> &afos, const vector<double> &prices);
+
+    static void DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_unit);
 };
 
 #endif // SOLVER_H

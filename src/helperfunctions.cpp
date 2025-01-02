@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <iostream>
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <iomanip>
@@ -154,6 +155,34 @@ vector<double> readSpotPricesFromCSV(const string& filename) {
     return spotPrices;
 }
 
+tuple<vector<double>, vector<double>, vector<double>, vector<double>> getFRCprices(const string& filename) {
+    vector<double> UpPrices, DownPrices, UpVolume, DownVolume;
+    ifstream file(filename);
+
+    // Read each line of the CSV
+    string line;
+    if (getline(file, line)) {
+    }
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string value1, value2, value3, value4;
+
+        // Read the two comma-separated values
+        if (getline(ss, value1, ',') && getline(ss, value2, ','), getline(ss, value3, ',') && getline(ss, value4, ',')) {
+            UpPrices.push_back(stod(value1));
+            DownPrices.push_back(stod(value2));
+            UpVolume.push_back(stod(value3));
+            DownVolume.push_back(stod(value4));
+        } else {
+            cerr << "Error: Malformed line in CSV: " << line << endl;
+        }
+    }
+
+    file.close();
+    return {UpPrices, DownPrices, UpVolume, DownVolume};
+}
+
 
 // Helper to trim quotes from a string
 string trimQuotes(const string& str) {
@@ -270,4 +299,136 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
     }
 
     return flexOffers;
+}
+
+
+static vector<double> buildDailySchedule(const AggregatedFlexOffer &afo) {
+    const int DAY_HOURS = 24;
+    vector<double> daySched(DAY_HOURS, 0.0);
+    int startHour = afo.get_aggregated_earliest_hour();
+    int duration  = afo.get_duration();
+    auto aggAlloc = afo.get_scheduled_allocation();
+
+    for (int i = 0; i < duration; i++) {
+        int idx = startHour + i;
+        if (idx >= 0 && idx < DAY_HOURS) {
+            daySched[idx] += aggAlloc[i];
+        }
+    }
+
+    return daySched;
+}
+
+
+void dumpMetricsToCSV(const string& filename, const vector<string>& headers, const vector<vector<double>>& data) {
+    ofstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << filename << endl;
+        return;
+    }
+
+    // Write headers
+    for (size_t i = 0; i < headers.size(); ++i) {
+        file << headers[i];
+        if (i < headers.size() - 1) file << ",";
+    }
+    file << "\n";
+
+    // Write data row by row
+    size_t rows = data.empty() ? 0 : data[0].size();
+    for (size_t row = 0; row < rows; ++row) {
+        for (size_t col = 0; col < data.size(); ++col) {
+            file << data[col][row];
+            if (col < data.size() - 1) file << ",";
+        }
+        file << "\n";
+    }
+
+    file.close();
+    cout << "Metrics dumped to " << filename << endl;
+}
+
+void prepareAndDumpMetrics(const vector<double> &spotPrices,
+                           const vector<AggregatedFlexOffer> &afos,
+                           const string &csvFilePath,
+                           const string &pythonScriptPath)
+{
+    // We assume a single-day horizon of 24 hours (or spotPrices.size() if not 24).
+    int DAY_HOURS = spotPrices.size();
+    // Build a "withFlex" schedule by summing all aggregator day schedules
+    vector<double> withFlex(DAY_HOURS, 0.0);
+    vector<double> noFlexPower(24, 0.0);
+
+
+    for (auto &afo : afos) {
+        vector<double> daySched = buildDailySchedule(afo); // 24-hr array
+        for (int h = 0; h < DAY_HOURS; h++) {
+            withFlex[h] += daySched[h];
+        }
+    }
+
+    ofstream file(csvFilePath);
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << csvFilePath << endl;
+        return;
+    }
+
+    // Write header
+    file << "Hour,SpotPrice,WithFlexPower,WithFlexCost,";
+
+    // Fill rows
+    for (int h = 0; h < DAY_HOURS; h++) {
+        double price = spotPrices[h];
+        double flexPwr = withFlex[h];
+        double flexCost = flexPwr * price;
+
+        file << h << "," << price << "," << flexPwr << "," << flexCost << "\n";
+    }
+
+    file.close();
+    cout << "Metrics dumped to " << csvFilePath << endl;
+
+    string python_command = "python3 " + pythonScriptPath;
+    int result = system(python_command.c_str());
+    if (result != 0) {
+        cerr << "Failed to execute Python script: " << python_command << endl;
+    }
+}
+
+void dumpFCRDataToCSV(const vector<vector<double>> &powerVars,
+                   const vector<vector<double>> &upVars,
+                   const vector<vector<double>> &downVars,
+                   double totalRevenue,
+                   const string &filename)
+{
+    ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        cerr << "Error opening file: " << filename << endl;
+        return;
+    }
+
+    // Write a header row
+    outFile << "AFO,Hour,Power,UpReg,DownReg\n";
+
+    // powerVars.size() should be the number of AggregatedFlexOffers
+    int A = static_cast<int>(powerVars.size());
+    for (int a = 0; a < A; a++) {
+        // For each AFO 'a', we assume the same indexing in upVars[a] and downVars[a]
+        int duration = static_cast<int>(powerVars[a].size());
+        for (int t = 0; t < duration; t++) {
+            outFile << a << "," << t << ","<< powerVars[a][t] << ","<< upVars[a][t] << ","<< downVars[a][t] << "\n";
+        }
+    }
+
+    // Optionally, include the total revenue on a separate line at the bottom
+    outFile << "\nTotalRevenue," << totalRevenue << "\n";
+    outFile.close();
+
+    string pythonPath = "../visuals/plot_fcr.py";
+
+    string python_command = "python3 "+ pythonPath;
+    int result = system(python_command.c_str());
+    if (result != 0) {
+        cerr << "Failed to execute Python script: " << python_command << endl;
+    }
 }
