@@ -326,7 +326,7 @@ Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers){
     return least_flexible;
 }
 
-void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,std::vector<TimeSlice> &aggregated_profile,int &duration,std::vector<Flexoffer> offers,const std::vector<double> &spotPrices){
+void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,vector<TimeSlice> &aggregated_profile,int &duration,vector<Flexoffer> offers,const vector<double> &spotPrices){
     Flexoffer least_flexible = least_flexible_object(offers);
 
     aggregated_earliest = least_flexible.get_est();
@@ -387,7 +387,7 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
 }
 
 
-void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const std::vector<double> &spotPrices){
+void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const vector<double> &spotPrices){
     std::vector<TimeSlice> tmp;
     std::vector<TimeSlice> fo_profile = least_flexible.get_profile();
     int i = offset;

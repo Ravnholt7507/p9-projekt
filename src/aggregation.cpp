@@ -40,7 +40,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
 }
 
 //for tec
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers) {
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers, const vector<double> *spotPrices) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
     }
@@ -51,6 +51,8 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
         start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
     } else if (align == Alignments::balance){
         balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
+    } else if (align == Alignments::price){
+        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers, *spotPrices);
     }
 
     scheduled_allocation.resize(duration, 0.0);
@@ -66,6 +68,7 @@ time_t AggregatedFlexOffer::get_aggregated_latest() const { return aggregated_la
 time_t AggregatedFlexOffer::get_aggregated_end_time() const { return aggregated_end_time; }
 vector<TimeSlice> AggregatedFlexOffer::get_aggregated_profile() const { return aggregated_profile; }
 const vector<double>& AggregatedFlexOffer::get_scheduled_allocation() const { return scheduled_allocation; }
+time_t AggregatedFlexOffer::get_aggregated_scheduled_start_time() const {return aggregated_scheduled_start_time; }
 int AggregatedFlexOffer::get_duration() const { return duration; }
 vector<variant<Flexoffer, Tec_flexoffer>> AggregatedFlexOffer::get_individual_offers() const {return individual_offers;}
 double AggregatedFlexOffer::get_min_overall() const {return overall_min;}
@@ -93,6 +96,7 @@ void AggregatedFlexOffer::set_id(int value) { id = value; }
 void AggregatedFlexOffer::set_aggregated_earliest(time_t value) { aggregated_earliest = value; }
 void AggregatedFlexOffer::set_aggregated_latest(time_t value) { aggregated_latest = value; }
 void AggregatedFlexOffer::set_aggregated_end_time(time_t value) { aggregated_end_time = value; }
+void AggregatedFlexOffer::set_aggregated_scheduled_start_time(time_t t) {aggregated_scheduled_start_time = t;}
 void AggregatedFlexOffer::set_aggregated_profile(const vector<TimeSlice>& value) { aggregated_profile = value; scheduled_allocation.resize(value.size(),0.0); duration = (int)value.size(); }
 void AggregatedFlexOffer::set_duration(int value) { duration = value; scheduled_allocation.resize(value,0.0); }
 void AggregatedFlexOffer::set_individual_offers(const vector<variant<Flexoffer, Tec_flexoffer>>& value) {
