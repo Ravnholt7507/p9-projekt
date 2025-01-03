@@ -16,6 +16,7 @@ private:
     time_t aggregated_earliest;
     time_t aggregated_latest;
     time_t aggregated_end_time;
+    time_t aggregated_scheduled_start_time;
     vector<TimeSlice> aggregated_profile;
     vector<double> scheduled_allocation;
     vector<variant<Flexoffer, Tec_flexoffer>> individual_offers; 
@@ -26,19 +27,21 @@ private:
 public:
     // Constructor
     AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Flexoffer> &offers, const vector<double> *spotPrices = nullptr);
-    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Tec_flexoffer> &offers);
+    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Tec_flexoffer> &offers, const vector<double> *spotPrices = nullptr);
 
     // Getters
     int get_id() const;
     time_t get_aggregated_earliest() const;
     time_t get_aggregated_latest() const;
     time_t get_aggregated_end_time() const;
+    time_t get_aggregated_scheduled_start_time() const;
     vector<TimeSlice> get_aggregated_profile() const;
     const vector<double>& get_scheduled_allocation() const;
     int get_duration() const; 
     vector<variant<Flexoffer, Tec_flexoffer>> get_individual_offers() const;
     double get_min_overall() const;
     double get_max_overall() const;
+
 
     // Hour-based getters
     int get_aggregated_earliest_hour() const;
@@ -54,6 +57,7 @@ public:
     void set_scheduled_allocation(const vector<double>&);
     void set_duration(int); 
     void set_individual_offers(const vector<variant<Flexoffer, Tec_flexoffer>>&);
+    void set_aggregated_scheduled_start_time(time_t);
 
     // Utils
     void pretty_print() const;
