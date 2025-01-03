@@ -1,17 +1,22 @@
 #include <iostream>
 #include <vector>
 #include <variant> 
+#include <string>
 
-#include "../include/group.h"
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/generator.h"
 #include "../include/helperfunctions.h"
 #include "../include/tec.h"
+#include "../include/unit_test.h"
+
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
+    if(argc > 1 && find(argv, argv+argc, "--run_tests")){
+        return runUnitTests();
+    }
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);
     string fcr_prices = "../data/FCRprices.csv";
