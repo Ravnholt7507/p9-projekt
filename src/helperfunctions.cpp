@@ -218,8 +218,8 @@ void clusterFo_Group(vector<Tec_Group>& groups, int est_threshold, int lst_thres
             break;
         }
 
-        cout << "[DEBUG] Closest groups to merge: Fo_Group " << groups[bestA].getGroupId()
-                  << " and Fo_Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
+        cout << "[DEBUG] Closest groups to merge: Group " << groups[bestA].getGroupId()
+                 << " and Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
 
         Tec_Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
         MBR candidateMBR;
