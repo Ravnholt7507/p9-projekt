@@ -15,8 +15,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     if(argc > 1 && find(argv, argv+argc, "--run_tests")){
-        runUnitTests();
-        return 0;        
+        return runUnitTests();
     }
     string filename = "../data/spotprices.csv";
     vector<double> spotPrices = readSpotPricesFromCSV(filename);

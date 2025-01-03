@@ -9,14 +9,19 @@ using namespace std;
 int flexoffer();
 int tec();
 
-void runUnitTests(){
+int runUnitTests(){
+    int parsing = 0;
+    int error = 1;
+
     cout << "Running all tests:\n";
     if(flexoffer()){
        cout << "Flexoffer unit test passed.\n";
-    };
+    } else return error;
     if(tec()){
        cout << "Tec flexoffer unit test passed.\n";
-    };
+    } else return error;
+
+    return parsing;
 }
 
 int flexoffer(){

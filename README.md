@@ -8,4 +8,4 @@
 - [X] [Add balance alignment to aggregation](https://github.com/Ravnholt7507/p9-projekt/issues/34)
 - [ ] [Make start time a part of schedulling aswell](https://github.com/Ravnholt7507/p9-projekt/issues/43)
 - [ ] [Computational evaluation for the project](https://github.com/Ravnholt7507/p9-projekt/issues/29)
-- [ ] [Create a unit test framework for whole project](https://github.com/Ravnholt7507/p9-projekt/issues/28)
+- [X] [Create a unit test framework for whole project](https://github.com/Ravnholt7507/p9-projekt/issues/28)
