@@ -25,7 +25,7 @@ private:
 
 public:
     // Constructor
-    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Flexoffer> &offers);
+    AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Flexoffer> &offers, const vector<double> *spotPrices = nullptr);
     AggregatedFlexOffer(const int offer_id, const Alignments a, const vector<Tec_flexoffer> &offers);
 
     // Getters

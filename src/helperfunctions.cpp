@@ -1,6 +1,9 @@
 #include "../include/helperfunctions.h"
+#include "../include/solver.h"
 #include <algorithm>
 #include <fstream>
+#include <chrono>  
+#include <iostream>
 #include <sstream>
 #include <cmath>
 #include <limits>
@@ -241,7 +244,7 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
 
     vector<variant<Flexoffer, Tec_flexoffer>> flexOffers;
     string line;
-    getline(file, line); // Skip header line
+    getline(file, line);
 
     int offerID = 1;
     while (getline(file, line)) {
@@ -253,48 +256,43 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
             continue;
         }
 
-        try {
-            // Parse times and kWhDelivered
-            time_t connectionTime = parseDateTime(fields[2]);
-            time_t doneChargingTime = fields[4].empty() ? parseDateTime(fields[3]) : parseDateTime(fields[4]);
-            double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
+        // Parse times and kWhDelivered
+        time_t connectionTime = parseDateTime(fields[2]);
+        time_t doneChargingTime = fields[4].empty() ? parseDateTime(fields[3]) : parseDateTime(fields[4]);
+        double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
 
-            // Round connection and end times
-            connectionTime = roundToNearestHour(connectionTime);
-            doneChargingTime = roundToNearestHour(doneChargingTime);
+        // Round connection and end times
+        connectionTime = roundToNearestHour(connectionTime);
+        doneChargingTime = roundToNearestHour(doneChargingTime);
 
-            // Calculate required charging duration in hours
-            double requiredHours = ceil(kWhDelivered / 7.2); // Assuming an average charging power of 7.2 kW
-            int duration = static_cast<int>(requiredHours); // Duration in hours
-            time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
+        // Calculate required charging duration in hours
+        double requiredHours = ceil(kWhDelivered / 7.2); // Assuming an average charging power of 7.2 kW
+        int duration = static_cast<int>(requiredHours); // Duration in hours
+        time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
 
-            // Calculate latestStartTime
-            time_t latestStartTime = doneChargingTime - durationInSeconds;
-            if (latestStartTime < connectionTime) {
-                latestStartTime = connectionTime; // Ensure latestStartTime respects connectionTime
-            }
+        // Calculate latestStartTime
+        time_t latestStartTime = doneChargingTime - durationInSeconds;
+        if (latestStartTime < connectionTime) {
+            latestStartTime = connectionTime; // Ensure latestStartTime respects connectionTime
+        }
 
-            // Calculate profile for the duration
-            auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
-            vector<TimeSlice> profile(duration, {minPower, maxPower});
+        // Calculate profile for the duration
+        auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
+        vector<TimeSlice> profile(duration, {minPower, maxPower});
 
-            // Calculate actual min and max energy for the profile
-            double actualMinEnergy = minPower * duration;
-            double actualMaxEnergy = maxPower * duration;
+        // Calculate actual min and max energy for the profile
+        double actualMinEnergy = minPower * duration;
+        double actualMaxEnergy = maxPower * duration;
 
-            // Calculate TEC constraints
-            double totalMinEnergy = actualMinEnergy * 0.9; // Example: 90% of actual minimum energy
-            double totalMaxEnergy = actualMaxEnergy * 1.1; // Example: 110% of actual maximum energy
+        // Calculate TEC constraints
+        double totalMinEnergy = actualMinEnergy * 0.9;
+        double totalMaxEnergy = actualMaxEnergy * 1.1;
 
-            // Create Flexoffer or Tec_flexoffer based on type
-            if (type == 0) { // Normal Flexoffer
-                flexOffers.emplace_back(Flexoffer(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
-            } else if (type == 1) { // TEC Flexoffer
-                flexOffers.emplace_back(Tec_flexoffer(totalMinEnergy, totalMaxEnergy, offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
-            }
-
-        } catch (const exception& e) {
-            cerr << "Error processing line: " << line << " - " << e.what() << endl;
+        // Create Flexoffer or Tec_flexoffer based on type
+        if (type == 0) { // Normal Flexoffer
+            flexOffers.emplace_back(Flexoffer(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
+        } else if (type == 1) { // TEC Flexoffer
+            flexOffers.emplace_back(Tec_flexoffer(totalMinEnergy, totalMaxEnergy, offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
         }
     }
 
@@ -440,11 +438,11 @@ static int hourOfDay(time_t t) {
     return tmInfo->tm_hour;
 }
 
-static std::string to_readable_timestamp(time_t t) {
+static string to_readable_timestamp(time_t t) {
     char buffer[20];
     struct tm* timeinfo = localtime(&t);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-    return std::string(buffer);
+    return string(buffer);
 }
 
 
@@ -482,7 +480,7 @@ void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double
     for (int a = 0; a < afos.size(); a++) {
 
         time_t baseTime = afos[a].get_aggregated_earliest();
-        std::vector<Flexoffer> originalFOs = afos[a].disaggregate_to_flexoffers();
+        vector<Flexoffer> originalFOs = afos[a].disaggregate_to_flexoffers();
 
         for (auto &fo : originalFOs) {
             int fo_duration = fo.get_duration();
@@ -508,13 +506,14 @@ void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double
     outFile2.close();
 }
 
-
-vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, 
+vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
                                             int max_group_size, 
                                             int startGroupId=1)
 {
+    auto start = chrono::steady_clock::now();
+
     vector<Group> groups;
     int groupId = startGroupId;
     for (const auto &fo : allFlexoffers) {
@@ -525,11 +524,151 @@ vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFle
 
     clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
 
-    std::vector<AggregatedFlexOffer> finalAggregates;
+    vector<AggregatedFlexOffer> finalAggregates;
     finalAggregates.reserve(groups.size());
     for (auto &g : groups) {
         finalAggregates.push_back(g.createAggregatedOffer());
     }
 
+    auto end = chrono::steady_clock::now();
+    double aggregationTimeSec = chrono::duration<double>(end - start).count();
+
+    {
+        string perfPath = "../data/aggregation_performance.csv";
+        ofstream perfFile(perfPath);
+        if (!perfFile.is_open()) {
+            cerr << "Error: Cannot open " << perfPath << " for writing.\n";
+        } else {
+            perfFile << "num_flexOffers,aggregation_time\n";
+            perfFile << allFlexoffers.size() << "," << aggregationTimeSec << "\n";
+            perfFile.close();
+            cout << "[INFO] Aggregation performance written to " << perfPath << endl;
+        }
+    }
+
+    // 7) Return the final AFOs
     return finalAggregates;
+}
+
+#include <fstream>
+#include <chrono>
+
+/**
+ * @brief Computes a naive or "no aggregator" baseline cost for a vector of Flexoffers.
+ *        E.g., each Flexoffer is scheduled at earliest start, using average power.
+ *
+ * @param flexOffers   Vector of Flexoffer
+ * @param spotPrices   Vector of spot prices (hourly)
+ * @return             Total baseline cost
+ */
+double computeBaselineCost(const std::vector<Flexoffer> &flexOffers, 
+                           const std::vector<double> &spotPrices)
+{
+    double total_cost = 0.0;
+    for (const auto &fo : flexOffers) 
+    {
+        int duration = fo.get_duration();
+        auto profile = fo.get_profile();
+        for (int h = 0; h < duration; h++) {
+            double avg_power = (profile[h].min_power + profile[h].max_power) / 2.0;
+            double price = (h >= 0 && h < (int)spotPrices.size()) 
+                               ? spotPrices[h]
+                               : 0.0;
+            total_cost += avg_power * price;
+        }
+    }
+    return total_cost;
+}
+
+double computeAggregatedCost(std::vector<Flexoffer> flexOffers,
+                             int est_threshold, 
+                             int lst_threshold, 
+                             int max_group_size,
+                             const std::vector<double> &spotPrices)
+{
+    std::vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size);
+    Solver::solve(afos, spotPrices);
+
+    double total_cost = 0.0;
+    for (auto &afo : afos) {
+        const auto &sched = afo.get_scheduled_allocation();
+        int duration = afo.get_duration();
+        for (int t = 0; t < duration; t++) {
+            double power = sched[t];
+            double price = (t >= 0 && t < (int)spotPrices.size()) 
+                               ? spotPrices[t]
+                               : 0.0;
+            total_cost += power * price;
+        }
+    }
+    return total_cost;
+}
+
+void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
+                             const std::vector<double> &spotPrices)
+{
+    // Example: define a few scenario parameter combos for your aggregator
+    struct AggSetting {
+        int est_threshold;
+        int lst_threshold;
+        int max_group_size;
+    };
+
+    std::vector<AggSetting> scenarios = {
+        {1, 1, 2},
+        {2, 2, 3},
+        {2, 2, 5},
+        {3, 3, 10},
+        // etc. Add more if you like
+    };
+
+    // Compute baseline cost ONCE (no aggregator scenario)
+    double baseline_cost = computeBaselineCost(flexOffers, spotPrices);
+
+    // Prepare a CSV to store results
+    std::string csvPath = "../data/economic_savings.csv";
+    std::ofstream outFile(csvPath);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Could not open " << csvPath << " for writing.\n";
+        return;
+    }
+
+    // CSV header
+    outFile << "scenario_id,est_threshold,lst_threshold,max_group_size,baseline_cost,aggregated_cost,savings\n";
+
+    // For each scenario, compute aggregator cost, compare to baseline
+    int scenario_id = 1;
+    for (auto &setting : scenarios) {
+        // Start timer (optional, if you also want to measure aggregator performance)
+        auto start = std::chrono::steady_clock::now();
+        
+        // 1) Aggregated cost
+        double agg_cost = computeAggregatedCost(
+            flexOffers,
+            setting.est_threshold,
+            setting.lst_threshold,
+            setting.max_group_size,
+            spotPrices
+        );
+
+        // 2) Compute savings
+        double savings = baseline_cost - agg_cost;
+
+        // End timer
+        auto end = std::chrono::steady_clock::now();
+        double scenarioTimeSec = std::chrono::duration<double>(end - start).count();
+
+        // Write row to CSV
+        outFile << scenario_id << ","
+                << setting.est_threshold << ","
+                << setting.lst_threshold << ","
+                << setting.max_group_size << ","
+                << baseline_cost << ","
+                << agg_cost << ","
+                << savings << "\n";
+        scenario_id++;
+    }
+
+    outFile.close();
+    std::cout << "Wrote scenario results to " << csvPath << std::endl;
 }

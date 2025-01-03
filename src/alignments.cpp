@@ -268,7 +268,8 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Tec_flexoffer least_f
     }
 }
 
-//for fo
+
+
 Flexoffer least_flexible_object(vector<Flexoffer> &offers){
     double avg_flex{0};
     double min_flex{numeric_limits<double>::max()};
@@ -315,3 +316,125 @@ Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers){
 
     return least_flexible;
 }
+
+void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,std::vector<TimeSlice> &aggregated_profile,int &duration,std::vector<Flexoffer> offers,const std::vector<double> &spotPrices){
+    Flexoffer least_flexible = least_flexible_object(offers);
+
+    aggregated_earliest = least_flexible.get_est();
+    aggregated_latest   = least_flexible.get_lst();
+    aggregated_end_time = least_flexible.get_et();
+    aggregated_profile  = least_flexible.get_profile();
+
+    double diff_sec = difftime(aggregated_end_time, aggregated_latest);
+    duration        = static_cast<int>( std::ceil(diff_sec / 3600.0) );
+
+    while(!offers.empty())
+    {
+        least_flexible = least_flexible_object(offers);
+
+        if(aggregated_latest < least_flexible.get_est())
+        {
+            double gapSec    = difftime(least_flexible.get_est(), aggregated_latest);
+            int empty_space  = static_cast<int>( std::ceil(gapSec / 3600.0) );
+            for(int i = 0; i < empty_space; ++i)
+                aggregated_profile.push_back({0,0});
+            
+            for(auto &slice : least_flexible.get_profile())
+                aggregated_profile.push_back(slice);
+
+            aggregated_latest = least_flexible.get_lst();
+            aggregated_end_time += (least_flexible.get_duration() * 3600);
+            duration = static_cast<int>( aggregated_profile.size() );
+        }
+        else if(aggregated_earliest > least_flexible.get_lst())
+        {
+            double gapSec   = difftime(aggregated_earliest, least_flexible.get_lst());
+            int empty_space = static_cast<int>( std::ceil(gapSec / 3600.0) );
+            for(int i=0; i<empty_space; ++i)
+                aggregated_profile.insert(aggregated_profile.begin(), {0,0});
+
+            std::vector<TimeSlice> tmp = least_flexible.get_profile();
+            std::reverse(tmp.begin(), tmp.end()); 
+            for(auto &slice : tmp)
+                aggregated_profile.insert(aggregated_profile.begin(), slice);
+
+            aggregated_earliest = least_flexible.get_lst();
+            duration = static_cast<int>( aggregated_profile.size() );
+        }
+        else
+        {
+            double offsetMinSec = difftime(least_flexible.get_est(), aggregated_earliest);
+            double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
+            int offsetMin = static_cast<int>( std::floor(offsetMinSec / 3600.0) );
+            int offsetMax = static_cast<int>( std::floor(offsetMaxSec / 3600.0) );
+
+            for(int i = offsetMin; i < offsetMax; i++)
+            {
+                double best_synergy = 0;
+                calc_priceAwareAlignment(aggregated_profile,least_flexible,i,best_synergy,aggregated_earliest,aggregated_latest,aggregated_end_time,duration,spotPrices);
+            }
+        }
+    }
+}
+
+
+void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const std::vector<double> &spotPrices){
+    std::vector<TimeSlice> tmp;
+    std::vector<TimeSlice> fo_profile = least_flexible.get_profile();
+    int i = offset;
+
+    while(i < 0 && !fo_profile.empty()){
+        tmp.push_back(fo_profile.front());
+        fo_profile.erase(fo_profile.begin());
+        i++;
+    }
+
+    while(i > 0 && !aggregated_profile.empty()){
+        tmp.push_back(aggregated_profile.front());
+        aggregated_profile.erase(aggregated_profile.begin());
+        i--;
+    }
+
+    while(!fo_profile.empty() && !aggregated_profile.empty()){
+        double newMin = aggregated_profile.front().min_power + fo_profile.front().min_power;
+        double newMax = aggregated_profile.front().max_power + fo_profile.front().max_power;
+        tmp.push_back({ newMin, newMax });
+        aggregated_profile.erase(aggregated_profile.begin());
+        fo_profile.erase(fo_profile.begin());
+    }
+
+    while(!fo_profile.empty()){
+        tmp.push_back(fo_profile.front());
+        fo_profile.erase(fo_profile.begin());
+    }
+    while(!aggregated_profile.empty()){
+        tmp.push_back(aggregated_profile.front());
+        aggregated_profile.erase(aggregated_profile.begin());
+    }
+
+    // Compute price synergy
+    double synergy  = 0.0;
+    double maxPrice = 0.0;
+    for(double p : spotPrices){ //get max price
+        if(p > maxPrice) maxPrice = p;
+    }
+
+    for(size_t h = 0; h < tmp.size(); h++){
+        double avgLoad   = (tmp[h].min_power + tmp[h].max_power)*0.5;
+        int hourIndex    = (offset + h);
+        double localPrice = spotPrices[hourIndex];
+        synergy += avgLoad * (maxPrice - localPrice);
+    }
+
+    if(synergy > best_synergy){
+        best_synergy        = synergy;
+        aggregated_profile  = move(tmp);
+
+        // Rebuild aggregator time bounds
+        aggregated_earliest = min(aggregated_earliest, least_flexible.get_est());
+        aggregated_latest   = max(aggregated_latest, least_flexible.get_lst());
+        duration            = aggregated_profile.size();
+        aggregated_end_time = aggregated_latest + duration*3600;
+    }
+}
+

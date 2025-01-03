@@ -18,7 +18,7 @@ static int time_to_hour(time_t t) {
 
 //Constructors
 //for fo
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers) {
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers, const vector<double> *spotPrices) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
     }
@@ -31,6 +31,8 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
         start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
     } else if (align == Alignments::balance){
         balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
+    } else if (align == Alignments::price){
+        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers, *spotPrices);
     }
 
     scheduled_allocation.resize(duration, 0.0);
