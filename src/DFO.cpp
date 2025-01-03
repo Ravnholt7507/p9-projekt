@@ -10,7 +10,6 @@ std::ostream &operator<<(std::ostream &os, const Point &point) {
     return os;
 }
 
-
 using namespace std;
 
 // DependencyPolygon Constructor
@@ -23,20 +22,39 @@ void DependencyPolygon::add_point(double x, double y) {
 }
 
 // Generate the convex polygon based on numsamples
-void DependencyPolygon::generate_polygon() {
+void DependencyPolygon::generate_polygon(size_t i, double next_min_prev, double next_max_prev) {
+    if (i == 0 && min_prev_energy == 0 && max_prev_energy == 0) {
+        add_point(0, next_min_prev);
+        add_point(0, next_max_prev);
+        return;
+    }
+
     double step = (max_prev_energy - min_prev_energy) / (numsamples - 1);
 
     for (int i = 0; i < numsamples; i++) {
         double current_prev_energy = min_prev_energy + i * step;
 
-        double min_current_energy = 3.0 - 0.3 * current_prev_energy;
-        double max_current_energy = 14.0 - 0.3 * current_prev_energy;
+        // Calculate the min and max energy needed for the next time slice
+        double min_current_energy = max(next_min_prev - current_prev_energy, 0.0);
+        double max_current_energy = max(next_max_prev - current_prev_energy, 0.0);
 
-        // Ensure energy values are valid
-        min_current_energy = max(min_current_energy, 0.0);
-        max_current_energy = max(max_current_energy, 0.0);
+        // Add the points to the polygon
+        add_point(current_prev_energy, min_current_energy);
+        add_point(current_prev_energy, max_current_energy);
+    }
+}
 
-        // Add the points to form the polygon
+// Overload for the last timestep (no next slice)
+void DependencyPolygon::generate_last_polygon() {
+    double step = (max_prev_energy - min_prev_energy) / (numsamples - 1);
+
+    for (int i = 0; i < numsamples; i++) {
+        double current_prev_energy = min_prev_energy + i * step;
+
+        // Add arbitrary values for the last time slice
+        double min_current_energy = 0.0;
+        double max_current_energy = 10.0; // Example value
+
         add_point(current_prev_energy, min_current_energy);
         add_point(current_prev_energy, max_current_energy);
     }
@@ -62,8 +80,12 @@ DFO::DFO(int id, vector<double> min_prev, vector<double> max_prev, int numsample
 
 // Generate all dependency polygons
 void DFO::generate_dependency_polygons() {
-    for (auto &polygon : polygons) {
-        polygon.generate_polygon();
+    for (size_t i = 0; i < polygons.size(); ++i) {
+        if (i < polygons.size() - 1) {
+            polygons[i].generate_polygon(i, polygons[i + 1].min_prev_energy, polygons[i + 1].max_prev_energy);
+        } else {
+            polygons[i].generate_last_polygon(); // Last timestep
+        }
     }
 }
 

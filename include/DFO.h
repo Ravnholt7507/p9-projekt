@@ -14,7 +14,8 @@ struct Point {
 class DependencyPolygon {
     public:
         DependencyPolygon(double min_prev, double max_prev, int numsamples);
-        void generate_polygon();
+        void generate_polygon(size_t i, double next_min_prev, double next_max_prev);
+        void generate_last_polygon();
         void add_point(double x, double y);
         void print_polygon() const;
 
