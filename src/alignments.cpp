@@ -183,11 +183,13 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexi
     vector<TimeSlice> least_profile = least_flexible.get_profile();
     int i{offset};
     while(i < 0 && !least_profile.empty()){
+        cout << "FIRST!!"<< endl;
         tmp.push_back(least_profile[0]); 
         least_profile.erase(least_profile.begin());
         i++;
     }
     while(i > 0 && !aggregated_profile.empty()){
+        cout << "SECOND!!"<< endl;
         tmp.push_back(aggregated_profile[0]);
         aggregated_profile.erase(aggregated_profile.begin()); 
         i--;
@@ -196,13 +198,17 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexi
         cout << "IM IN HERE!!!!" << endl;
         tmp.push_back({aggregated_profile[0].min_power + least_profile[0].min_power, aggregated_profile[0].max_power + least_profile[0].max_power}); 
         least_profile.erase(least_profile.begin());
+        cout << aggregated_profile.size()<<endl;
         aggregated_profile.erase(aggregated_profile.begin());
+        cout << aggregated_profile.size()<<endl;
     }
     while(!least_profile.empty()){
+        cout << "THIRD!!"<<endl;
         tmp.push_back(least_profile[0]); 
         least_profile.erase(least_profile.begin());
     }
     while(!aggregated_profile.empty()){
+        cout << "FOURTH"<<endl;
         tmp.push_back(aggregated_profile[0]);
         aggregated_profile.erase(aggregated_profile.begin()); 
     }
