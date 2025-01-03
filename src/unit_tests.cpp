@@ -137,7 +137,6 @@ int nToMAggregation_unittest(){
     int max_group_size = 3;
     
     vector<AggregatedFlexOffer> afos = nToMAggregation(offers, est_threshold, lst_threshold, max_group_size, Alignments::balance, 0);
-    afos[0].pretty_print();
 
     if(afos.size() != 1){
         cout << "nToMAggregation test has failed. The size of the aggregated FO vector was "

@@ -9,7 +9,7 @@ using namespace std;
 Flexoffer least_flexible_object(vector<Flexoffer>&);
 Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers);
 vector<TimeSlice> calc_alignment(vector<TimeSlice>, Flexoffer, int, double&); 
-void calc_alignment(vector<TimeSlice>&, Tec_flexoffer, int, double&, time_t&, time_t&, time_t&, int&, double&, double&);
+vector<TimeSlice> calc_alignment(vector<TimeSlice>, Tec_flexoffer, int, double&);
 void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const std::vector<double> &spotPrices);
 void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Tec_flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,double &overall_min,double &overall_max,const vector<double> &spotPrices);
 
@@ -133,7 +133,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                     best_earliest = aggregated_earliest + (i * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();
-                    best_endtime = aggregated_latest + (duration*3600);
+                    best_endtime = aggregated_latest + ((duration-1)*3600);
                     best_profile = tmp;
                 }
             }
@@ -187,11 +187,36 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
+
+
+            time_t best_earliest;
+            time_t best_latest;
+            int best_duration;
+            time_t best_endtime;
+            vector<TimeSlice> best_profile;
             double best_result = 0;
+            double best_min;
+            double best_max;
             for(int i = offsetMin; i <= offsetMax; i++){
-                calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration, overall_min, overall_max);
+                double placeholder = best_result;
+                vector<TimeSlice> tmp = calc_alignment(aggregated_profile, least_flexible, i, best_result);
+                if(best_result > placeholder){
+                    best_earliest = aggregated_earliest + (i * 3600);
+                    best_latest = min(aggregated_latest, least_flexible.get_lst());
+                    best_duration = tmp.size();
+                    best_endtime = aggregated_latest + (duration*3600);
+                    best_profile = tmp;
+                    best_min = overall_min + least_flexible.get_min_overall_kw();
+                    best_max = overall_max + least_flexible.get_max_overall_kw();
+                }
             }
-            
+            aggregated_earliest = best_earliest;
+            aggregated_latest = best_latest;
+            duration = best_duration;
+            aggregated_end_time = best_endtime;
+            aggregated_profile = best_profile;
+            overall_min = best_min;
+            overall_max = best_max;
         }
     }
 }
@@ -238,7 +263,7 @@ vector<TimeSlice> calc_alignment(vector<TimeSlice> aggregated_profile, Flexoffer
 }
 
 //For tec
-void calc_alignment(vector<TimeSlice> &aggregated_profile, Tec_flexoffer least_flexible, int offset, double &best_result, time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, int &duration, double &overall_min, double &overall_max){
+vector<TimeSlice> calc_alignment(vector<TimeSlice> aggregated_profile, Tec_flexoffer least_flexible, int offset, double &best_result){
     vector<TimeSlice> tmp{};    
     vector<TimeSlice> least_profile = least_flexible.get_profile();
     int i{offset};
@@ -274,15 +299,8 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Tec_flexoffer least_f
 
     if(result > best_result){
         best_result = result;
-        aggregated_earliest = min(aggregated_earliest, least_flexible.get_est());
-        aggregated_latest = max(aggregated_latest, least_flexible.get_lst());
-        duration = tmp.size();
-        aggregated_end_time = aggregated_latest + (duration*3600);
-        aggregated_profile.clear();
-        aggregated_profile = tmp;
-        overall_min += least_flexible.get_min_overall_kw();
-        overall_max += least_flexible.get_max_overall_kw();
     }
+    return tmp;
 }
 
 
@@ -306,7 +324,6 @@ Flexoffer least_flexible_object(vector<Flexoffer> &offers){
         }
     }
     Flexoffer least_flexible = offers[id];  
-    least_flexible.print_flexoffer();
     offers.erase(next(offers.begin(), id));
 
     return least_flexible;
