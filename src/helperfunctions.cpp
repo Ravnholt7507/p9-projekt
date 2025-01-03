@@ -2,6 +2,8 @@
 #include "../include/solver.h"
 #include <algorithm>
 #include <fstream>
+#include <chrono>
+#include <fstream>
 #include <chrono>  
 #include <iostream>
 #include <sstream>
@@ -17,7 +19,8 @@
 
 using namespace std;
 
-void createMBR(const Group& group, MBR& mbr) {
+//For Fo
+void createMBR(const Fo_Group& group, MBR& mbr) {
     const auto& flexoffers = group.getFlexOffers();
     if (flexoffers.empty()) return;
 
@@ -37,13 +40,36 @@ void createMBR(const Group& group, MBR& mbr) {
     }
 }
 
+//For Tec
+void createMBR(const Tec_Group& group, MBR& mbr) {
+    const auto& flexoffers = group.getFlexOffers();
+    if (flexoffers.empty()) return;
+
+    mbr.min_est_hour = flexoffers.front().get_est_hour();
+    mbr.max_est_hour = flexoffers.front().get_est_hour();
+    mbr.min_lst_hour = flexoffers.front().get_lst_hour();
+    mbr.max_lst_hour = flexoffers.front().get_lst_hour();
+
+    for (const auto& fo : flexoffers) {
+        int est_hour = fo.get_est_hour();
+        int lst_hour = fo.get_lst_hour();
+
+        if (est_hour < mbr.min_est_hour) mbr.min_est_hour = est_hour;
+        if (est_hour > mbr.max_est_hour) mbr.max_est_hour = est_hour;
+        if (lst_hour < mbr.min_lst_hour) mbr.min_lst_hour = lst_hour;
+        if (lst_hour > mbr.max_lst_hour) mbr.max_lst_hour = lst_hour;
+    }
+}
+
+
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold) {
     int est_range = mbr.max_est_hour - mbr.min_est_hour;
     int lst_range = mbr.max_lst_hour - mbr.min_lst_hour;
     return est_range > est_threshold || lst_range > lst_threshold;
 }
 
-static double groupDistance(const Group& g1, const Group& g2) {
+//For Fo
+static double groupDistance(const Fo_Group& g1, const Fo_Group& g2) {
     MBR m1, m2;
     createMBR(g1, m1);
     createMBR(g2, m2);
@@ -58,8 +84,25 @@ static double groupDistance(const Group& g1, const Group& g2) {
     return sqrt(dx*dx + dy*dy);
 }
 
-static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
-    Group merged(newGroupId);
+//for Tec
+static double groupDistance(const Tec_Group& g1, const Tec_Group& g2) {
+    MBR m1, m2;
+    createMBR(g1, m1);
+    createMBR(g2, m2);
+
+    double c1_est = (m1.min_est_hour + m1.max_est_hour) / 2.0;
+    double c1_lst = (m1.min_lst_hour + m1.max_lst_hour) / 2.0;
+    double c2_est = (m2.min_est_hour + m2.max_est_hour) / 2.0;
+    double c2_lst = (m2.min_lst_hour + m2.max_lst_hour) / 2.0;
+
+    double dx = c2_est - c1_est;
+    double dy = c2_lst - c1_lst;
+    return sqrt(dx*dx + dy*dy);
+}
+
+//For Fo
+static Fo_Group mergeGroups(const Fo_Group& g1, const Fo_Group& g2, int newGroupId) {
+    Fo_Group merged(newGroupId);
     for (const auto& fo : g1.getFlexOffers()) {
         merged.addFlexOffer(fo);
     }
@@ -69,7 +112,20 @@ static Group mergeGroups(const Group& g1, const Group& g2, int newGroupId) {
     return merged;
 }
 
-void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
+//For Tec
+static Tec_Group mergeGroups(const Tec_Group& g1, const Tec_Group& g2, int newGroupId) {
+    Tec_Group merged(newGroupId);
+    for (const auto& fo : g1.getFlexOffers()) {
+        merged.addFlexOffer(fo);
+    }
+    for (const auto& fo : g2.getFlexOffers()) {
+        merged.addFlexOffer(fo);
+    }
+    return merged;
+}
+
+//For Fo
+void clusterFo_Group(vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
     if (groups.size() <= 1) return;
 
     bool merged = true;
@@ -100,10 +156,72 @@ void clusterGroup(vector<Group>& groups, int est_threshold, int lst_threshold, i
             break;
         }
 
-        cout << "[DEBUG] Closest groups to merge: Group " << groups[bestA].getGroupId()
-                  << " and Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
+        cout << "[DEBUG] Closest groups to merge: Fo_Group " << groups[bestA].getGroupId()
+                  << " and Fo_Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
 
-        Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
+        Fo_Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
+        MBR candidateMBR;
+        createMBR(candidate, candidateMBR);
+
+        bool thresholdOK = !exceedsThreshold(candidateMBR, est_threshold, lst_threshold);
+        bool sizeOK = (int)candidate.getFlexOffers().size() <= max_group_size;
+
+        if (thresholdOK && sizeOK) {
+            cout << "[DEBUG] Merging groups " << groups[bestA].getGroupId() << " and " << groups[bestB].getGroupId() << " into new Group " << candidate.getGroupId() << "\n";
+            if (bestA > bestB) swap(bestA, bestB);
+            groups.erase(groups.begin() + bestB);
+            groups.erase(groups.begin() + bestA);
+            groups.push_back(candidate);
+            merged = true;
+        } else {
+            cout << "[DEBUG] Cannot merge these two groups due to " 
+                      << (thresholdOK ? "" : "threshold violation ") 
+                      << (thresholdOK && !sizeOK ? "and " : "") 
+                      << (!sizeOK ? "max group size exceeded" : "")
+                      << ". Stopping.\n";
+            merged = false;
+        }
+    }
+
+    cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
+}
+
+//For tec
+void clusterFo_Group(vector<Tec_Group>& groups, int est_threshold, int lst_threshold, int max_group_size) {
+    if (groups.size() <= 1) return;
+
+    bool merged = true;
+    int nextGroupId = 1000;
+
+    cout << "[DEBUG] Starting bottom-up hierarchical clustering...\n";
+    cout << "[DEBUG] Initial number of groups: " << groups.size() << "\n";
+
+    while (merged && groups.size() > 1) {
+        merged = false;
+        double minDist = numeric_limits<double>::max();
+        int bestA = -1, bestB = -1;
+
+        // Find the two closest groups
+        for (size_t i = 0; i < groups.size(); ++i) {
+            for (size_t j = i + 1; j < groups.size(); ++j) {
+                double dist = groupDistance(groups[i], groups[j]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    bestA = (int)i;
+                    bestB = (int)j;
+                }
+            }
+        }
+
+        if (bestA == -1 || bestB == -1) {
+            cout << "[DEBUG] No pairs found for merging.\n";
+            break;
+        }
+
+        cout << "[DEBUG] Closest groups to merge: Fo_Group " << groups[bestA].getGroupId()
+                  << " and Fo_Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
+
+        Tec_Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
         MBR candidateMBR;
         createMBR(candidate, candidateMBR);
 
@@ -285,8 +403,8 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
         double actualMaxEnergy = maxPower * duration;
 
         // Calculate TEC constraints
-        double totalMinEnergy = actualMinEnergy * 0.9;
-        double totalMaxEnergy = actualMaxEnergy * 1.1;
+        double totalMinEnergy = actualMinEnergy * 1.1; // Example: 90% of actual minimum energy
+        double totalMaxEnergy = actualMaxEnergy * 1.2; // Example: 110% of actual maximum energy
 
         // Create Flexoffer or Tec_flexoffer based on type
         if (type == 0) { // Normal Flexoffer
@@ -438,14 +556,6 @@ static int hourOfDay(time_t t) {
     return tmInfo->tm_hour;
 }
 
-static string to_readable_timestamp(time_t t) {
-    char buffer[20];
-    struct tm* timeinfo = localtime(&t);
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-    return string(buffer);
-}
-
-
 void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double> &spotPrices, const string &aggCsvPath, const string &disCsvPath) {
     ofstream outFile(aggCsvPath);
     outFile << "AggregatorID,Hour,ScheduledPower,Cost\n";
@@ -477,9 +587,8 @@ void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double
     ofstream outFile2(disCsvPath);
     outFile2 << "AggregatorID,FlexOfferID,Hour,ScheduledPower,Cost\n";
 
-    for (int a = 0; a < afos.size(); a++) {
+    for (size_t a = 0; a < afos.size(); a++) {
 
-        time_t baseTime = afos[a].get_aggregated_earliest();
         vector<Flexoffer> originalFOs = afos[a].disaggregate_to_flexoffers();
 
         for (auto &fo : originalFOs) {
@@ -506,28 +615,29 @@ void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double
     outFile2.close();
 }
 
+//For FO
 vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
-                                            int max_group_size, 
-                                            int startGroupId=1)
+                                            int max_group_size,
+                                            Alignments align, 
+                                            int startFo_GroupId=1)
 {
     auto start = chrono::steady_clock::now();
-
-    vector<Group> groups;
-    int groupId = startGroupId;
+    vector<Fo_Group> groups;
+    int groupId = startFo_GroupId;
     for (const auto &fo : allFlexoffers) {
-        Group g(groupId++);
+        Fo_Group g(groupId++);
         g.addFlexOffer(fo);
         groups.push_back(g);
     }
 
-    clusterGroup(groups, est_threshold, lst_threshold, max_group_size);
+    clusterFo_Group(groups, est_threshold, lst_threshold, max_group_size);
 
     vector<AggregatedFlexOffer> finalAggregates;
     finalAggregates.reserve(groups.size());
     for (auto &g : groups) {
-        finalAggregates.push_back(g.createAggregatedOffer());
+        finalAggregates.push_back(g.createAggregatedOffer(align));
     }
 
     auto end = chrono::steady_clock::now();
@@ -550,8 +660,6 @@ vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffe
     return finalAggregates;
 }
 
-#include <fstream>
-#include <chrono>
 
 /**
  * @brief Computes a naive or "no aggregator" baseline cost for a vector of Flexoffers.
@@ -584,9 +692,10 @@ double computeAggregatedCost(std::vector<Flexoffer> flexOffers,
                              int est_threshold, 
                              int lst_threshold, 
                              int max_group_size,
+                             Alignments align,
                              const std::vector<double> &spotPrices)
 {
-    std::vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size);
+    std::vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align);
     Solver::solve(afos, spotPrices);
 
     double total_cost = 0.0;
@@ -605,7 +714,7 @@ double computeAggregatedCost(std::vector<Flexoffer> flexOffers,
 }
 
 void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
-                             const std::vector<double> &spotPrices)
+                             const std::vector<double> &spotPrices, Alignments align)
 {
     // Example: define a few scenario parameter combos for your aggregator
     struct AggSetting {
@@ -648,6 +757,7 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
             setting.est_threshold,
             setting.lst_threshold,
             setting.max_group_size,
+            align,
             spotPrices
         );
 
@@ -656,7 +766,6 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
 
         // End timer
         auto end = std::chrono::steady_clock::now();
-        double scenarioTimeSec = std::chrono::duration<double>(end - start).count();
 
         // Write row to CSV
         outFile << scenario_id << ","
@@ -671,4 +780,31 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
 
     outFile.close();
     std::cout << "Wrote scenario results to " << csvPath << std::endl;
+}
+    //
+//For tec
+vector<AggregatedFlexOffer> nToMAggregation(const vector<Tec_flexoffer> &allFlexoffers, 
+                                            int est_threshold, 
+                                            int lst_threshold, 
+                                            int max_group_size, 
+                                            Alignments align,
+                                            int startFo_GroupId=1)
+{
+    vector<Tec_Group> groups;
+    int groupId = startFo_GroupId;
+    for (const auto &fo : allFlexoffers) {
+        Tec_Group g(groupId++);
+        g.addFlexOffer(fo);
+        groups.push_back(g);
+    }
+
+    clusterFo_Group(groups, est_threshold, lst_threshold, max_group_size);
+
+    vector<AggregatedFlexOffer> finalAggregates;
+    finalAggregates.reserve(groups.size());
+    for (auto &g : groups) {
+        finalAggregates.push_back(g.createAggregatedOffer(align));
+    }
+
+    return finalAggregates;
 }

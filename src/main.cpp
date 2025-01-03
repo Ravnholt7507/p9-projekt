@@ -28,34 +28,44 @@ int main(int argc, char *argv[]) {
     vector<double> fcr_down_volumes = get<3>(result);
 
     string evDataFile = "../data/ev_data.csv"; // Path to your EV data CSV file
-    vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 0);
-    vector<Flexoffer> flexOffers;
+    vector<variant<Flexoffer, Tec_flexoffer>> ParsedOffers = parseEVDataToFlexOffers(evDataFile, 1);
 
     // AggregatedFlexOffer agg1(0, Alignments::start, flexOffers);
     int est_threshold  = 2;
     int lst_threshold  = 2;
     int max_group_size = 3;
-
+    vector<AggregatedFlexOffer> afos;
     if(holds_alternative<Flexoffer>(ParsedOffers.front())) {
+        vector<Flexoffer> flexOffers;
         for (auto offer : ParsedOffers){
             flexOffers.push_back(get<Flexoffer>(offer));
         }
-    } else {
+        for (auto fo : flexOffers) {
+            fo.print_flexoffer();
+        }
+        afos = nToMAggregation(flexOffers,
+                est_threshold,
+                lst_threshold,
+                max_group_size,
+                Alignments::balance,
+                0);
+        vector<vector<double>> solution = Solver::solve(afos, spotPrices);
+    } else if(holds_alternative<Tec_flexoffer>(ParsedOffers.front())){
+        vector<Tec_flexoffer> flexOffers;
         for (auto offer : ParsedOffers){
             flexOffers.push_back(get<Tec_flexoffer>(offer));
         }
+        for (auto fo : flexOffers) {
+            fo.print_flexoffer();
+        }
+        afos = nToMAggregation(flexOffers,
+                est_threshold,
+                lst_threshold,
+                max_group_size,
+                Alignments::balance,
+                0);
+        vector<vector<double>> solution = Solver::solve_tec(afos, spotPrices);
     }
-
-    for (auto fo : flexOffers) {
-        fo.print_flexoffer();
-    }
-
-    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, 0);
-
-    vector<vector<double>> solution = Solver::solve(afos, spotPrices);
-
-
-
 
     cout << "\n=== Results ===\n";
     cout << "--- Optimized ---\n";

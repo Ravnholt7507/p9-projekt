@@ -5,22 +5,40 @@
 #include "flexoffer.h"
 #include "aggregation.h"
 
-class Group {
+using namespace std;
+class Fo_Group {
 private:
     int id;
     std::vector<Flexoffer> flexoffers;
 
 public:
-    Group(int group_id);
+    Fo_Group(int group_id);
 
     void addFlexOffer(const Flexoffer &fo);
     const vector<Flexoffer>& getFlexOffers() const;
 
-    AggregatedFlexOffer createAggregatedOffer() const;
+    AggregatedFlexOffer createAggregatedOffer(Alignments) const;
 
-    void printAggregatedOffer() const;
+    void printAggregatedOffer(Alignments) const;
 
     int getGroupId() const;
 };
 
+class Tec_Group {
+private:
+    int id;
+    std::vector<Tec_flexoffer> flexoffers;
+
+public:
+    Tec_Group(int group_id);
+
+    void addFlexOffer(const Tec_flexoffer &fo);
+    const vector<Tec_flexoffer>& getFlexOffers() const;
+
+    AggregatedFlexOffer createAggregatedOffer(Alignments) const;
+
+    void printAggregatedOffer(Alignments) const;
+
+    int getGroupId() const;
+};
 #endif // GROUP_H

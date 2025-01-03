@@ -1,26 +1,50 @@
 #include "../include/group.h"
 #include "../include/alignments.h"
 
-Group::Group(int group_id) : id(group_id) {
+Fo_Group::Fo_Group(int group_id) : id(group_id) {
 }
 
-void Group::addFlexOffer(const Flexoffer& fo) {
+void Fo_Group::addFlexOffer(const Flexoffer& fo) {
     flexoffers.push_back(fo);
 }
 
-const std::vector<Flexoffer>& Group::getFlexOffers() const {
+const std::vector<Flexoffer>& Fo_Group::getFlexOffers() const {
     return flexoffers;
 }
 
-AggregatedFlexOffer Group::createAggregatedOffer() const {
-    return AggregatedFlexOffer(id, Alignments::balance, flexoffers);
+AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments allign) const {
+    return AggregatedFlexOffer(id, allign, flexoffers);
 }
 
-void Group::printAggregatedOffer() const {
-    auto agg = createAggregatedOffer();
+void Fo_Group::printAggregatedOffer(Alignments align) const {
+    auto agg = createAggregatedOffer(align);
     agg.pretty_print();
 }
 
-int Group::getGroupId() const {
+int Fo_Group::getGroupId() const {
+    return id;
+}
+
+Tec_Group::Tec_Group(int group_id) : id(group_id) {
+}
+
+void Tec_Group::addFlexOffer(const Tec_flexoffer& fo) {
+    flexoffers.push_back(fo);
+}
+
+const std::vector<Tec_flexoffer>& Tec_Group::getFlexOffers() const {
+    return flexoffers;
+}
+
+AggregatedFlexOffer Tec_Group::createAggregatedOffer(Alignments align) const {
+    return AggregatedFlexOffer(id, align, flexoffers);
+}
+
+void Tec_Group::printAggregatedOffer(Alignments align) const {
+    auto agg = createAggregatedOffer(align);
+    agg.pretty_print();
+}
+
+int Tec_Group::getGroupId() const {
     return id;
 }

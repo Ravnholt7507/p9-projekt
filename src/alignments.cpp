@@ -10,6 +10,7 @@ Flexoffer least_flexible_object(vector<Flexoffer>&);
 Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers);
 void calc_alignment(vector<TimeSlice>&, Flexoffer, int, double&, time_t&, time_t&, time_t&, int&);
 void calc_alignment(vector<TimeSlice>&, Tec_flexoffer, int, double&, time_t&, time_t&, time_t&, int&, double&, double&);
+void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const std::vector<double> &spotPrices);
 
 //for fo
 void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, vector<TimeSlice> &aggregated_profile, int &duration, const vector<Flexoffer> &offers){
@@ -371,7 +372,7 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             for(int i = offsetMin; i < offsetMax; i++)
             {
                 double best_synergy = 0;
-                calc_priceAwareAlignment(aggregated_profile,least_flexible,i,best_synergy,aggregated_earliest,aggregated_latest,aggregated_end_time,duration,spotPrices);
+                calc_priceAwareAlignment(aggregated_profile, least_flexible, i, best_synergy, aggregated_earliest, aggregated_latest, aggregated_end_time, duration,spotPrices);
             }
         }
     }

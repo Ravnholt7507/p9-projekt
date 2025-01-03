@@ -140,6 +140,10 @@ void AggregatedFlexOffer::pretty_print() const {
         cout << "  Hour " << i << " (" << to_readable(t) << "): "
              << "Power=" << scheduled_allocation[i] << " kW" << endl;
     }
+    if(overall_max > 0){
+        cout << "Overall min: " << overall_min << endl;
+        cout << "Overall max: " << overall_max << endl;
+    }
     cout << "==============================" << endl;
 }
 
