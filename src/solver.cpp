@@ -4,7 +4,6 @@
 #include <algorithm>
 
 #include "../include/solver.h"
-#include "../include/tec.h"
 #include "../include/aggregation.h"
 
 using namespace std;
