@@ -110,7 +110,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             int empty_space = (int) ceil(diff_sec / 3600.0);
             for(int i = 0; i < empty_space; i++) aggregated_profile.insert(aggregated_profile.begin(), {0,0});
             vector<TimeSlice> tmp = least_flexible.get_profile();
-            reverse(tmp.begin(), tmp.begin());
+            reverse(tmp.begin(), tmp.end());
             for(auto slice : tmp) aggregated_profile.insert(aggregated_profile.begin(), slice);
             aggregated_earliest = least_flexible.get_lst();
             duration = aggregated_profile.size();
@@ -119,7 +119,8 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
-            for(int i = offsetMin; i < offsetMax; i++){
+            cout << "OFFSET MIN IS " <<  offsetMin << " AND OFFSET MAX IS " << offsetMax << endl;
+            for(int i = offsetMin; i <= offsetMax; i++){
                 double best_result = 0;
                 calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration);
             }
@@ -157,7 +158,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             int empty_space = (int) ceil(diff_sec / 3600.0);
             for(int i = 0; i < empty_space; i++) aggregated_profile.insert(aggregated_profile.begin(), {0,0});
             vector<TimeSlice> tmp = least_flexible.get_profile();
-            reverse(tmp.begin(), tmp.begin());
+            reverse(tmp.begin(), tmp.end());
             for(auto slice : tmp) aggregated_profile.insert(aggregated_profile.begin(), slice);
             aggregated_earliest = least_flexible.get_lst();
             duration = aggregated_profile.size();
@@ -168,7 +169,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
-            for(int i = offsetMin; i < offsetMax; i++){
+            for(int i = offsetMin; i <= offsetMax; i++){
                 double best_result = 0;
                 calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration, overall_min, overall_max);
             }
@@ -192,6 +193,7 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexi
         i--;
     }
     while(!least_profile.empty() && !aggregated_profile.empty()){
+        cout << "IM IN HERE!!!!" << endl;
         tmp.push_back({aggregated_profile[0].min_power + least_profile[0].min_power, aggregated_profile[0].max_power + least_profile[0].max_power}); 
         least_profile.erase(least_profile.begin());
         aggregated_profile.erase(aggregated_profile.begin());
@@ -211,10 +213,12 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexi
     } 
     result /= tmp.size();
 
+    cout << "Run was " << result << endl;
     if(result > best_result){
+        cout << "i updated stuff" << endl;
         best_result = result;
-        aggregated_earliest = min(aggregated_earliest, least_flexible.get_est());
-        aggregated_latest = max(aggregated_latest, least_flexible.get_lst());
+        aggregated_earliest += (offset * 3600);
+        aggregated_latest = min(aggregated_latest, least_flexible.get_lst());
         duration = tmp.size();
         aggregated_end_time = aggregated_latest + (duration*3600);
         aggregated_profile.clear();
@@ -271,7 +275,7 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Tec_flexoffer least_f
 }
 
 
-
+//for Fo
 Flexoffer least_flexible_object(vector<Flexoffer> &offers){
     double avg_flex{0};
     double min_flex{numeric_limits<double>::max()};
@@ -281,15 +285,17 @@ Flexoffer least_flexible_object(vector<Flexoffer> &offers){
         avg_flex = 0; 
 
         for(const auto& slice : offers[i].get_profile()){
-            avg_flex += slice.max_power/2; 
+            avg_flex += slice.max_power; 
         }        
+        avg_flex /= offers[i].get_profile().size();
 
-        if(avg_flex < min_flex){
+        if(avg_flex <= min_flex){
             min_flex = avg_flex;
             id = i;
         }
     }
     Flexoffer least_flexible = offers[id];  
+    least_flexible.print_flexoffer();
     offers.erase(next(offers.begin(), id));
 
     return least_flexible;
@@ -305,8 +311,9 @@ Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers){
         avg_flex = 0; 
 
         for(const auto& slice : offers[i].get_profile()){
-            avg_flex += slice.max_power/2; 
+            avg_flex += slice.max_power; 
         }        
+        avg_flex /= offers[i].get_profile().size();
 
         if(avg_flex < min_flex){
             min_flex = avg_flex;

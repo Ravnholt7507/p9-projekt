@@ -131,8 +131,6 @@ void clusterFo_Group(vector<Fo_Group>& groups, int est_threshold, int lst_thresh
     bool merged = true;
     int nextGroupId = 1000;
 
-    cout << "[DEBUG] Starting bottom-up hierarchical clustering...\n";
-    cout << "[DEBUG] Initial number of groups: " << groups.size() << "\n";
 
     while (merged && groups.size() > 1) {
         merged = false;
@@ -152,12 +150,8 @@ void clusterFo_Group(vector<Fo_Group>& groups, int est_threshold, int lst_thresh
         }
 
         if (bestA == -1 || bestB == -1) {
-            cout << "[DEBUG] No pairs found for merging.\n";
             break;
         }
-
-        cout << "[DEBUG] Closest groups to merge: Fo_Group " << groups[bestA].getGroupId()
-                  << " and Fo_Group " << groups[bestB].getGroupId() << " with distance " << minDist << "\n";
 
         Fo_Group candidate = mergeGroups(groups[bestA], groups[bestB], nextGroupId++);
         MBR candidateMBR;
@@ -167,23 +161,16 @@ void clusterFo_Group(vector<Fo_Group>& groups, int est_threshold, int lst_thresh
         bool sizeOK = (int)candidate.getFlexOffers().size() <= max_group_size;
 
         if (thresholdOK && sizeOK) {
-            cout << "[DEBUG] Merging groups " << groups[bestA].getGroupId() << " and " << groups[bestB].getGroupId() << " into new Group " << candidate.getGroupId() << "\n";
             if (bestA > bestB) swap(bestA, bestB);
             groups.erase(groups.begin() + bestB);
             groups.erase(groups.begin() + bestA);
             groups.push_back(candidate);
             merged = true;
         } else {
-            cout << "[DEBUG] Cannot merge these two groups due to " 
-                      << (thresholdOK ? "" : "threshold violation ") 
-                      << (thresholdOK && !sizeOK ? "and " : "") 
-                      << (!sizeOK ? "max group size exceeded" : "")
-                      << ". Stopping.\n";
             merged = false;
         }
     }
 
-    cout << "[DEBUG] Clustering complete. Final number of groups: " << groups.size() << "\n";
 }
 
 //For tec
@@ -652,7 +639,6 @@ vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffe
             perfFile << "num_flexOffers,aggregation_time\n";
             perfFile << allFlexoffers.size() << "," << aggregationTimeSec << "\n";
             perfFile.close();
-            cout << "[INFO] Aggregation performance written to " << perfPath << endl;
         }
     }
 

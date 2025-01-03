@@ -25,8 +25,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
 
     id = offer_id;
 
-    cout << "=== Aggregating FlexOffers for AFO ID " << id << " ===" << endl;
-
     if(align == Alignments::start){
         start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
     } else if (align == Alignments::balance){
@@ -48,8 +46,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     }
 
     id = offer_id;
-
-    cout << "=== Aggregating FlexOffers for AFO ID " << id << " ===" << endl;
 
     if(align == Alignments::start){
         start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
