@@ -8,7 +8,7 @@ using namespace std;
 
 Flexoffer least_flexible_object(vector<Flexoffer>&);
 Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers);
-void calc_alignment(vector<TimeSlice>&, Flexoffer, int, double&, time_t&, time_t&, time_t&, int&);
+vector<TimeSlice> calc_alignment(vector<TimeSlice>, Flexoffer, int, double&); 
 void calc_alignment(vector<TimeSlice>&, Tec_flexoffer, int, double&, time_t&, time_t&, time_t&, int&, double&, double&);
 void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,const std::vector<double> &spotPrices);
 void calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile,const Tec_flexoffer &least_flexible,int offset,double &best_synergy,time_t &aggregated_earliest,time_t &aggregated_latest,time_t &aggregated_end_time,int &duration,double &overall_min,double &overall_max,const vector<double> &spotPrices);
@@ -119,11 +119,29 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
-            cout << "OFFSET MIN IS " <<  offsetMin << " AND OFFSET MAX IS " << offsetMax << endl;
+            double best_result = 0;
+
+            time_t best_earliest;
+            time_t best_latest;
+            int best_duration;
+            time_t best_endtime;
+            vector<TimeSlice> best_profile;
             for(int i = offsetMin; i <= offsetMax; i++){
-                double best_result = 0;
-                calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration);
+                double placeholder = best_result;
+                vector<TimeSlice> tmp = calc_alignment(aggregated_profile, least_flexible, i, best_result);
+                if(best_result > placeholder){
+                    best_earliest = aggregated_earliest + (i * 3600);
+                    best_latest = min(aggregated_latest, least_flexible.get_lst());
+                    best_duration = tmp.size();
+                    best_endtime = aggregated_latest + (duration*3600);
+                    best_profile = tmp;
+                }
             }
+            aggregated_earliest = best_earliest;
+            aggregated_latest = best_latest;
+            duration = best_duration;
+            aggregated_end_time = best_endtime;
+            aggregated_profile = best_profile;
         }
     }
 }
@@ -169,46 +187,40 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
+            double best_result = 0;
             for(int i = offsetMin; i <= offsetMax; i++){
-                double best_result = 0;
                 calc_alignment(aggregated_profile, least_flexible, i, best_result, aggregated_earliest, aggregated_latest, aggregated_end_time, duration, overall_min, overall_max);
             }
+            
         }
     }
 }
 
 //for fo
-void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexible, int offset, double &best_result, time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, int &duration){
+vector<TimeSlice> calc_alignment(vector<TimeSlice> aggregated_profile, Flexoffer least_flexible, int offset, double &best_result){
     vector<TimeSlice> tmp{};    
     vector<TimeSlice> least_profile = least_flexible.get_profile();
     int i{offset};
     while(i < 0 && !least_profile.empty()){
-        cout << "FIRST!!"<< endl;
         tmp.push_back(least_profile[0]); 
         least_profile.erase(least_profile.begin());
         i++;
     }
     while(i > 0 && !aggregated_profile.empty()){
-        cout << "SECOND!!"<< endl;
         tmp.push_back(aggregated_profile[0]);
         aggregated_profile.erase(aggregated_profile.begin()); 
         i--;
     }
     while(!least_profile.empty() && !aggregated_profile.empty()){
-        cout << "IM IN HERE!!!!" << endl;
         tmp.push_back({aggregated_profile[0].min_power + least_profile[0].min_power, aggregated_profile[0].max_power + least_profile[0].max_power}); 
         least_profile.erase(least_profile.begin());
-        cout << aggregated_profile.size()<<endl;
         aggregated_profile.erase(aggregated_profile.begin());
-        cout << aggregated_profile.size()<<endl;
     }
     while(!least_profile.empty()){
-        cout << "THIRD!!"<<endl;
         tmp.push_back(least_profile[0]); 
         least_profile.erase(least_profile.begin());
     }
     while(!aggregated_profile.empty()){
-        cout << "FOURTH"<<endl;
         tmp.push_back(aggregated_profile[0]);
         aggregated_profile.erase(aggregated_profile.begin()); 
     }
@@ -219,17 +231,10 @@ void calc_alignment(vector<TimeSlice> &aggregated_profile, Flexoffer least_flexi
     } 
     result /= tmp.size();
 
-    cout << "Run was " << result << endl;
     if(result > best_result){
-        cout << "i updated stuff" << endl;
         best_result = result;
-        aggregated_earliest += (offset * 3600);
-        aggregated_latest = min(aggregated_latest, least_flexible.get_lst());
-        duration = tmp.size();
-        aggregated_end_time = aggregated_latest + (duration*3600);
-        aggregated_profile.clear();
-        aggregated_profile = tmp;
     }
+    return tmp;
 }
 
 //For tec
