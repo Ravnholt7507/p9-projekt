@@ -22,6 +22,7 @@ void createMBR(const Tec_Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 void clusterGroup(std::vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 void clusterGroup(std::vector<Tec_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
+time_t roundToNearestHour(time_t raw_time);
 std::vector<double> readSpotPricesFromCSV(const string& filename);
 vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type);
 void dumpMetricsToCSV(const std::string& filename, const std::vector<std::string>& headers, const std::vector<std::vector<double>>& data);
@@ -31,5 +32,6 @@ void dumpFCRDataToCSV(const vector<vector<double>> &powerVars,const vector<vecto
 void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double> &spotPrices, const string &aggCsvPath, const string &disCsvPath);
 vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
 vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
+
 
 #endif // HELPERFUNCTION_H

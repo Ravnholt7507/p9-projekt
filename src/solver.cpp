@@ -5,8 +5,15 @@
 
 #include "../include/solver.h"
 #include "../include/aggregation.h"
+#include "../include/helperfunctions.h"
 
 using namespace std;
+
+static int hourOfDay(time_t t) {
+    struct tm* tmInfo = localtime(&t);
+    return tmInfo->tm_hour;
+}
+
 
 ILOSTLBEGIN
 
@@ -72,6 +79,19 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
             solution[a][t] = cplex.getValue(powerVars[a][t]);
         }
         afos[a].apply_schedule(solution[a]);
+        int firstNonZero = -1;
+        for (int t = 0; t < duration; t++) {
+            if (solution[a][t] > 0) {
+                firstNonZero = t;
+                break;
+            }
+        }
+        if (firstNonZero > 0) {
+            time_t scheduled_start = afos[a].get_aggregated_earliest() + (firstNonZero * 3600);
+            afos[a].set_aggregated_scheduled_start_time(scheduled_start);
+        } else {
+            afos[a].set_aggregated_scheduled_start_time(afos[a].get_aggregated_earliest());
+        }
     }
 
     // Print results
@@ -459,11 +479,25 @@ vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, cons
             solution[a][t] = cplex.getValue(powerVars[a][t]);
         }
         afos[a].apply_schedule(solution[a]);
+        int firstNonZero = -1;
+        for (int t = 0; t < duration; t++) {
+            if (solution[a][t] > 0) {
+                firstNonZero = t;
+                break;
+            }
+        }
+        if (firstNonZero > 0) {
+            time_t scheduled_start = afos[a].get_aggregated_earliest() + (firstNonZero * 3600);
+            afos[a].set_aggregated_scheduled_start_time(scheduled_start);
+        } else {
+            afos[a].set_aggregated_scheduled_start_time(afos[a].get_aggregated_earliest());
+        }
     }
 
-    // Print results
+
     for (int a = 0; a < A; a++) {
         cout << "AggregatedFlexOffer " << a << " scheduled power:" << endl;
+        cout << "Scheduled start time " << hourOfDay(afos[a].get_aggregated_scheduled_start_time()) << endl;
         for (int t = 0; t < afos[a].get_duration(); t++) {
             cout << "  Hour " << t << ": " << solution[a][t] << " kW" << endl;
         }
