@@ -150,8 +150,7 @@ void AggregatedFlexOffer::pretty_print() const {
 
 
 vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
-    // Compute fraction of allocation for each aggregated timeslice
-    std::vector<double> fraction(duration, 0.0);
+    vector<double> fraction(duration, 0.0);
     for (int i = 0; i < duration; i++) {
         double denom = aggregated_profile[i].max_power - aggregated_profile[i].min_power;
         fraction[i] = (scheduled_allocation[i] - aggregated_profile[i].min_power) / denom;
@@ -160,9 +159,8 @@ vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
     }
 
     // Disaggregate to each original Flexoffer
-    std::vector<Flexoffer> result;
-
-    time_t aggregated_schedule_start = aggregated_earliest;
+    vector<Flexoffer> result;
+    time_t aggregator_start = this->aggregated_scheduled_start_time;
 
     for (auto &vfo : individual_offers) {
         Flexoffer f;
@@ -173,14 +171,14 @@ vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
             f = get<Tec_flexoffer>(vfo);
         }
 
-        double start_diff_sec = difftime(f.get_lst(), aggregated_latest);
-        int start_hour = (int)std::floor(start_diff_sec / 3600.0);
+        double start_diff_sec = difftime(f.get_est(), aggregator_start);
+        int offSetHour = (int)std::floor(start_diff_sec / 3600.0);
 
-        std::vector<double> f_scheduled_allocation((size_t)f.get_duration(), 0.0);
-
+        vector<double> f_scheduled_allocation((size_t)f.get_duration(), 0.0);
         auto f_profile = f.get_profile();
+
         for (int h = 0; h < f.get_duration(); h++) {
-            int idx = start_hour + h;
+            int idx = offSetHour + h;
             if (idx >= 0 && idx < duration) {
                 double f_min = f_profile[h].min_power;
                 double f_max = f_profile[h].max_power;
@@ -188,8 +186,7 @@ vector<Flexoffer> AggregatedFlexOffer::disaggregate_to_flexoffers() {
                 f_scheduled_allocation[h] = f_min + denom * fraction[idx];
             }
         }
-
-        time_t f_scheduled_start = aggregated_schedule_start + (start_hour * 3600);
+        time_t f_scheduled_start = aggregator_start + (offSetHour * 3600);
 
         f.set_scheduled_allocation(f_scheduled_allocation);
         f.set_scheduled_start_time(f_scheduled_start);
