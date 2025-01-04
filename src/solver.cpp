@@ -5,7 +5,6 @@
 
 #include "../include/solver.h"
 #include "../include/aggregation.h"
-#include "../include/helperfunctions.h"
 
 using namespace std;
 
@@ -13,7 +12,6 @@ static int hourOfDay(time_t t) {
     struct tm* tmInfo = localtime(&t);
     return tmInfo->tm_hour;
 }
-
 
 ILOSTLBEGIN
 
