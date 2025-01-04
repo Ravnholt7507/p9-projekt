@@ -45,5 +45,9 @@ void disagg1toN(
     const DFO &DA, const std::vector<DFO> &DFOs, 
     const std::vector<double> &yA_ref, 
     std::vector<std::vector<double>> &y_refs);
+vector<Point> find_or_interpolate_points(
+    const vector<Point>& points, 
+    double dependency_value
+);
 
 #endif

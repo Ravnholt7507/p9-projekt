@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "../include/solver.h"
+#include "../include/DFO.h"
 #include "../include/aggregation.h"
 
 using namespace std;
@@ -370,22 +371,24 @@ void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_uni
         totalCost.end();
 
         // Constraints: Ensure scheduling adheres to dependency polygons
+        IloNumVar cumulative_dependency(env, 0.0, IloInfinity, ILOFLOAT);
         for (size_t t = 0; t < dfo.polygons.size(); ++t) {
             const auto& polygon = dfo.polygons[t];
-            IloExpr dependency(env);
 
-            for (size_t i = 0; i < t; ++i) {
-                dependency += energy[i];
-            }
-
-            for (const auto& point : polygon.points) {
+            /*for (const auto& point : polygon.points) {
                 if (point.x >= 0 && point.y >= 0) {
                     model.add(dependency <= point.x);
                     model.add(energy[t] >= point.y);
                     model.add(energy[t] <= point.x);
                 }
-            }
-            dependency.end();
+            }*/
+            vector<Point> Min_Max_Energy = find_or_interpolate_points(polygon.points, cumulative_dependency.getLB());
+            Point &min_point = Min_Max_Energy[0];
+            Point &max_point = Min_Max_Energy[1];
+            model.add(energy[t] >= min_point.y);
+            model.add(energy[t] <= max_point.y);
+
+            model.add(cumulative_dependency == (cumulative_dependency + energy[t]));
         }
 
         // Solve the model
