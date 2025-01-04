@@ -10,7 +10,8 @@ using namespace std;
 
 int flexoffer_unittest();
 int tec_unittest();
-int nToMAggregation_unittest();
+int nToMAggregationWithStartAlignment_unittest();
+int nToMAggregationWithBalanceAlignment_unittest();
 
 int runUnitTests(){
     int parsing = 0;
@@ -23,8 +24,11 @@ int runUnitTests(){
     if(tec_unittest()){
        cout << "Tec flexoffer unit test passed.\n";
     } else return error;
-    if(nToMAggregation_unittest()){
-       cout << "nToMAggregation unit test passed.\n";
+    if(nToMAggregationWithStartAlignment_unittest()){
+       cout << "nToMAggregation with start alignment unit test passed.\n";
+    } else return error;
+    if(nToMAggregationWithBalanceAlignment_unittest()){
+       cout << "nToMAggregation with balance alignment unit test passed.\n";
     } else return error;
 
     return parsing;
@@ -126,7 +130,64 @@ int tec_unittest(){
     return 1;
 };
 
-int nToMAggregation_unittest(){
+//this is the example for Torbens Flexoffer aggregation paper from 2015 on page 2896
+int nToMAggregationWithStartAlignment_unittest(){
+    vector<TimeSlice> testProfile{{0, 1},{0,1}, {0,1}};
+    Flexoffer testOffer1(1, 0, 4*(3600), 7*(3600), testProfile, 3);
+    Flexoffer testOffer2(2, 2*(3600), 4*(3600), 6*(3600), testProfile, 3);
+    vector<Flexoffer> offers{testOffer1, testOffer2};
+
+    int est_threshold  = 4;
+    int lst_threshold  = 5;
+    int max_group_size = 3;
+    
+    vector<AggregatedFlexOffer> afos = nToMAggregation(offers, est_threshold, lst_threshold, max_group_size, Alignments::start, 0);
+
+    if(afos.size() != 1){
+        cout << "nToMAggregation_start test has failed. The size of the aggregated FO vector was "
+             << afos.size() << " but was expected to be 1.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_earliest()/3600 != 0){
+        cout << "nToMAggregation_start test has failed. The earliest start time of the aggregated FO vector was "
+             << afos[0].get_aggregated_earliest()/3600 << " but was expected to be 0.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_latest()/3600 != 1){
+        cout << "nToMAggregation_start test has failed. The latest start time of the aggregated FO vector was "
+             << afos[0].get_aggregated_latest()/3600<< " but was expected to be 1.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_end_time()/3600 != 6){
+        cout << "nToMAggregation_start test has failed. The latest end time of the aggregated FO vector was "
+             << afos[0].get_aggregated_end_time()/3600 << " but was expected to be 6.\n"; 
+        return 0;
+    }
+    if(afos[0].get_duration() != 5){
+        cout << "nToMAggregation_start test has failed. The duration of the aggregated FO vector was "
+             << afos[0].get_duration() << " but was expected to be 5.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_profile().size() != 5){
+        cout << "nToMAggregation_start test has failed. The profile size of the aggregated FO vector was "
+             << afos[0].get_aggregated_profile().size() << " but was expected to be 5.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_profile()[0].min_power != 0){
+        cout << "nToMAggregation_start test has failed. The profile element(min power) of the aggregated FO vector was "
+             << afos[0].get_aggregated_profile()[0].min_power << " but was expected to be 0.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_profile()[0].max_power != 1){
+        cout << "nToMAggregation_start test has failed. The profile element(min power) of the aggregated FO vector was "
+             << afos[0].get_aggregated_profile()[0].max_power << " but was expected to be 2.\n"; 
+        return 0;
+    }
+    
+    return 1;
+};
+
+int nToMAggregationWithBalanceAlignment_unittest(){
     vector<TimeSlice> testProfile{{0, 1}};
     Flexoffer testOffer1(1, 1*(3600), 2*(3600), 3*(3600), testProfile, 1);
     Flexoffer testOffer2(2, 2*(3600), 3*(3600), 4*(3600), testProfile, 1);
@@ -139,37 +200,37 @@ int nToMAggregation_unittest(){
     vector<AggregatedFlexOffer> afos = nToMAggregation(offers, est_threshold, lst_threshold, max_group_size, Alignments::balance, 0);
 
     if(afos.size() != 1){
-        cout << "nToMAggregation test has failed. The size of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The size of the aggregated FO vector was "
              << afos.size() << " but was expected to be 1.\n"; 
         return 0;
     }
     if(afos[0].get_aggregated_earliest()/3600 != 2){
-        cout << "nToMAggregation test has failed. The earliest start time of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The earliest start time of the aggregated FO vector was "
              << afos[0].get_aggregated_earliest()/3600 << " but was expected to be 2.\n"; 
         return 0;
     }
     if(afos[0].get_aggregated_latest()/3600 != 2){
-        cout << "nToMAggregation test has failed. The latest start time of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The latest start time of the aggregated FO vector was "
              << afos[0].get_aggregated_latest()/3600<< " but was expected to be 2.\n"; 
         return 0;
     }
     if(afos[0].get_aggregated_end_time()/3600 != 3){
-        cout << "nToMAggregation test has failed. The latest end time of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The latest end time of the aggregated FO vector was "
              << afos[0].get_aggregated_end_time()/3600 << " but was expected to be 3.\n"; 
         return 0;
     }
     if(afos[0].get_duration() != 1){
-        cout << "nToMAggregation test has failed. The duration of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The duration of the aggregated FO vector was "
              << afos[0].get_duration() << " but was expected to be 1.\n"; 
         return 0;
     }
     if(afos[0].get_aggregated_profile()[0].min_power != 0){
-        cout << "nToMAggregation test has failed. The profile element(min power) of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The profile element(min power) of the aggregated FO vector was "
              << afos[0].get_aggregated_profile()[0].min_power << " but was expected to be 0.\n"; 
         return 0;
     }
     if(afos[0].get_aggregated_profile()[0].max_power != 2){
-        cout << "nToMAggregation test has failed. The profile element(min power) of the aggregated FO vector was "
+        cout << "nToMAggregation_balance test has failed. The profile element(min power) of the aggregated FO vector was "
              << afos[0].get_aggregated_profile()[0].max_power << " but was expected to be 2.\n"; 
         return 0;
     }
