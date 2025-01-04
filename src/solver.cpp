@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "../include/solver.h"
+#include "../include/DFO.h"
 #include "../include/aggregation.h"
 
 using namespace std;
@@ -353,7 +354,54 @@ solveVolumeReductionMultiple(
     return {};
 }
 
+void add_linear_interpolation_constraints(
+    IloModel& model,
+    IloEnv& env,
+    IloNumVar energy,
+    IloNumExpr cumulative_dependency,
+    const vector<Point>& points
+) {
+    for (size_t k = 1; k + 1 < points.size(); k += 2) {
+        const auto& prev_point_min = points[k - 1];
+        const auto& prev_point_max = points[k];
+        const auto& next_point_min = points[k + 1];
+        const auto& next_point_max = points[k + 2];
 
+        // Check if cumulative_dependency is within the relevant range
+        IloConstraint lower_bound = (cumulative_dependency >= prev_point_min.x);
+        IloConstraint upper_bound = (cumulative_dependency <= next_point_min.x);
+
+        // Add constraints for the valid range and break after finding the relevant range
+        if (prev_point_min.x <= next_point_min.x) {
+            model.add(lower_bound);
+            model.add(upper_bound);
+
+            // Linear interpolation for min and max energy
+            IloNumExpr min_energy(env);
+            IloNumExpr max_energy(env);
+
+            min_energy = prev_point_min.y +
+                         ((next_point_min.y - prev_point_min.y) /
+                          (next_point_min.x - prev_point_min.x)) *
+                         (cumulative_dependency - prev_point_min.x);
+
+            max_energy = prev_point_max.y +
+                         ((next_point_max.y - prev_point_max.y) /
+                          (next_point_max.x - prev_point_max.x)) *
+                         (cumulative_dependency - prev_point_max.x);
+
+            // Add constraints for energy
+            model.add(energy >= min_energy);
+            model.add(energy <= max_energy);
+
+            // End expressions to free memory
+            min_energy.end();
+            max_energy.end();
+
+            break; // Stop after finding the relevant pair
+        }
+    }
+}
 
 void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_unit) {
     IloEnv env;
@@ -370,23 +418,18 @@ void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_uni
         totalCost.end();
 
         // Constraints: Ensure scheduling adheres to dependency polygons
+        IloNumExpr cumulative_dependency(env); // Running sum of energy variables
+
         for (size_t t = 0; t < dfo.polygons.size(); ++t) {
             const auto& polygon = dfo.polygons[t];
-            IloExpr dependency(env);
 
-            for (size_t i = 0; i < t; ++i) {
-                dependency += energy[i];
-            }
+            // Add interpolation constraints for the current dependency polygon
+            add_linear_interpolation_constraints(model, env, energy[t], cumulative_dependency, polygon.points);
 
-            for (const auto& point : polygon.points) {
-                if (point.x >= 0 && point.y >= 0) {
-                    model.add(dependency <= point.x);
-                    model.add(energy[t] >= point.y);
-                    model.add(energy[t] <= point.x);
-                }
-            }
-            dependency.end();
+            // Update cumulative dependency for the next timestep
+            cumulative_dependency += energy[t];
         }
+        cumulative_dependency.end();
 
         // Solve the model
         IloCplex cplex(model);

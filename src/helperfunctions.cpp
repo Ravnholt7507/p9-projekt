@@ -646,15 +646,6 @@ vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffe
     return finalAggregates;
 }
 
-
-/**
- * @brief Computes a naive or "no aggregator" baseline cost for a vector of Flexoffers.
- *        E.g., each Flexoffer is scheduled at earliest start, using average power.
- *
- * @param flexOffers   Vector of Flexoffer
- * @param spotPrices   Vector of spot prices (hourly)
- * @return             Total baseline cost
- */
 double computeBaselineCost(const std::vector<Flexoffer> &flexOffers, 
                            const std::vector<double> &spotPrices)
 {
@@ -665,9 +656,7 @@ double computeBaselineCost(const std::vector<Flexoffer> &flexOffers,
         auto profile = fo.get_profile();
         for (int h = 0; h < duration; h++) {
             double avg_power = (profile[h].min_power + profile[h].max_power) / 2.0;
-            double price = (h >= 0 && h < (int)spotPrices.size()) 
-                               ? spotPrices[h]
-                               : 0.0;
+            double price = spotPrices[h];
             total_cost += avg_power * price;
         }
     }
@@ -690,19 +679,15 @@ double computeAggregatedCost(std::vector<Flexoffer> flexOffers,
         int duration = afo.get_duration();
         for (int t = 0; t < duration; t++) {
             double power = sched[t];
-            double price = (t >= 0 && t < (int)spotPrices.size()) 
-                               ? spotPrices[t]
-                               : 0.0;
+            double price = spotPrices[t];
             total_cost += power * price;
         }
     }
     return total_cost;
 }
 
-void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
-                             const std::vector<double> &spotPrices, Alignments align)
+void runAggregationScenarios(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices, Alignments align)
 {
-    // Example: define a few scenario parameter combos for your aggregator
     struct AggSetting {
         int est_threshold;
         int lst_threshold;
@@ -714,30 +699,23 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
         {2, 2, 3},
         {2, 2, 5},
         {3, 3, 10},
-        // etc. Add more if you like
     };
 
-    // Compute baseline cost ONCE (no aggregator scenario)
     double baseline_cost = computeBaselineCost(flexOffers, spotPrices);
 
-    // Prepare a CSV to store results
-    std::string csvPath = "../data/economic_savings.csv";
-    std::ofstream outFile(csvPath);
+    string csvPath = "../data/economic_savings.csv";
+    ofstream outFile(csvPath);
     if (!outFile.is_open()) {
-        std::cerr << "Error: Could not open " << csvPath << " for writing.\n";
+        cerr << "Error: Could not open " << csvPath << " for writing.\n";
         return;
     }
 
-    // CSV header
     outFile << "scenario_id,est_threshold,lst_threshold,max_group_size,baseline_cost,aggregated_cost,savings\n";
 
-    // For each scenario, compute aggregator cost, compare to baseline
     int scenario_id = 1;
     for (auto &setting : scenarios) {
-        // Start timer (optional, if you also want to measure aggregator performance)
         auto start = std::chrono::steady_clock::now();
         
-        // 1) Aggregated cost
         double agg_cost = computeAggregatedCost(
             flexOffers,
             setting.est_threshold,
@@ -747,13 +725,8 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
             spotPrices
         );
 
-        // 2) Compute savings
         double savings = baseline_cost - agg_cost;
 
-        // End timer
-        auto end = std::chrono::steady_clock::now();
-
-        // Write row to CSV
         outFile << scenario_id << ","
                 << setting.est_threshold << ","
                 << setting.lst_threshold << ","
@@ -765,9 +738,9 @@ void runAggregationScenarios(const std::vector<Flexoffer> &flexOffers,
     }
 
     outFile.close();
-    std::cout << "Wrote scenario results to " << csvPath << std::endl;
+    std::cout << "Wrote scenario results to " << csvPath << endl;
 }
-    //
+
 //For tec
 vector<AggregatedFlexOffer> nToMAggregation(const vector<Tec_flexoffer> &allFlexoffers, 
                                             int est_threshold, 

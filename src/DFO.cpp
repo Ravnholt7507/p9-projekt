@@ -483,4 +483,71 @@ int main() {
     return 0;
 }
 
+
+SOLVER in main::
+
+int main() {
+    // Initialize DFO 1
+    vector<double> min_prev_1 = {0.0, 2.0, 4.0};
+    vector<double> max_prev_1 = {0.0, 4.0, 6.0};
+    int numsamples = 5;
+
+    DFO dfo1(1, min_prev_1, max_prev_1, numsamples);
+    dfo1.generate_dependency_polygons();
+
+    //dfo1.print_dfo();
+
+    vector<double> min_prev_2 = {0.0, 5.0, 8.0};
+    vector<double> max_prev_2 = {0.0, 8.0, 12.0};
+
+    DFO dfo2(1, min_prev_2, max_prev_2, numsamples);
+    dfo2.generate_dependency_polygons();
+
+    //dfo2.print_dfo();
+    // Aggregate DFO 1 and DFO 2
+    DFO aggregated_dfo = agg2to1(dfo1, dfo2, numsamples);
+    std::cout << "Aggregated DFO:" << std::endl;
+    aggregated_dfo.print_dfo();
+
+
+
+vector<double> spot_prices = {4.0, 5.0, 3.0};
+    Solver::DFO_Optimization(aggregated_dfo, spot_prices);
+/*
+    // Reference schedule for disaggregation
+    std::vector<double> yA_ref = {7.5, 7.0, 5.0}; // Example energy schedule for aggregated DFO
+
+    // Disaggregate aggregated DFO into DFO 1 and DFO 2
+    std::vector<double> y1_ref, y2_ref;
+    disagg1to2(dfo1, dfo2, aggregated_dfo, yA_ref, y1_ref, y2_ref);
+
+    std::cout << "\nDisaggregated energy schedule for DFO 1:" << std::endl;
+    for (const auto &val : y1_ref) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Disaggregated energy schedule for DFO 2:" << std::endl;
+    for (const auto &val : y2_ref) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    // Disaggregate aggregated DFO into multiple DFOs
+    std::vector<DFO> dfos = {dfo1, dfo2};
+    std::vector<std::vector<double>> y_refs;
+    disagg1toN(aggregated_dfo, dfos, yA_ref, y_refs);
+
+    std::cout << "\nDisaggregated energy schedules for multiple DFOs:" << std::endl;
+    for (size_t i = 0; i < y_refs.size(); ++i) {
+        std::cout << "DFO " << i + 1 << ": ";
+        for (const auto &val : y_refs[i]) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    return 0;
+}
+
 */
