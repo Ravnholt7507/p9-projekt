@@ -403,8 +403,9 @@ void add_linear_interpolation_constraints(
     }
 }
 
-void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_unit) {
+vector<double> Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_unit) {
     IloEnv env;
+    vector<double> DFO_Schedule;
     try {
         IloModel model(env);
         IloNumVarArray energy(env, dfo.polygons.size(), 0.0, IloInfinity, ILOFLOAT);
@@ -437,7 +438,9 @@ void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_uni
         if (cplex.solve()) {
             cout << "Optimal solution found!" << endl;
             for (size_t t = 0; t < dfo.polygons.size(); ++t) {
-                cout << "Energy at time " << t + 1 << ": " << cplex.getValue(energy[t]) << endl;
+                double value = cplex.getValue(energy[t]);
+                DFO_Schedule.push_back(value);
+                cout << "Energy at time " << t + 1 << ": " << value << endl;
             }
         } else {
             cerr << "Failed to find optimal solution." << endl;
@@ -449,6 +452,7 @@ void Solver::DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_uni
         cerr << "Unknown error occurred." << endl;
     }
     env.end();
+    return DFO_Schedule;
 }
 
 
