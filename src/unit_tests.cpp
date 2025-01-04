@@ -163,5 +163,16 @@ int nToMAggregation_unittest(){
              << afos[0].get_duration() << " but was expected to be 1.\n"; 
         return 0;
     }
+    if(afos[0].get_aggregated_profile()[0].min_power != 0){
+        cout << "nToMAggregation test has failed. The profile element(min power) of the aggregated FO vector was "
+             << afos[0].get_aggregated_profile()[0].min_power << " but was expected to be 0.\n"; 
+        return 0;
+    }
+    if(afos[0].get_aggregated_profile()[0].max_power != 2){
+        cout << "nToMAggregation test has failed. The profile element(min power) of the aggregated FO vector was "
+             << afos[0].get_aggregated_profile()[0].max_power << " but was expected to be 2.\n"; 
+        return 0;
+    }
+    
     return 1;
 };
