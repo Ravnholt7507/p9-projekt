@@ -17,9 +17,11 @@ public:
     void addFlexOffer(const Flexoffer &fo);
     const vector<Flexoffer>& getFlexOffers() const;
 
-    AggregatedFlexOffer createAggregatedOffer(Alignments) const;
+    AggregatedFlexOffer createAggregatedOffer(Alignments)const;
+    AggregatedFlexOffer createAggregatedOffer(Alignments, const vector<double>&) const;
 
     void printAggregatedOffer(Alignments) const;
+    void printAggregatedOffer(Alignments, const vector<double>&) const;
 
     int getGroupId() const;
 };
@@ -36,7 +38,9 @@ public:
     const vector<Tec_flexoffer>& getFlexOffers() const;
 
     AggregatedFlexOffer createAggregatedOffer(Alignments) const;
+    AggregatedFlexOffer createAggregatedOffer(Alignments, const vector<double>&) const;
 
+    void printAggregatedOffer(Alignments, const vector<double>&) const;
     void printAggregatedOffer(Alignments) const;
 
     int getGroupId() const;

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <cmath>
 
 #include "../include/evaluation.h"
 #include "../include/aggregation.h"
@@ -43,7 +42,7 @@ double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector
 }
 
 double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
-    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, 0);
+    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 0);
 
     Solver::solve(afos, spotPrices);
 
@@ -62,7 +61,7 @@ double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, in
 
 double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
     
-    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, 1);
+    vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 1);
 
     Solver::solve_tec(afos, spotPrices);
 
@@ -83,8 +82,6 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<double> &spotPrices){
     
     auto scenarios = generateScenarioMatrix(); 
-    cout << "DEBUGGER " << spotPrices.size();
-    return;
     string csvFile = "../data/economic_savings.csv";
     ofstream file(csvFile);
     if (!file.is_open()) {

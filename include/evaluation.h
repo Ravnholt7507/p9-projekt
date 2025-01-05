@@ -2,7 +2,6 @@
 #define EVALUATION_H
 
 #include <vector>
-#include <string>
 
 #include "../include/flexoffer.h"
 #include "../include/tec.h"

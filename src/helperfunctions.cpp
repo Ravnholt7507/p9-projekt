@@ -629,6 +629,49 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers,
     // 7) Return the final AFOs
     return finalAggregates;
 }
+vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, 
+                                            int est_threshold, 
+                                            int lst_threshold, 
+                                            int max_group_size,
+                                            Alignments align, 
+                                            const vector<double> &spotPrices,
+                                            int startFo_GroupId=1)
+{
+    auto start = chrono::steady_clock::now();
+    vector<Fo_Group> groups;
+    int groupId = startFo_GroupId;
+    for (const auto &fo : allFlexoffers) {
+        Fo_Group g(groupId++);
+        g.addFlexOffer(fo);
+        groups.push_back(g);
+    }
+
+    clusterFo_Group(groups, est_threshold, lst_threshold, max_group_size);
+
+    vector<AggregatedFlexOffer> finalAggregates;
+    finalAggregates.reserve(groups.size());
+    for (auto &g : groups) {
+        finalAggregates.push_back(g.createAggregatedOffer(align, spotPrices));
+    }
+
+    auto end = chrono::steady_clock::now();
+    double aggregationTimeSec = chrono::duration<double>(end - start).count();
+
+    {
+        string perfPath = "../data/aggregation_performance.csv";
+        ofstream perfFile(perfPath);
+        if (!perfFile.is_open()) {
+            cerr << "Error: Cannot open " << perfPath << " for writing.\n";
+        } else {
+            perfFile << "num_flexOffers,aggregation_time\n";
+            perfFile << allFlexoffers.size() << "," << aggregationTimeSec << "\n";
+            perfFile.close();
+        }
+    }
+
+    // 7) Return the final AFOs
+    return finalAggregates;
+}
 
 //For tec
 vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, 
@@ -652,6 +695,32 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers
     finalAggregates.reserve(groups.size());
     for (auto &g : groups) {
         finalAggregates.push_back(g.createAggregatedOffer(align));
+    }
+
+    return finalAggregates;
+}
+vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, 
+                                            int est_threshold, 
+                                            int lst_threshold, 
+                                            int max_group_size, 
+                                            Alignments align,
+                                            const vector<double> &spotPrices,
+                                            int startFo_GroupId=1)
+{
+    vector<Tec_Group> groups;
+    int groupId = startFo_GroupId;
+    for (const auto &fo : allFlexoffers) {
+        Tec_Group g(groupId++);
+        g.addFlexOffer(fo);
+        groups.push_back(g);
+    }
+
+    clusterFo_Group(groups, est_threshold, lst_threshold, max_group_size);
+
+    vector<AggregatedFlexOffer> finalAggregates;
+    finalAggregates.reserve(groups.size());
+    for (auto &g : groups) {
+        finalAggregates.push_back(g.createAggregatedOffer(align, spotPrices));
     }
 
     return finalAggregates;

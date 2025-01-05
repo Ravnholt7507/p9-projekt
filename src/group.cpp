@@ -16,8 +16,17 @@ AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments allign) const {
     return AggregatedFlexOffer(id, allign, flexoffers);
 }
 
+AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments allign, const vector<double> &spotPrices) const {
+    return AggregatedFlexOffer(id, allign, flexoffers, spotPrices);
+}
+
 void Fo_Group::printAggregatedOffer(Alignments align) const {
     auto agg = createAggregatedOffer(align);
+    agg.pretty_print();
+}
+
+void Fo_Group::printAggregatedOffer(Alignments align, const vector<double> &spotPrices) const {
+    auto agg = createAggregatedOffer(align, spotPrices);
     agg.pretty_print();
 }
 
@@ -40,8 +49,17 @@ AggregatedFlexOffer Tec_Group::createAggregatedOffer(Alignments align) const {
     return AggregatedFlexOffer(id, align, flexoffers);
 }
 
+AggregatedFlexOffer Tec_Group::createAggregatedOffer(Alignments align, const vector<double> &spotPrices) const {
+    return AggregatedFlexOffer(id, align, flexoffers, spotPrices);
+}
+
 void Tec_Group::printAggregatedOffer(Alignments align) const {
     auto agg = createAggregatedOffer(align);
+    agg.pretty_print();
+}
+
+void Tec_Group::printAggregatedOffer(Alignments align, const vector<double> &spotPrices) const {
+    auto agg = createAggregatedOffer(align, spotPrices);
     agg.pretty_print();
 }
 

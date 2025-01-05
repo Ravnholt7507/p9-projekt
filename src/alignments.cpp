@@ -82,7 +82,6 @@ void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, tim
         double start_diff_sec = difftime(fo.get_lst(), aggregated_latest);
         int start_hour = (int) floor(start_diff_sec / 3600.0);
 
-        cout << "  FlexOffer ID " << fo.get_offer_id() << " alignment: start_hour = " << start_hour << endl;
 
         auto p = fo.get_profile();
         for (int h = 0; h < fo.get_duration(); h++) {
@@ -427,7 +426,6 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             for(int i = offsetMin; i < offsetMax; i++)
             {
                 double placeholder = best_synergy;
-                cout << "DEBUGGER: " << spotPrices.size();
                 vector<TimeSlice> tmp = calc_priceAwareAlignment(aggregated_profile, least_flexible, i, best_synergy, spotPrices);
                 
                 if(placeholder < best_synergy){
@@ -570,7 +568,6 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             for(int i = offsetMin; i < offsetMax; i++)
             {
                 double placeholder = best_synergy;
-                cout << "DEBUGGER: " << spotPrices.size();
                 vector<TimeSlice> tmp = calc_priceAwareAlignment(aggregated_profile, least_flexible, i, best_synergy, spotPrices);
                 
                 if(placeholder < best_synergy){

@@ -18,7 +18,7 @@ static int time_to_hour(time_t t) {
 
 //Constructors
 //for fo
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers, const vector<double> *spotPrices) {
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
     }
@@ -30,7 +30,28 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     } else if (align == Alignments::balance){
         balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
     } else if (align == Alignments::price){
-        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers, *spotPrices);
+        cout << "No spotPrices was given" << endl;
+    }
+
+    scheduled_allocation.resize(duration, 0.0);
+    for(auto offer : offers){
+        individual_offers.push_back(offer);
+    } 
+}
+
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Flexoffer> &offers, const vector<double> &spotPrices) {
+    if (offers.empty()) {
+        throw invalid_argument("No FlexOffers provided for aggregation.");
+    }
+
+    id = offer_id;
+
+    if(align == Alignments::start){
+        start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
+    } else if (align == Alignments::balance){
+        balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers);
+    } else if (align == Alignments::price){
+        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers, spotPrices);
     }
 
     scheduled_allocation.resize(duration, 0.0);
@@ -40,7 +61,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
 }
 
 //for tec
-AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers, const vector<double> *spotPrices) {
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers) {
     if (offers.empty()) {
         throw invalid_argument("No FlexOffers provided for aggregation.");
     }
@@ -52,7 +73,28 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     } else if (align == Alignments::balance){
         balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
     } else if (align == Alignments::price){
-        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers, *spotPrices);
+        cout << "No spotPrices was given!" << endl;
+    }
+
+    scheduled_allocation.resize(duration, 0.0);
+    for(auto offer : offers){
+        individual_offers.push_back(offer);
+    } 
+}
+
+AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, const vector<Tec_flexoffer> &offers, const vector<double> &spotPrices) {
+    if (offers.empty()) {
+        throw invalid_argument("No FlexOffers provided for aggregation.");
+    }
+
+    id = offer_id;
+
+    if(align == Alignments::start){
+        start_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
+    } else if (align == Alignments::balance){
+        balance_alignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers);
+    } else if (align == Alignments::price){
+        priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers, spotPrices);
     }
 
     scheduled_allocation.resize(duration, 0.0);
