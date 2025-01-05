@@ -93,14 +93,6 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
         }
     }
 
-    // Print results
-    for (int a = 0; a < A; a++) {
-        cout << "AggregatedFlexOffer " << a << " scheduled power:" << endl;
-        for (int t = 0; t < afos[a].get_duration(); t++) {
-            cout << "  Hour " << t << ": " << solution[a][t] << " kW" << endl;
-        }
-    }
-
     env.end();
     return solution;
 }
@@ -536,15 +528,6 @@ vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, cons
             afos[a].set_aggregated_scheduled_start_time(scheduled_start);
         } else {
             afos[a].set_aggregated_scheduled_start_time(afos[a].get_aggregated_earliest());
-        }
-    }
-
-
-    for (int a = 0; a < A; a++) {
-        cout << "AggregatedFlexOffer " << a << " scheduled power:" << endl;
-        cout << "Scheduled start time " << hourOfDay(afos[a].get_aggregated_scheduled_start_time()) << endl;
-        for (int t = 0; t < afos[a].get_duration(); t++) {
-            cout << "  Hour " << t << ": " << solution[a][t] << " kW" << endl;
         }
     }
 

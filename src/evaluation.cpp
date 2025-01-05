@@ -157,7 +157,7 @@ vector<AggScenario> generateScenarioMatrix() {
                         AggScenario s;
                         s.aggregator_type = at;
                         s.est_threshold = th;
-                        s.lst_threshold = th;    // same for simplicity
+                        s.lst_threshold = th;
                         s.max_group_size = g;
                         s.align = al;
                         s.usedOffers = usedN;
