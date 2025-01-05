@@ -427,9 +427,10 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             for(int i = offsetMin; i < offsetMax; i++)
             {
                 double placeholder = best_synergy;
+                cout << "DEBUGGER: " << spotPrices.size();
                 vector<TimeSlice> tmp = calc_priceAwareAlignment(aggregated_profile, least_flexible, i, best_synergy, spotPrices);
                 
-                if(placeholder > best_synergy){
+                if(placeholder < best_synergy){
                     best_earliest = aggregated_earliest + (i * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();
@@ -484,7 +485,7 @@ vector<TimeSlice> calc_priceAwareAlignment(vector<TimeSlice> &aggregated_profile
     // Compute price synergy
     double synergy  = 0.0;
     double maxPrice = 0.0;
-    for(double p : spotPrices){ //get max price
+    for(const double &p : spotPrices){ //get max price
         if(p > maxPrice) maxPrice = p;
     }
 
@@ -569,9 +570,10 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             for(int i = offsetMin; i < offsetMax; i++)
             {
                 double placeholder = best_synergy;
+                cout << "DEBUGGER: " << spotPrices.size();
                 vector<TimeSlice> tmp = calc_priceAwareAlignment(aggregated_profile, least_flexible, i, best_synergy, spotPrices);
                 
-                if(placeholder > best_synergy){
+                if(placeholder < best_synergy){
                     best_earliest = aggregated_earliest + (i * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();

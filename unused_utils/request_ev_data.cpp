@@ -79,7 +79,7 @@ void downloadData(const string &url, const string &outputFilePath)
 
 int main() {
 
-    int totalPages = 4;
+    int totalPages = 100;
     string outputfilePath = "../data/ev_data.csv";
     for (int page = 1; page <= totalPages; ++page) {
         std::ostringstream apiURL;

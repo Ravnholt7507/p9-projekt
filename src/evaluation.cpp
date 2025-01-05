@@ -82,14 +82,9 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<double> &spotPrices){
     
-    vector<AggScenario> scenarios = {
-        // aggregator_type, est_th, lst_th, max_group_size, align, usedOffers
-        {0, 1, 1, 2, Alignments::start, 10},
-        {0, 2, 2, 5, Alignments::start, 15},
-        {1, 1, 1, 2, Alignments::start, 10},
-        {1, 2, 2, 5, Alignments::start, 15},
-    };
-
+    auto scenarios = generateScenarioMatrix(); 
+    cout << "DEBUGGER " << spotPrices.size();
+    return;
     string csvFile = "../data/economic_savings.csv";
     ofstream file(csvFile);
     if (!file.is_open()) {
@@ -129,9 +124,48 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         << s.max_group_size << "," << baseline << "," << agg_cost << "," << savings << "," << scenarioTimeSec << "," << n << "\n";
 
         cout << "Scenario " << scenario_id << " [type=" << s.aggregator_type << "] => " << "est=" << s.est_threshold << ", lst=" << s.lst_threshold 
-        << ", maxG=" << s.max_group_size << "\n" << "   baseline=" << baseline  << ", aggregated_cost=" << agg_cost  << ", savings=" << savings  << ", scenario_time=" << n << scenarioTimeSec << "s\n\n";
+        << ", maxG=" << s.max_group_size << "\n" << "   baseline=" << baseline  << ", aggregated_cost=" << agg_cost  << ", savings=" << savings  << ", NrOfFos " <<  n << ", scenario_time=" << scenarioTimeSec << "s\n\n";
         scenario_id++;
     }
 
     file.close();
+}
+
+vector<AggScenario> generateScenarioMatrix() {
+
+    vector<AggScenario> scenarios;
+    
+    vector<int> aggrTypes = {0, 1};
+
+    vector<Alignments> aligns = {
+        Alignments::start,
+        Alignments::balance,
+        Alignments::price,
+    };
+
+    vector<int> thresholds = {1, 2, 3}; 
+
+    vector<int> groupSizes = {2, 5, 10};
+
+    vector<int> nOffersVec = {10, 20, 50};
+
+    for (int at : aggrTypes) {
+        for (auto al : aligns) {
+            for (int th : thresholds) {
+                for (int g : groupSizes) {
+                    for (int usedN : nOffersVec) {
+                        AggScenario s;
+                        s.aggregator_type = at;
+                        s.est_threshold = th;
+                        s.lst_threshold = th;    // same for simplicity
+                        s.max_group_size = g;
+                        s.align = al;
+                        s.usedOffers = usedN;
+                        scenarios.push_back(s);
+                    }
+                }
+            }
+        }
+    }
+    return scenarios;
 }
