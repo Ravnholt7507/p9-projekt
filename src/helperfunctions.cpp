@@ -422,7 +422,6 @@ static vector<double> buildDailySchedule(const AggregatedFlexOffer &afo) {
     return daySched;
 }
 
-
 void dumpMetricsToCSV(const string& filename, const vector<string>& headers, const vector<vector<double>>& data) {
     ofstream file(filename);
     if (!file.is_open()) {
@@ -456,9 +455,7 @@ void prepareAndDumpMetrics(const vector<double> &spotPrices,
                            const string &csvFilePath,
                            const string &pythonScriptPath)
 {
-    // We assume a single-day horizon of 24 hours (or spotPrices.size() if not 24).
     int DAY_HOURS = spotPrices.size();
-    // Build a "withFlex" schedule by summing all aggregator day schedules
     vector<double> withFlex(DAY_HOURS, 0.0);
     vector<double> noFlexPower(24, 0.0);
 
@@ -603,7 +600,7 @@ void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double
 }
 
 //For FO
-vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffers, 
+vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
                                             int max_group_size,
@@ -646,103 +643,8 @@ vector<AggregatedFlexOffer> nToMAggregation(const vector<Flexoffer> &allFlexoffe
     return finalAggregates;
 }
 
-double computeBaselineCost(const std::vector<Flexoffer> &flexOffers, 
-                           const std::vector<double> &spotPrices)
-{
-    double total_cost = 0.0;
-    for (const auto &fo : flexOffers) 
-    {
-        int duration = fo.get_duration();
-        auto profile = fo.get_profile();
-        for (int h = 0; h < duration; h++) {
-            double avg_power = (profile[h].min_power + profile[h].max_power) / 2.0;
-            double price = spotPrices[h];
-            total_cost += avg_power * price;
-        }
-    }
-    return total_cost;
-}
-
-double computeAggregatedCost(std::vector<Flexoffer> flexOffers,
-                             int est_threshold, 
-                             int lst_threshold, 
-                             int max_group_size,
-                             Alignments align,
-                             const std::vector<double> &spotPrices)
-{
-    std::vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align);
-    Solver::solve(afos, spotPrices);
-
-    double total_cost = 0.0;
-    for (auto &afo : afos) {
-        const auto &sched = afo.get_scheduled_allocation();
-        int duration = afo.get_duration();
-        for (int t = 0; t < duration; t++) {
-            double power = sched[t];
-            double price = spotPrices[t];
-            total_cost += power * price;
-        }
-    }
-    return total_cost;
-}
-
-void runAggregationScenarios(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices, Alignments align)
-{
-    struct AggSetting {
-        int est_threshold;
-        int lst_threshold;
-        int max_group_size;
-    };
-
-    std::vector<AggSetting> scenarios = {
-        {1, 1, 2},
-        {2, 2, 3},
-        {2, 2, 5},
-        {3, 3, 10},
-    };
-
-    double baseline_cost = computeBaselineCost(flexOffers, spotPrices);
-
-    string csvPath = "../data/economic_savings.csv";
-    ofstream outFile(csvPath);
-    if (!outFile.is_open()) {
-        cerr << "Error: Could not open " << csvPath << " for writing.\n";
-        return;
-    }
-
-    outFile << "scenario_id,est_threshold,lst_threshold,max_group_size,baseline_cost,aggregated_cost,savings\n";
-
-    int scenario_id = 1;
-    for (auto &setting : scenarios) {
-        auto start = std::chrono::steady_clock::now();
-        
-        double agg_cost = computeAggregatedCost(
-            flexOffers,
-            setting.est_threshold,
-            setting.lst_threshold,
-            setting.max_group_size,
-            align,
-            spotPrices
-        );
-
-        double savings = baseline_cost - agg_cost;
-
-        outFile << scenario_id << ","
-                << setting.est_threshold << ","
-                << setting.lst_threshold << ","
-                << setting.max_group_size << ","
-                << baseline_cost << ","
-                << agg_cost << ","
-                << savings << "\n";
-        scenario_id++;
-    }
-
-    outFile.close();
-    std::cout << "Wrote scenario results to " << csvPath << endl;
-}
-
 //For tec
-vector<AggregatedFlexOffer> nToMAggregation(const vector<Tec_flexoffer> &allFlexoffers, 
+vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
                                             int max_group_size, 

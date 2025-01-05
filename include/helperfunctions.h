@@ -30,8 +30,8 @@ void prepareAndDumpMetrics(const std::vector<double>& spotPrices, const std::vec
 tuple<vector<double>, vector<double>, vector<double>, vector<double>> getFRCprices(const string& filename);
 void dumpFCRDataToCSV(const vector<vector<double>> &powerVars,const vector<vector<double>> &upVars,const vector<vector<double>> &downVars,double totalRevenue,const string &filename);
 void dumpSolverAndDisaggResults(vector<AggregatedFlexOffer> &afos, vector<double> &spotPrices, const string &aggCsvPath, const string &disCsvPath);
-vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
-vector<AggregatedFlexOffer> nToMAggregation(const std::vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
+vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
+vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
 
 
 #endif // HELPERFUNCTION_H
