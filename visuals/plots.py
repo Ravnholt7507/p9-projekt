@@ -1,84 +1,86 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_time_vs_flexoffers(csv_file: str):
-
+def load_and_structure(csv_file: str) -> pd.DataFrame:
     df = pd.read_csv(csv_file)
 
-    plt.figure(figsize=(6, 4))
-    plt.bar(df['NrOfFlexOffers'].astype(str), df['scenario_time'], color='skyblue')
+    aggregator_map = {0: 'Normal', 1: 'TEC', 2: 'Other?'}
+    if 'aggregator_type' in df.columns:
+        df['aggregator_label'] = df['aggregator_type'].map(aggregator_map).fillna('Unknown')
+
+
+    alignment_map = {0: 'start', 1: 'balance', 2: 'price'}
+    if 'alignment' in df.columns:
+        df['alignment_label'] = df['alignment'].map(alignment_map).fillna('Unknown')
+
+    return df
+
+
+def plot_time_vs_flexoffers(csv_file: str):
+    df = load_and_structure(csv_file)
+
+    grouped = df.groupby(['NrOfFlexOffers','aggregator_label'])['scenario_time'].mean().reset_index()
+
+    pivoted = grouped.pivot(index='NrOfFlexOffers', columns=['aggregator_label'], values='scenario_time')
+    pivoted.plot(kind='bar', width=0.75, figsize=(7,5), color=['skyblue','orange','green'])
+
     plt.xlabel("Number of FlexOffers")
-    plt.ylabel("Scenario Time (seconds?)")
-    plt.title("Scenario Time vs. Number of FlexOffers")
+    plt.ylabel("Average Scenario Time (s)")
+    plt.title("Scenario Time vs. Number of FlexOffers\n(grouped by Aggregator Type)")
+    plt.legend(title='Aggregator Type')
     plt.tight_layout()
     plt.show()
 
-def plot_alignment_savings(csv_file: str):
 
-    df = pd.read_csv(csv_file)
-    
-    alignment_map = {0: 'start', 1: 'balance', 2: 'price'}
-    df['alignment_label'] = df['alignment'].map(alignment_map)
-    
-    plt.figure(figsize=(6,4))
-    plt.bar(df['alignment_label'].astype(str), df['savings'], color='orange')
+def plot_alignment_savings(csv_file: str):
+    df = load_and_structure(csv_file)
+
+    grouped = df.groupby(['alignment_label','aggregator_label'])['savings'].mean().reset_index()
+
+    pivoted = grouped.pivot(index='alignment_label', columns='aggregator_label', values='savings')
+    pivoted.plot(kind='bar', figsize=(7,5))
+
     plt.xlabel("Alignment Method")
-    plt.ylabel("Savings")
-    plt.title("Savings by Alignment")
+    plt.ylabel("Average Savings")
+    plt.title("Savings by Alignment, grouped by Aggregator Type")
+    plt.legend(title='Aggregator')
     plt.tight_layout()
     plt.show()
 
 def plot_baseline_vs_aggregated(csv_file: str):
+    df = load_and_structure(csv_file)
 
-    df = pd.read_csv(csv_file)
+    grouped = df.groupby(['aggregator_label','alignment_label'])[['baseline_cost','aggregated_cost']].mean().reset_index()
 
-    plt.figure(figsize=(6, 4))
-    x_vals = range(len(df))
-    width = 0.4
-    
-    plt.bar([x - width/2 for x in x_vals], df['baseline_cost'], 
-            width=width, label='Baseline Cost', color='grey')
-    plt.bar([x + width/2 for x in x_vals], df['aggregated_cost'], 
-            width=width, label='Aggregated Cost', color='green')
-    
-    plt.xlabel("Scenario Index")
+    pivoted = grouped.pivot(index=['alignment_label'], columns=['aggregator_label',], values=['baseline_cost','aggregated_cost'])
+
+    pivoted.plot(kind='bar', figsize=(8,5))
+    plt.title("Baseline vs. Aggregated Cost\n(averaged by aggregator & alignment)")
     plt.ylabel("Cost")
-    plt.title("Baseline vs. Aggregated Cost")
-    plt.legend()
     plt.tight_layout()
     plt.show()
+
 
 def plot_savings_by_aggregator_type(csv_file: str):
 
-    df = pd.read_csv(csv_file)
+    df = load_and_structure(csv_file)
 
-    grouped = df.groupby('aggregator_type')['savings'].mean().reset_index()
-    
-    plt.figure(figsize=(6, 4))
-    plt.bar(grouped['aggregator_type'].astype(str), grouped['savings'], color='purple')
-    plt.xlabel("Aggregator Type (0=Normal, 1=TEC)")
-    plt.ylabel("Avg Savings")
-    plt.title("Savings by Aggregator Type")
+    grouped = df.groupby(['aggregator_label','NrOfFlexOffers'])['savings'].mean().reset_index()
+    pivoted = grouped.pivot(index='NrOfFlexOffers', columns='aggregator_label', values='savings')
+
+    pivoted.plot(kind='bar', figsize=(7,5))
+    plt.xlabel("Number of FlexOffers")
+    plt.ylabel("Average Savings")
+    plt.title("Savings by Aggregator Type\n(varying NrOfFlexOffers)")
+    plt.legend(title='Aggregator Type')
     plt.tight_layout()
     plt.show()
 
-def plot_scenario_time_over_savings(csv_file: str):
-    df = pd.read_csv(csv_file)
-    
-    plt.figure(figsize=(6, 4))
-    plt.scatter(df['scenario_time'], df['savings'], color='red')
-    plt.xlabel("Scenario Time")
-    plt.ylabel("Savings")
-    plt.title("Scenario Time vs. Savings")
-    plt.tight_layout()
-    plt.show()
 
-# Example usage:
 if __name__ == "__main__":
     csv_path = "../data/economic_savings.csv"
-    
+
     plot_time_vs_flexoffers(csv_path)
     plot_alignment_savings(csv_path)
     plot_baseline_vs_aggregated(csv_path)
     plot_savings_by_aggregator_type(csv_path)
-    plot_scenario_time_over_savings(csv_path)

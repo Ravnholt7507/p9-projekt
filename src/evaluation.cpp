@@ -43,7 +43,6 @@ double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector
 
 double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
     vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 0);
-
     Solver::solve(afos, spotPrices);
 
     double total_cost = 0.0;
@@ -60,9 +59,7 @@ double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, in
 }
 
 double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
-    
     vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 1);
-
     Solver::solve_tec(afos, spotPrices);
 
     double total_cost = 0.0;
@@ -98,7 +95,7 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         double agg_cost = 0.0;
         int n = min(s.usedOffers, (int)normalOffers.size());
 
-        // two lines below limits the size of flexOffer vectors
+        // the two lines below limits the size of flexOffer vectors
         vector<Flexoffer> subNormal(normalOffers.begin(), normalOffers.begin() + n);
         vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
         
@@ -132,12 +129,12 @@ vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
     
-    vector<int> aggrTypes = {0, 1};
+    vector<int> aggrTypes = {1};
 
     vector<Alignments> aligns = {
         Alignments::start,
         Alignments::balance,
-        Alignments::price,
+        //Alignments::price,
     };
 
     vector<int> thresholds = {1, 2, 3}; 

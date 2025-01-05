@@ -57,7 +57,7 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
         individual_offers.push_back(offer);
-    } 
+    }
 }
 
 //for tec

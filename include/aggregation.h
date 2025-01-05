@@ -70,5 +70,4 @@ public:
     //disaggregation
     vector<Flexoffer> disaggregate_to_flexoffers();
 };
-
 #endif
