@@ -12,12 +12,12 @@ const std::vector<Flexoffer>& Fo_Group::getFlexOffers() const {
     return flexoffers;
 }
 
-AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments allign) const {
-    return AggregatedFlexOffer(id, allign, flexoffers);
+AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments align) const {
+    return AggregatedFlexOffer(id, align, flexoffers);
 }
 
-AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments allign, const vector<double> &spotPrices) const {
-    return AggregatedFlexOffer(id, allign, flexoffers, spotPrices);
+AggregatedFlexOffer Fo_Group::createAggregatedOffer(Alignments align, const vector<double> &spotPrices) const {
+    return AggregatedFlexOffer(id, align, flexoffers, spotPrices);
 }
 
 void Fo_Group::printAggregatedOffer(Alignments align) const {
@@ -33,6 +33,7 @@ void Fo_Group::printAggregatedOffer(Alignments align, const vector<double> &spot
 int Fo_Group::getGroupId() const {
     return id;
 }
+
 
 Tec_Group::Tec_Group(int group_id) : id(group_id) {
 }

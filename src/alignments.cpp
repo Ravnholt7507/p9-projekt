@@ -416,11 +416,11 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
 
-            time_t best_earliest;
-            time_t best_latest;
-            int best_duration;
-            time_t best_endtime;
-            vector<TimeSlice> best_profile;
+            time_t best_earliest = aggregated_earliest;
+            time_t best_latest   = aggregated_latest;
+            int    best_duration = duration;
+            time_t best_endtime  = aggregated_end_time;
+            vector<TimeSlice> best_profile = aggregated_profile;
 
             double best_synergy = 0;
             for(int i = offsetMin; i < offsetMax; i++)
@@ -556,11 +556,13 @@ void priceAwareAlignment(time_t &aggregated_earliest,time_t &aggregated_latest,t
             int offsetMin = floor(offsetMinSec / 3600.0);
             int offsetMax = floor(offsetMaxSec / 3600.0);
 
-            time_t best_earliest;
-            time_t best_latest;
-            int best_duration;
-            time_t best_endtime;
-            vector<TimeSlice> best_profile;
+
+            time_t best_earliest = aggregated_earliest;
+            time_t best_latest   = aggregated_latest;
+            int    best_duration = duration;
+            time_t best_endtime  = aggregated_end_time;
+            vector<TimeSlice> best_profile = aggregated_profile;
+
             double best_min;
             double best_max;
 
