@@ -1,5 +1,4 @@
 #include <cmath>
-#include <iostream>
 #include <algorithm>
 
 #include "../include/alignments.h"
@@ -59,38 +58,49 @@ void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, tim
 }
 
 //for tec
-void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, vector<TimeSlice> &aggregated_profile, int &duration, double &overall_min, double &overall_max, const vector<Tec_flexoffer> &offers){
+void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, vector<TimeSlice> &aggregated_profile, int &duration, double &overall_min, double &overall_max, vector<Tec_flexoffer> offers){
+    aggregated_earliest = offers[0].get_est();
+    aggregated_latest = offers[0].get_lst();
+    aggregated_end_time = offers[0].get_et();
 
-    aggregated_earliest = numeric_limits<time_t>::max();
-    aggregated_latest = 0;
-    aggregated_end_time = 0;
+    vector<TimeSlice> tmp;
+    for (const auto& fo : offers) {
+        int i = aggregated_earliest - fo.get_est();
+        if(i != 0) i /= 3600;
+        vector<TimeSlice> foCopy = fo.get_profile();
+        vector<TimeSlice> aggCopy = aggregated_profile;
+        while(i < 0 && !aggCopy.empty()){
+            tmp.push_back(aggCopy[0]);   
+            aggCopy.erase(aggCopy.begin());
+            i++;
+        }
+        while(i>0 && !foCopy.empty()){
+            tmp.push_back(foCopy[0]);
+            foCopy.erase(foCopy.begin());
+            i--;
+        }
+        while(!aggCopy.empty() && !foCopy.empty()){
+            tmp.push_back({aggCopy[0].min_power + foCopy[0].min_power, aggCopy[0].max_power + foCopy[0].max_power});
+            aggCopy.erase(aggCopy.begin());
+            foCopy.erase(foCopy.begin());
+        }
+        while(!foCopy.empty()){
+            tmp.push_back(foCopy[0]);   
+            foCopy.erase(foCopy.begin());
+        }
+        while(!aggCopy.empty()){
+            tmp.push_back(aggCopy[0]);
+            aggCopy.erase(aggCopy.begin());
+        }
 
-    for (const auto &fo : offers) {
+        duration = tmp.size();
         aggregated_earliest = min(aggregated_earliest, fo.get_est());
-        aggregated_latest = max(aggregated_latest, fo.get_lst());
-        aggregated_end_time = max(aggregated_end_time, fo.get_et());
+        aggregated_end_time = min(aggregated_end_time, fo.get_et());
+        aggregated_latest = aggregated_end_time - (duration * 3600);
         overall_min += fo.get_min_overall_kw();
         overall_max += fo.get_max_overall_kw();
-    }
-
-    double diff_sec = difftime(aggregated_end_time, aggregated_latest);
-    duration = (int) ceil(diff_sec / 3600.0);
-
-    aggregated_profile.resize(duration, TimeSlice{0.0, 0.0});
-
-    for (const auto &fo : offers) {
-        double start_diff_sec = difftime(fo.get_lst(), aggregated_latest);
-        int start_hour = (int) floor(start_diff_sec / 3600.0);
-
-
-        auto p = fo.get_profile();
-        for (int h = 0; h < fo.get_duration(); h++) {
-            int idx = start_hour + h;
-            if (idx >= 0 && idx < duration) {
-                aggregated_profile[idx].min_power += p[h].min_power;
-                aggregated_profile[idx].max_power += p[h].max_power;
-            }
-        }
+        aggregated_profile = tmp;
+        tmp.clear();
     }
 }
 
