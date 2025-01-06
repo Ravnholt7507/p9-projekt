@@ -398,16 +398,15 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         throw std::runtime_error("Error: Could not open file " + filename);
     }
 
-    std::vector<DFO> dfos; // We'll collect one DFO per EV session
+    std::vector<DFO> dfos; // Collect one DFO per EV session
 
     // Skip header line
     std::string line;
     if (!std::getline(file, line)) {
-        // empty file
-        return dfos;
+        return dfos; // Empty file
     }
 
-    int dfo_id = 1; // increment for each EV session
+    int dfo_id = 1; // Increment for each EV session
     while (std::getline(file, line)) {
         if (line.empty()) continue;
 
@@ -417,46 +416,68 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             continue;
         }
 
-        // 1) Parse times, round
-        time_t connectionTime   = parseDateTime(fields[2]);
+        // Parse connection and doneCharging times
+        time_t connectionTime = parseDateTime(fields[2]);
         time_t doneChargingTime = parseDateTime(fields[3]);
-        connectionTime   = roundToNearestHour(connectionTime);
+        time_t disconnectTime = parseDateTime(fields[4]);
+        connectionTime = roundToNearestHour(connectionTime);
         doneChargingTime = roundToNearestHour(doneChargingTime);
+        disconnectTime = roundToNearestHour(disconnectTime);
 
-        // 2) kWh
+        // Parse kWhDelivered
         double kWhDelivered = fields[5].empty() ? 0.0 : std::stod(fields[5]);
         if (kWhDelivered <= 0.0) {
-            // Maybe skip or create a trivial DFO
             std::cerr << "Warning: zero or negative kWh, skipping line.\n";
             continue;
         }
 
-        // 3) Compute how many hours from start to end
+        // Compute charging duration and charging rate
         double diff_sec = std::difftime(doneChargingTime, connectionTime);
         if (diff_sec <= 0) {
-            std::cerr << "Warning: end time <= start time, skipping.\n";
+            std::cerr << "Warning: doneChargingTime <= connectionTime, skipping.\n";
             continue;
         }
-        int T = static_cast<int>(std::ceil(diff_sec / 3600.0));
-        if (T < 1) T = 1; // at least 1 hour
+        int charging_hours = static_cast<int>(std::ceil(diff_sec / 3600.0));
+        double charging_rate = kWhDelivered / charging_hours;
 
-        // 4) Build min_prev and max_prev arrays
-        std::vector<double> min_prev(T+1, 0.0);
-        std::vector<double> max_prev(T+1, 0.0);
+        // Create 24 time slices
+        const int total_time_slices = 24;
+        std::vector<double> min_prev(total_time_slices + 1, 0.0);
+        std::vector<double> max_prev(total_time_slices + 1, 0.0);
 
-        for (int i = 0; i <= T; i++) {
-            double fraction = static_cast<double>(i) / T;
-            min_prev[i] = 0.0;
-            max_prev[i] = fraction * kWhDelivered;
+        // Scale max_prev using the full charging rate from the connection time
+        double cumulative_energy = 0.0;
+        for (int i = connectionTime / 3600; i < doneChargingTime / 3600 && cumulative_energy < kWhDelivered; ++i) {
+            cumulative_energy += charging_rate;
+            if (cumulative_energy > kWhDelivered) {
+                cumulative_energy = kWhDelivered;
+            }
+            max_prev[i + 1] = cumulative_energy;
         }
 
-        // 5) Create the DFO
+        // Scale min_prev starting from the last charging hour
+        cumulative_energy = kWhDelivered;
+        for (int i = doneChargingTime / 3600; i >= connectionTime / 3600 && cumulative_energy > 0; --i) {
+            min_prev[i + 1] = cumulative_energy;
+            cumulative_energy -= charging_rate;
+            if (cumulative_energy < 0) {
+                cumulative_energy = 0;
+            }
+        }
+
+        // For time slices after disconnectTime, set min/max to kWhDelivered
+        for (int i = disconnectTime / 3600 + 1; i <= total_time_slices; ++i) {
+            min_prev[i] = kWhDelivered;
+            max_prev[i] = kWhDelivered;
+        }
+
+        // Create the DFO
         DFO myDFO(dfo_id++, min_prev, max_prev, numsamples);
 
-        // 6) Generate polygons
+        // Generate dependency polygons
         myDFO.generate_dependency_polygons();
 
-        // 7) Store
+        // Store the DFO
         dfos.push_back(myDFO);
     }
 
