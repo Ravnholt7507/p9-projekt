@@ -8,6 +8,7 @@
 #include "../include/alignments.h"
 #include "../include/helperfunctions.h"
 #include "../include/tec.h"
+#include "../include/DFO.h"
 
 using namespace std;
 
@@ -42,19 +43,34 @@ double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector
 }
 
 
-double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPrices){
+double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPrices) {
     double total_cost = 0.0;
-    for(const auto &dfo : dfos) {
+
+    for (const auto &dfo : dfos) {
         int T = dfo.polygons.size();
         int maxT = min(T, static_cast<int>(spotPrices.size()));
 
-        for(int t=0; t<maxT; t++){
-            double minE = dfo.polygons[t].min_prev_energy;
-            double maxE = dfo.polygons[t].max_prev_energy;
-            double avgE = 0.5*(minE + maxE);
-            total_cost += avgE * spotPrices[t];
+        double accumulated_dependency = 0.0; // Tracks the dependency amount over time
+
+        for (int t = 0; t < maxT; ++t) {
+            const auto &polygon = dfo.polygons[t];
+
+            // Find min and max energy usage allowed in this time slice
+            vector<Point> matching_points = find_or_interpolate_points(polygon.points, accumulated_dependency);
+            double min_current_energy = matching_points[0].y;
+            double max_current_energy = matching_points[1].y;
+
+            // Compute the average energy usage for this time slice
+            double avg_current_energy = 0.5 * (min_current_energy + max_current_energy);
+
+            // Update the total cost
+            total_cost += avg_current_energy * spotPrices[t];
+
+            // Update the accumulated dependency for the next time slice
+            accumulated_dependency += avg_current_energy;
         }
     }
+
     return total_cost;
 }
 
