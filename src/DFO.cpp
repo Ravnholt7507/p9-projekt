@@ -28,7 +28,12 @@ void DependencyPolygon::generate_polygon(size_t i, double next_min_prev, double 
         add_point(0, next_max_prev);
         return;
     }
-
+    if (min_prev_energy == max_prev_energy && next_min_prev == next_max_prev) {
+        add_point(min_prev_energy, 0);
+        add_point(max_prev_energy, 0);
+        return;
+    }
+    
     double step = (max_prev_energy - min_prev_energy) / (numsamples - 1);
 
     for (int i = 0; i < numsamples; i++) {
@@ -61,8 +66,8 @@ void DependencyPolygon::generate_last_polygon() {
 }
 
 // Print the polygon points
-void DependencyPolygon::print_polygon() const {
-    cout << "Dependency Polygon Points:" << endl;
+void DependencyPolygon::print_polygon(int i) const {
+    cout << "Dependency Polygon Points at hour " << i << ":" << endl;
     for (const auto &point : points) {
         cout << "(" << point.x << ", " << point.y << ")" << endl;
     }
@@ -84,7 +89,7 @@ void DFO::generate_dependency_polygons() {
         if (i < polygons.size() - 1) {
             polygons[i].generate_polygon(i, polygons[i + 1].min_prev_energy, polygons[i + 1].max_prev_energy);
         } else {
-            polygons[i].generate_last_polygon(); // Last timestep
+            polygons[i].generate_polygon(i, 0, 0); // Last timestep
         }
     }
 }
@@ -92,8 +97,8 @@ void DFO::generate_dependency_polygons() {
 // Print the entire DFO
 void DFO::print_dfo() const {
     cout << "Dependency-Based Flexoffer ID: " << dfo_id << endl;
-    for (const auto &polygon : polygons) {
-        polygon.print_polygon();
+    for (size_t i = 0; i < polygons.size(); ++i) {
+        polygons[i].print_polygon(i);
     }
 }
 
