@@ -23,7 +23,7 @@ void DependencyPolygon::add_point(double x, double y) {
 
 // Generate the convex polygon based on numsamples
 void DependencyPolygon::generate_polygon(size_t i, double next_min_prev, double next_max_prev) {
-    if (i == 0 && min_prev_energy == 0 && max_prev_energy == 0) {
+    if (min_prev_energy == 0 && max_prev_energy == 0) {
         add_point(0, next_min_prev);
         add_point(0, next_max_prev);
         return;

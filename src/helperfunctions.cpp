@@ -391,6 +391,14 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
     return flexOffers;
 }
 
+int parseDateTimeToHour(const std::string &dateTimeStr) {
+    struct tm tm = {};
+    if (strptime(dateTimeStr.c_str(), "%a, %d %b %Y %H:%M:%S %Z", &tm) == nullptr) {
+        throw std::runtime_error("Failed to parse date/time: " + dateTimeStr);
+    }
+    return tm.tm_hour; // Extract the hour of the day (0–23)
+}
+
 
 std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 4) {
     std::ifstream file(filename);
@@ -416,28 +424,37 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             continue;
         }
 
-        // Parse connection and doneCharging times
-        time_t connectionTime = parseDateTime(fields[2]);
-        time_t doneChargingTime = parseDateTime(fields[3]);
-        time_t disconnectTime = parseDateTime(fields[4]);
-        connectionTime = roundToNearestHour(connectionTime);
-        doneChargingTime = roundToNearestHour(doneChargingTime);
-        disconnectTime = roundToNearestHour(disconnectTime);
+        // Parse times as hours of the day
+        int connectionHour, disconnectHour, doneChargingHour;
+        try {
+            connectionHour = parseDateTimeToHour(fields[2]);
+            disconnectHour = parseDateTimeToHour(fields[3]);
+            doneChargingHour = parseDateTimeToHour(fields[4]);
+        } catch (const std::exception &e) {
+            std::cerr << "Error parsing date/time: " << e.what() << " in line: " << line << std::endl;
+            continue;
+        }
 
         // Parse kWhDelivered
-        double kWhDelivered = fields[5].empty() ? 0.0 : std::stod(fields[5]);
+        double kWhDelivered = 0.0;
+        try {
+            kWhDelivered = std::stod(fields[5]);
+        } catch (const std::exception &e) {
+            std::cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << std::endl;
+            continue;
+        }
+
         if (kWhDelivered <= 0.0) {
-            std::cerr << "Warning: zero or negative kWh, skipping line.\n";
+            std::cerr << "Warning: zero or negative kWhDelivered, skipping line." << std::endl;
             continue;
         }
 
         // Compute charging duration and charging rate
-        double diff_sec = std::difftime(doneChargingTime, connectionTime);
-        if (diff_sec <= 0) {
-            std::cerr << "Warning: doneChargingTime <= connectionTime, skipping.\n";
+        int charging_hours = doneChargingHour - connectionHour;
+        if (charging_hours <= 0) {
+            std::cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
             continue;
         }
-        int charging_hours = static_cast<int>(std::ceil(diff_sec / 3600.0));
         double charging_rate = kWhDelivered / charging_hours;
 
         // Create 24 time slices
@@ -445,9 +462,9 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         std::vector<double> min_prev(total_time_slices + 1, 0.0);
         std::vector<double> max_prev(total_time_slices + 1, 0.0);
 
-        // Scale max_prev using the full charging rate from the connection time
+        // Scale max_prev using the full charging rate from the connection hour
         double cumulative_energy = 0.0;
-        for (int i = connectionTime / 3600; i < doneChargingTime / 3600 && cumulative_energy < kWhDelivered; ++i) {
+        for (int i = connectionHour; i <= doneChargingHour && cumulative_energy < kWhDelivered; ++i) {
             cumulative_energy += charging_rate;
             if (cumulative_energy > kWhDelivered) {
                 cumulative_energy = kWhDelivered;
@@ -457,7 +474,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
 
         // Scale min_prev starting from the last charging hour
         cumulative_energy = kWhDelivered;
-        for (int i = doneChargingTime / 3600; i >= connectionTime / 3600 && cumulative_energy > 0; --i) {
+        for (int i = doneChargingHour; i >= connectionHour && cumulative_energy > 0; --i) {
             min_prev[i + 1] = cumulative_energy;
             cumulative_energy -= charging_rate;
             if (cumulative_energy < 0) {
@@ -465,8 +482,8 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             }
         }
 
-        // For time slices after disconnectTime, set min/max to kWhDelivered
-        for (int i = disconnectTime / 3600 + 1; i <= total_time_slices; ++i) {
+        // For time slices after disconnectHour, set min/max to kWhDelivered
+        for (int i = disconnectHour + 1; i <= total_time_slices; ++i) {
             min_prev[i] = kWhDelivered;
             max_prev[i] = kWhDelivered;
         }
