@@ -117,7 +117,7 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         file << scenario_id << "," << s.aggregator_type << "," << static_cast<int>(s.align) << "," << s.est_threshold << "," << s.lst_threshold << ","
         << s.max_group_size << "," << baseline << "," << agg_cost << "," << savings << "," << scenarioTimeSec << "," << n << "\n";
 
-        cout << "Scenario " << scenario_id << " [type=" << s.aggregator_type << "] => " << "est=" << s.est_threshold << ", lst=" << s.lst_threshold 
+        cout << "Scenario " << scenario_id << " [type=" << s.aggregator_type << " alignment= " << static_cast<int>(s.align) << "] => " << "est=" << s.est_threshold << ", lst=" << s.lst_threshold 
         << ", maxG=" << s.max_group_size << "\n" << "   baseline=" << baseline  << ", aggregated_cost=" << agg_cost  << ", savings=" << savings  << ", NrOfFos " <<  n << ", scenario_time=" << scenarioTimeSec << "s\n\n";
         scenario_id++;
     }
@@ -129,12 +129,12 @@ vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
     
-    vector<int> aggrTypes = {1};
+    vector<int> aggrTypes = {0,1};
 
     vector<Alignments> aligns = {
         Alignments::start,
         Alignments::balance,
-        //Alignments::price,
+        Alignments::price,
     };
 
     vector<int> thresholds = {1, 2, 3}; 
