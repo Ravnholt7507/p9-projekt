@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     vector<variant<Flexoffer, Tec_flexoffer>> parsedNormalOffers = parseEVDataToFlexOffers(evDataFile, 0);
     vector<variant<Flexoffer, Tec_flexoffer>> parsedTecOffers = parseEVDataToFlexOffers(evDataFile, 1);
 
+    vector<DFO> dfos = parseEVDataToDFO(evDataFile, 5);
     vector<Flexoffer> fos;
     vector<Tec_flexoffer> tec_fos;
 
@@ -39,7 +40,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    runAggregationScenarios(fos, tec_fos, spotPrices);
+    runAggregationScenarios(fos, tec_fos, dfos, spotPrices);
     return 0;
 }
 
