@@ -35,6 +35,6 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, in
 vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices, int startGroupId);
 vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
 vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices, int startGroupId);
-vector<DFO> parseEVDataToDFO(const string &filename, int numsamples=4);
+vector<DFO> parseEVDataToDFO(const string &filename, int numsamples);
 
 #endif // HELPERFUNCTION_H
