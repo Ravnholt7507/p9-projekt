@@ -171,7 +171,7 @@ vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
     
-    vector<int> aggrTypes = {0,1};
+    vector<int> aggrTypes = {0,1,2};
 
     vector<Alignments> aligns = {
         Alignments::start,

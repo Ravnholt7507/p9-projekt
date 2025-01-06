@@ -2,6 +2,9 @@
 #include <fstream>
 #include <curl/curl.h>
 #include "../json.hpp" // Include nlohmann/json header
+#include <stdexcept>
+#include <sstream>
+#include <ctime>
 
 using namespace std;
 using json = nlohmann::json;
@@ -11,6 +14,26 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
 {
     ((string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
+}
+
+/** 
+ * Minimal parseDateTime function that converts something like 
+ * "Wed, 25 Apr 2018 11:08:04 GMT" to time_t 
+ * If your actual time format differs, adjust the parsing logic 
+ */
+time_t parseDateTime(const std::string &datetimeStr) {
+    // We'll assume it's something like "Wed, 25 Apr 2018 11:08:04 GMT"
+    // Adjust as necessary for your exact format
+    std::tm timeinfo = {};
+    std::istringstream iss(datetimeStr);
+    // Example: "Wed, 25 Apr 2018 11:08:04 GMT"
+    iss >> std::get_time(&timeinfo, "%a, %d %b %Y %H:%M:%S GMT");
+    if (iss.fail()) {
+        // If it fails, throw or return 0
+        throw std::runtime_error("Invalid date-time format: " + datetimeStr);
+    }
+    // Convert from struct tm to time_t (UTC)
+    return timegm(&timeinfo); 
 }
 
 void downloadData(const string &url, const string &outputFilePath)
@@ -60,11 +83,36 @@ void downloadData(const string &url, const string &outputFilePath)
 
                 // Extract and write all fields for each record
                 for (const auto& record : jsonData["_items"]) {
-                    for (auto& field : record.items()) {
-                        outFile << (field.value().is_null() ? "" : field.value().dump()) << ",";
+                    try {
+                        // 1) Make sure these fields exist
+                        if (!record.contains("connectionTime") || !record.contains("doneChargingTime")) {
+                            // If they're missing, skip or do something else
+                            continue;
+                        }
+
+                        // 2) Parse them as time_t
+                        string connTimeStr  = record["connectionTime"].get<string>();
+                        string doneTimeStr  = record["doneChargingTime"].get<string>();
+
+                        time_t connTime  = parseDateTime(connTimeStr);
+                        time_t doneTime  = parseDateTime(doneTimeStr);
+
+                        // 3) Check difference
+                        double diffSec = difftime(doneTime, connTime);
+                        if (diffSec < 3600.0) {
+                            continue;
+                        }
+                        for (auto &field : record.items()) {
+                            outFile << (field.value().is_null() ? "" : field.value().dump()) << ",";
+                        }
+                        outFile.seekp(-1, ios_base::cur); // Remove trailing comma
+                        outFile << "\n";
+
+                    } catch (const std::exception &e) {
+                        cerr << "Record parse error: " << e.what() << endl;
+                        // skip this record
+                        continue;
                     }
-                    outFile.seekp(-1, ios_base::cur); // Remove trailing comma
-                    outFile << "\n";
                 }
 
                 outFile.close();
@@ -76,19 +124,17 @@ void downloadData(const string &url, const string &outputFilePath)
     }
 }
 
-
 int main() {
-
     int totalPages = 100;
     string outputfilePath = "../data/ev_data.csv";
     for (int page = 1; page <= totalPages; ++page) {
         std::ostringstream apiURL;
-        apiURL << "https://ev.caltech.edu/api/v1/sessions/caltech?%20where=connectionTime%3E=%22Wed,%201%20May%202019%2000:00:00%20GMT%22%20and%20connectionTime%3C=%22Thu,%202%20May%202019%2000:00:00%20GMT%22%20"
-                << "&page=" << page
-                << "&pretty";
+        apiURL << "https://ev.caltech.edu/api/v1/sessions/caltech?"
+               << "%20where=connectionTime%3E=%22Wed,%201%20May%202019%2000:00:00%20GMT%22%20"
+               << "and%20connectionTime%3C=%22Thu,%202%20May%202019%2000:00:00%20GMT%22%20"
+               << "&page=" << page
+               << "&pretty";
         downloadData(apiURL.str(), outputfilePath);
     }
-
-
     return 0;
 }
