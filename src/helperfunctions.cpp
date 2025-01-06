@@ -459,8 +459,8 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
 
         // Create 24 time slices
         const int total_time_slices = 24;
-        std::vector<double> min_prev(total_time_slices + 1, 0.0);
-        std::vector<double> max_prev(total_time_slices + 1, 0.0);
+        std::vector<double> min_prev(total_time_slices, 0.0);
+        std::vector<double> max_prev(total_time_slices, 0.0);
 
         // Scale max_prev using the full charging rate from the connection hour
         double cumulative_energy = 0.0;
