@@ -180,11 +180,10 @@ vector<double> Solver::DFO_Optimization(const DFO& dfo, const vector<double>& co
         IloCplex cplex(model);
         cplex.setOut(env.getNullStream()); // Suppress output for performance
         if (cplex.solve()) {
-            cout << "Optimal solution found!" << endl;
             for (size_t t = 0; t < dfo.polygons.size(); ++t) {
                 double value = cplex.getValue(energy[t]);
                 DFO_Schedule.push_back(value);
-                cout << "Energy at time " << t + 1 << ": " << value << endl;
+            //    cout << "Energy at time " << t + 1 << ": " << value << endl;
             }
         } else {
             cerr << "Failed to find optimal solution." << endl;
