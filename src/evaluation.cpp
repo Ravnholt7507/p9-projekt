@@ -148,24 +148,23 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         double agg_cost=0.0;
 
         int n = min(s.usedOffers, (int)normalOffers.size()); //check that chosen size is less than what we actually have
+        vector<Flexoffer> subNormal(normalOffers.begin(), normalOffers.begin() + n);    
 
         auto t_start = chrono::steady_clock::now();
         if (s.aggregator_type == 0) { //thsi is for normal FOs
-            vector<Flexoffer> subNormal(normalOffers.begin(), normalOffers.begin() + n);    
             baseline = computeBaselineCost(subNormal, spotPrices);
             agg_cost = computeAggregatedCost(subNormal, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
         }
         else if (s.aggregator_type == 1) { // this is for tec FOs
             vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
-            baseline = computeBaselineCost(subTec, spotPrices);
+            baseline = computeBaselineCost(subNormal, spotPrices);
             agg_cost = computeAggregatedCost(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
         }
         else if (s.aggregator_type == 2){ // DFO
             vector<DFO> subDFOs(dfos.begin(), dfos.begin()+n);
-            baseline = computeBaselineCost(subDFOs, spotPrices);
+            baseline = computeBaselineCost(subNormal, spotPrices);
             agg_cost = computeAggregatedCost(subDFOs, spotPrices);
         } 
-
 
         auto t_end = chrono::steady_clock::now();
         double savings = baseline - agg_cost;
@@ -186,9 +185,7 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    
     vector<int> aggrTypes = {0,1,2};
-
     vector<Alignments> aligns = {
         Alignments::start,
         Alignments::balance,
@@ -196,9 +193,7 @@ vector<AggScenario> generateScenarioMatrix() {
     };
 
     vector<int> thresholds = {1, 2, 3}; 
-
     vector<int> groupSizes = {2, 5, 10};
-
     vector<int> nOffersVec = {10, 20, 50};
 
     for (int at : aggrTypes) {
