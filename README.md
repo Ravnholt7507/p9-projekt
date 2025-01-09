@@ -20,7 +20,7 @@ A requirement for building the project is to have the CPLEX solver installed on 
 ```./output --run_tests``` 
 
 # Generating graphs
-To generate the graph used in the report:
+To generate the graphs used in the report:
 1. Step into the visuals folder (assuming you are in the projects root folder)
     - Command: ```cd visuals``` 
 2. Make sure the pip librarys pandas and matplotlib is installed
