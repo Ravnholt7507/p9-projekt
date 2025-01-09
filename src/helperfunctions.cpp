@@ -391,36 +391,36 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
     return flexOffers;
 }
 
-int parseDateTimeToHour(const std::string &dateTimeStr) {
+int parseDateTimeToHour(const string &dateTimeStr) {
     struct tm tm = {};
     if (strptime(dateTimeStr.c_str(), "%a, %d %b %Y %H:%M:%S %Z", &tm) == nullptr) {
-        throw std::runtime_error("Failed to parse date/time: " + dateTimeStr);
+        throw runtime_error("Failed to parse date/time: " + dateTimeStr);
     }
     return tm.tm_hour; // Extract the hour of the day (0–23)
 }
 
 
-std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 4) {
-    std::ifstream file(filename);
+vector<DFO> parseEVDataToDFO(const string &filename, int numsamples = 4) {
+    ifstream file(filename);
     if (!file.is_open()) {
-        throw std::runtime_error("Error: Could not open file " + filename);
+        throw runtime_error("Error: Could not open file " + filename);
     }
 
-    std::vector<DFO> dfos; // Collect one DFO per EV session
+    vector<DFO> dfos; // Collect one DFO per EV session
 
     // Skip header line
-    std::string line;
-    if (!std::getline(file, line)) {
+    string line;
+    if (!getline(file, line)) {
         return dfos; // Empty file
     }
 
     int dfo_id = 1; // Increment for each EV session
-    while (std::getline(file, line)) {
+    while (getline(file, line)) {
         if (line.empty()) continue;
 
         auto fields = parseCSVLine(line);
         if (fields.size() < 6) {
-            std::cerr << "[parseEVDataToDFO] Skipping invalid line:\n" << line << std::endl;
+            cerr << "[parseEVDataToDFO] Skipping invalid line:\n" << line << endl;
             continue;
         }
 
@@ -430,37 +430,37 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             connectionHour = parseDateTimeToHour(fields[2]);
             disconnectHour = parseDateTimeToHour(fields[3]);
             doneChargingHour = parseDateTimeToHour(fields[4]);
-        } catch (const std::exception &e) {
-            std::cerr << "Error parsing date/time: " << e.what() << " in line: " << line << std::endl;
+        } catch (const exception &e) {
+            cerr << "Error parsing date/time: " << e.what() << " in line: " << line << endl;
             continue;
         }
 
         // Parse kWhDelivered
         double kWhDelivered = 0.0;
         try {
-            kWhDelivered = std::stod(fields[5]);
-        } catch (const std::exception &e) {
-            std::cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << std::endl;
+            kWhDelivered = stod(fields[5]);
+        } catch (const exception &e) {
+            cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << endl;
             continue;
         }
 
         if (kWhDelivered <= 0.0) {
-            std::cerr << "Warning: zero or negative kWhDelivered, skipping line." << std::endl;
+            cerr << "Warning: zero or negative kWhDelivered, skipping line." << endl;
             continue;
         }
 
         // Compute charging duration and charging rate
         int charging_hours = doneChargingHour - connectionHour;
         // if (charging_hours <= 0) {
-        //     std::cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
+        //     cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
         //     continue;
         // }
         double charging_rate = kWhDelivered / charging_hours;
 
         // Create 24 time slices
         const int total_time_slices = 24;
-        std::vector<double> min_prev(total_time_slices, 0.0);
-        std::vector<double> max_prev(total_time_slices, 0.0);
+        vector<double> min_prev(total_time_slices, 0.0);
+        vector<double> max_prev(total_time_slices, 0.0);
 
         // Scale max_prev using the full charging rate from the connection hour
         double cumulative_energy = 0.0;
@@ -595,5 +595,27 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers
     return finalAggregates;
 }
 
+
+vector<FCRRow> readFCRCSV(const string &filename){
+    vector<FCRRow> result;
+    ifstream file(filename);
+    string line;
+    if(!getline(file, line)) {
+        throw runtime_error("Empty FCR file or missing header: " + filename);
+    }
+    while(getline(file, line)) {
+        if(line.empty()) continue;
+        stringstream ss(line);
+        string hr, fp, fv;
+        if(getline(ss, hr, ',') && getline(ss, fv, ',') && getline(ss, fp, ',')) {
+            FCRRow row;
+            row.hourString = hr;
+            row.fcrPrice = stod(fp);
+            row.fcrVolume = stod(fv);
+            result.push_back(row);
+        }
+    }
+    return result;
+}
 
 

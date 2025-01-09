@@ -7,26 +7,25 @@
 
 using namespace std;
 
+struct SolverResult {
+    vector<double> finalSchedule;
+    vector<double> newDeviation;
+    double totalReduction;
+};
+
+
 class Solver {
 public:
     // Existing method
     static vector<vector<double>> solve(vector<AggregatedFlexOffer> &afos, const vector<double> &prices);
 
-    static tuple<vector<vector<double>>, vector<vector<double>>, vector<vector<double>>, double> solveFCRRevenueMaximization(
-    vector<AggregatedFlexOffer> &afos,
-    const vector<double> &up_prices,
-    const vector<double> &down_prices,
-    const vector<double> &energy_cost);
-
-    static tuple<vector<vector<double>>, double>
-    solveVolumeReductionMultiple(
-    vector<AggregatedFlexOffer> &allAFOs,
-    const vector<vector<double>> &allOrigVolumes,
-    const vector<vector<double>> &allEsch);
-
     static vector<vector<double>> solve_tec(vector<AggregatedFlexOffer> &afos, const vector<double> &prices);
 
     static vector<double> DFO_Optimization(const DFO& dfo, const vector<double>& cost_per_unit);
+
+    static SolverResult solveFCR(AggregatedFlexOffer &afo, const vector<double> &mismatch);
+
+    static SolverResult solveFCR_tec(AggregatedFlexOffer &afo, const std::vector<double> &mismatch);
 };
 
 #endif // SOLVER_H

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <fstream>
 #include <chrono>
 
@@ -128,6 +129,71 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices)
     return total_cost;
 }
 
+double runBRPScenario(vector<Flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
+
+    double totalBRPBenefit = 0.0;
+    vector<AggregatedFlexOffer> aggregatedAFOs = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 0);
+
+    const int T = 24; 
+    vector<double> deviation(T, 0.0), fcrPrices(T, 0.0);
+
+    vector<FCRRow> rows = readFCRCSV("../data/FCRprices.csv");
+    for (int i = 0; i < (int)deviation.size(); i++){
+        deviation[i] = rows[i].fcrVolume;
+        fcrPrices[i] = rows[i].fcrPrice;
+    }
+
+    for (auto &afo : aggregatedAFOs){
+        SolverResult brpRes = Solver::solveFCR(afo, deviation);
+
+        double brpBenefitForThisAFO = 0.0;
+        int duration = afo.get_duration();
+        for (int t = 0; t < duration; t++) {
+            double old_m  = fabs(deviation[t + afo.get_aggregated_earliest_hour()]);
+            double new_m  = brpRes.newDeviation[t];
+            double diffPrice = fabs(spotPrices[t + afo.get_aggregated_earliest_hour()] - fcrPrices[t + afo.get_aggregated_earliest_hour()]);
+            cout << "Time t (duration): " << t << "old_m: " << old_m << "new_m: " << new_m << "diffPrice: " << diffPrice << "\n";
+            brpBenefitForThisAFO += (old_m - new_m) * diffPrice;
+        }
+
+        cout << "cost benefit for individal aggregated FOs: " << brpBenefitForThisAFO << "\n";
+        totalBRPBenefit += brpBenefitForThisAFO;
+    }
+    return totalBRPBenefit;
+}
+
+double runBRPScenario(vector<Tec_flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
+
+    double totalBRPBenefit = 0.0;
+    vector<AggregatedFlexOffer> aggregatedAFOs = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 0);
+
+    const int T = 24; 
+    vector<double> deviation(T, 0.0), fcrPrices(T, 0.0);
+
+    vector<FCRRow> rows = readFCRCSV("../data/FCRprices.csv");
+    for (int i = 0; i < (int)deviation.size(); i++){
+        deviation[i] = rows[i].fcrVolume;
+        fcrPrices[i] = rows[i].fcrPrice;
+    }
+
+    for (auto &afo : aggregatedAFOs){
+        SolverResult brpRes = Solver::solveFCR_tec(afo, deviation);
+
+        double brpBenefitForThisAFO = 0.0;
+        int duration = afo.get_duration();
+        for (int t = 0; t < duration; t++) {
+            double old_m    = fabs(deviation[t + afo.get_aggregated_earliest_hour()]);
+            double new_m    = brpRes.newDeviation[t];
+            double diffPrice = fabs(spotPrices[t + afo.get_aggregated_earliest_hour()] - fcrPrices[t + afo.get_aggregated_earliest_hour()]);
+            brpBenefitForThisAFO += (old_m - new_m) * diffPrice;
+            cout << "Time t (duration): " << t << "old_m: " << old_m << "new_m: " << new_m << "diffPrice: " << diffPrice << "\n";
+        }
+        cout << "cost benefit for individal aggregated FOs: " << brpBenefitForThisAFO << "\n";
+        totalBRPBenefit += brpBenefitForThisAFO;
+    }
+    return totalBRPBenefit;
+}
+
 
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &dfos, const vector<double> &spotPrices){
@@ -140,31 +206,42 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         return;
     }
 
-    file << "scenario_id,aggregator_type,alignment,est_threshold,lst_threshold,max_group_size,baseline_cost,aggregated_cost,savings,scenario_time,NrOfFlexOffers\n";
+    file << "scenario_id,aggregator_type,alignment,est_threshold,lst_threshold,max_group_size,baseline_cost,aggregated_cost,savings,scenario_time,NrOfFlexOffers,brpBenefit\n";
 
     int scenario_id = 1;
     for (auto &s : scenarios) {
         double baseline=0.0;
         double agg_cost=0.0;
-
+        double fcrBenefit = 0.0;
         int n = min(s.usedOffers, (int)normalOffers.size()); //check that chosen size is less than what we actually have
         vector<Flexoffer> subNormal(normalOffers.begin(), normalOffers.begin() + n);    
 
         auto t_start = chrono::steady_clock::now();
-        if (s.aggregator_type == 0) { //thsi is for normal FOs
-            baseline = computeBaselineCost(subNormal, spotPrices);
-            agg_cost = computeAggregatedCost(subNormal, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+        if (s.objective_mode == 0) {
+            if (s.aggregator_type == 0) { //thsi is for normal FOs
+                baseline = computeBaselineCost(subNormal, spotPrices);
+                agg_cost = computeAggregatedCost(subNormal, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+            }
+            else if (s.aggregator_type == 1) { // this is for tec FOs
+                vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
+                baseline = computeBaselineCost(subNormal, spotPrices);
+                agg_cost = computeAggregatedCost(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+            }
+            else if (s.aggregator_type == 2){ // DFO
+                vector<DFO> subDFOs(dfos.begin(), dfos.begin()+n);
+                baseline = computeBaselineCost(subNormal, spotPrices);
+                agg_cost = computeAggregatedCost(subDFOs, spotPrices);
+            }
         }
-        else if (s.aggregator_type == 1) { // this is for tec FOs
-            vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
-            baseline = computeBaselineCost(subNormal, spotPrices);
-            agg_cost = computeAggregatedCost(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+        else {
+            if (s.aggregator_type == 0) {
+                fcrBenefit = runBRPScenario(subNormal, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+            }
+            else if (s.aggregator_type == 1) {
+                vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
+                fcrBenefit = runBRPScenario(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
+            }
         }
-        else if (s.aggregator_type == 2){ // DFO
-            vector<DFO> subDFOs(dfos.begin(), dfos.begin()+n);
-            baseline = computeBaselineCost(subNormal, spotPrices);
-            agg_cost = computeAggregatedCost(subDFOs, spotPrices);
-        } 
 
         auto t_end = chrono::steady_clock::now();
         double savings = baseline - agg_cost;
@@ -172,10 +249,10 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         double scenarioTimeSec = chrono::duration<double>(t_end - t_start).count();
 
         file << scenario_id << "," << s.aggregator_type << "," << static_cast<int>(s.align) << "," << s.est_threshold << "," << s.lst_threshold << ","
-        << s.max_group_size << "," << baseline << "," << agg_cost << "," << savings << "," << scenarioTimeSec << "," << n << "\n";
+        << s.max_group_size << "," << baseline << "," << agg_cost << "," << savings << "," << scenarioTimeSec << "," << n << "," << fcrBenefit << "\n";
 
         cout << "Scenario " << scenario_id << " [type=" << s.aggregator_type << " alignment= " << static_cast<int>(s.align) << "] => " << "est=" << s.est_threshold << ", lst=" << s.lst_threshold 
-        << ", maxG=" << s.max_group_size << "\n" << "   baseline=" << baseline  << ", aggregated_cost=" << agg_cost  << ", savings=" << savings  << ", NrOfFos " <<  n << ", scenario_time=" << scenarioTimeSec << "s\n\n";
+        << ", maxG=" << s.max_group_size << "\n" << "   baseline=" << baseline  << ", aggregated_cost=" << agg_cost  << ", savings=" << savings  << ", NrOfFos " <<  n << ", scenario_time=" << scenarioTimeSec << ", BRP: " << fcrBenefit << "s\n\n";
         scenario_id++;
     }
 
@@ -185,30 +262,37 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0,1,2};
+    vector<int> aggrTypes = {0,1};
+    
     vector<Alignments> aligns = {
         Alignments::start,
-        Alignments::balance,
+        //Alignments::balance,
         Alignments::price,
     };
 
-    vector<int> thresholds = {1, 2, 3}; 
-    vector<int> groupSizes = {2, 5, 10};
-    vector<int> nOffersVec = {10, 20, 50};
+    vector<int> thresholds = {2, 4}; 
+    vector<int> groupSizes = {3, 5,10};
+    vector<int> nOffersVec = {5, 10, 20};
+
+    vector<int> objModes = {0};
+    
 
     for (int at : aggrTypes) {
-        for (auto al : aligns) {
-            for (int th : thresholds) {
-                for (int g : groupSizes) {
-                    for (int usedN : nOffersVec) {
-                        AggScenario s;
-                        s.aggregator_type = at;
-                        s.est_threshold = th;
-                        s.lst_threshold = th;
-                        s.max_group_size = g;
-                        s.align = al;
-                        s.usedOffers = usedN;
-                        scenarios.push_back(s);
+        for (int om : objModes) {
+            for (auto al : aligns) {
+                for (int th : thresholds) {
+                    for (int g : groupSizes) {
+                        for (int usedN : nOffersVec) {
+                            AggScenario s;
+                            s.aggregator_type = at;
+                            s.objective_mode  = om;
+                            s.est_threshold = th;
+                            s.lst_threshold = th;
+                            s.max_group_size = g;
+                            s.align = al;
+                            s.usedOffers = usedN;
+                            scenarios.push_back(s);
+                        }
                     }
                 }
             }

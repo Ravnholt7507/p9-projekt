@@ -19,6 +19,16 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) 
     return newLength;
 }
 
+time_t parseDateTime(const std::string &datetimeStr) {
+    std::tm timeinfo = {};
+    std::istringstream iss(datetimeStr);
+    iss >> std::get_time(&timeinfo, "%a, %d %b %Y %H:%M:%S GMT");
+    if (iss.fail()) {
+        throw std::runtime_error("Invalid date-time format: " + datetimeStr);
+    }
+    return timegm(&timeinfo); 
+}
+
 // Function to download and process price data
 void downloadAndConvertPrices(const string &url, const string &outputFilePath) {
     CURL* curl;
@@ -45,7 +55,7 @@ void downloadAndConvertPrices(const string &url, const string &outputFilePath) {
             ofstream outFile(outputFilePath);
             if (outFile.is_open()) {
                 // Write header
-                outFile << "FCRdomestic_MW,FCRabroad_MW,FCRcross_EUR,FCRdk_EUR\n";
+                outFile << "time (hour UTC),Volume (kWh),Price (euro/kWh)\n";
 
                 // Extract and convert data
                 for (const auto& record : jsonData["records"]) {
@@ -62,8 +72,11 @@ void downloadAndConvertPrices(const string &url, const string &outputFilePath) {
                         fcr_price_cross = fcr_price_cross / 1000.0;
                         fcr_price_dk = fcr_price_dk  / 1000.0;
 
+                        double overall_Price = (fcr_price_cross + fcr_price_dk) / 2;
+                        double overall_Volume = fcr_dom + fcr_abr;
+
                         // Write to CSV
-                        outFile << fcr_dom << "," << fcr_abr << "," << fcr_price_cross << "," << fcr_price_dk << "\n";
+                        outFile << hourUTC << "," << overall_Volume << "," << overall_Price << "\n";
                     }
                 }
 
@@ -85,3 +98,4 @@ int main() {
 
     return 0;
 }
+

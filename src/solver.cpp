@@ -9,15 +9,93 @@
 
 using namespace std;
 
-static int hourOfDay(time_t t) {
-    struct tm* tmInfo = localtime(&t);
-    return tmInfo->tm_hour;
-}
-
 ILOSTLBEGIN
 
 //Opitimization based on NordPool for normal flexOffers
-vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const vector<double> &prices) {
+vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const vector<double> &prices){
+
+    if (afos.empty()) {
+        cerr << "[DEBUG] No AggregatedFlexOffers => returning empty.\n";
+        return {};
+    }
+
+    IloEnv env;
+    IloModel model(env);
+
+    int A = (int)afos.size();
+    vector<IloNumVarArray> powerVars(A);
+    IloExpr obj(env);
+
+    // 3) Build decision variables
+    for (int a = 0; a < A; a++) {
+        int duration = afos[a].get_duration();
+        powerVars[a] = IloNumVarArray(env, duration);
+        auto profile = afos[a].get_aggregated_profile();
+
+        for (int t = 0; t < duration; t++) {
+            double lb = profile[t].min_power;
+            double ub = profile[t].max_power;
+
+            // Debug
+            //cout << "[DEBUG] AFO=" << a << " t=" << t << " lb=" << lb 
+            //     << " ub=" << ub << " price=" << adjusted_prices[t] << endl;
+
+            powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
+            obj += 1.0 * prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
+        }
+    }
+
+    model.add(IloMinimize(env, obj));
+    obj.end();
+
+    // 4) Solve
+    IloCplex cplex(model);
+    cplex.setOut(env.getNullStream());
+    bool ok = cplex.solve();
+    if (!ok) {
+        cerr << "[ERROR] No optimal solution found => cplex status="
+             << cplex.getStatus() << endl;
+        env.end();
+        return {};
+    }
+
+    // 5) Extract solution
+    vector<vector<double>> solution(A);
+    for (int a = 0; a < A; a++) {
+        int duration = afos[a].get_duration();
+        solution[a].resize(duration);
+        for (int t = 0; t < duration; t++) {
+            // If cplex throws NotExtracted => check if you see the var in the model
+            double val = cplex.getValue(powerVars[a][t]);
+            solution[a][t] = val;
+        }
+        afos[a].apply_schedule(solution[a]);
+
+        // Shift aggregator's earliest if needed
+        int firstNonZero = -1;
+        for (int t = 0; t < duration; t++) {
+            if (solution[a][t] > 0.0) {
+                firstNonZero = t;
+                break;
+            }
+        }
+        if (firstNonZero > 0) {
+            time_t scheduled_start = afos[a].get_aggregated_earliest() + (firstNonZero * 3600);
+            afos[a].set_aggregated_scheduled_start_time(scheduled_start);
+        } else {
+            afos[a].set_aggregated_scheduled_start_time(afos[a].get_aggregated_earliest());
+        }
+        cout << "[DEBUG] AFO " << a << " => final schedule => duration=" << duration
+             << endl;
+    }
+
+    env.end();
+    return solution;
+}
+
+
+
+vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, const vector<double> &prices) {
     if (afos.empty()) {
         cerr << "No AggregatedFlexOffers to solve." << endl;
         return {};
@@ -30,20 +108,11 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
     vector<IloNumVarArray> powerVars(A);
     IloExpr obj(env);
 
-    // Ensure prices cover the longest duration
-    int max_duration = 0;
-    for (const auto &afo : afos) {
-        max_duration = max(max_duration, afo.get_duration());
-    }
-    vector<double> adjusted_prices = prices;
-    if ((int)adjusted_prices.size() < max_duration) {
-        adjusted_prices.resize(max_duration, 0.0);
-    }
-    
     // Create decision variables with valid bounds
     for (int a = 0; a < A; a++) {
         int duration = afos[a].get_duration();
         powerVars[a] = IloNumVarArray(env, duration);
+        cout << "Duration: " << duration << "\n"; 
 
         auto profile = afos[a].get_aggregated_profile();
         for (int t = 0; t < duration; t++) {
@@ -52,11 +121,18 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
             powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
 
             // Objective function: add only valid durations
-            obj += -1 * adjusted_prices[t] * powerVars[a][t];
+            obj += prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
         }
+        IloExpr total_energy(env);
+        for (int t = 0; t < duration; t++) {
+            total_energy += powerVars[a][t];
+        }
+        model.add(total_energy >= afos[a].get_min_overall());
+        model.add(total_energy <= afos[a].get_max_overall());
+        total_energy.end();
     }
 
-    model.add(IloMaximize(env, obj));
+    model.add(IloMinimize(env, obj));
     obj.end();
 
     // Solve the model
@@ -96,6 +172,7 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
     env.end();
     return solution;
 }
+
 
 
 void add_linear_interpolation_constraints(
@@ -198,340 +275,154 @@ vector<double> Solver::DFO_Optimization(const DFO& dfo, const vector<double>& co
     return DFO_Schedule;
 }
 
+SolverResult Solver::solveFCR(AggregatedFlexOffer &afo, const vector<double> &mismatch){
+    SolverResult result;
+    result.totalReduction = 0.0;
 
-vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, const vector<double> &prices) {
-    if (afos.empty()) {
-        cerr << "No AggregatedFlexOffers to solve." << endl;
-        return {};
-    }
-
+    int T = afo.get_duration();
     IloEnv env;
     IloModel model(env);
 
-    int A = afos.size();
-    vector<IloNumVarArray> powerVars(A);
+    IloNumVarArray p(env, T);
+    auto profile = afo.get_aggregated_profile();
+    for (int t = 0; t < T; t++) {
+        double lb = profile[t].min_power;
+        double ub = profile[t].max_power;
+        p[t] = IloNumVar(env, lb, ub, ILOFLOAT);
+    }
+
+    IloNumVarArray y(env, T);
+    for (int t = 0; t < T; t++) {
+        y[t] = IloNumVar(env, 0.0, IloInfinity, ILOFLOAT);
+    }
+
+    for (int t = 0; t < T; t++) {
+        double v = mismatch[t + afo.get_aggregated_earliest_hour()];
+        model.add( y[t] >= (v - p[t]) );
+        model.add( y[t] >= (p[t] - v) );
+    }
+
     IloExpr obj(env);
-
-    // Ensure prices cover the longest duration
-    int max_duration = 0;
-    for (const auto &afo : afos) {
-        max_duration = max(max_duration, afo.get_duration());
+    for (int t = 0; t < T; t++) {
+        obj += y[t];
     }
-    
-    // Create decision variables with valid bounds
-    for (int a = 0; a < A; a++) {
-        int duration = afos[a].get_duration();
-        powerVars[a] = IloNumVarArray(env, duration);
-
-        auto profile = afos[a].get_aggregated_profile();
-        for (int t = 0; t < duration; t++) {
-            double lb = profile[t].min_power;
-            double ub = profile[t].max_power;
-            powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
-
-            // Objective function: add only valid durations
-            obj += prices[t] * powerVars[a][t];
-        }
-        IloExpr total_energy(env);
-        for (int t = 0; t < duration; t++) {
-            total_energy += powerVars[a][t];
-        }
-        model.add(total_energy >= afos[a].get_min_overall());
-        model.add(total_energy <= afos[a].get_max_overall());
-        total_energy.end();
-    }
-
     model.add(IloMinimize(env, obj));
     obj.end();
 
-    // Solve the model
+    // Solve
     IloCplex cplex(model);
     cplex.setOut(env.getNullStream());
-
     if (!cplex.solve()) {
-        cerr << "No optimal solution found." << endl;
+        cerr << "[solveSingleAFO_BRP] No feasible solution.\n";
         env.end();
-        return {};
+        return result;
     }
 
     // Extract solution
-    vector<vector<double>> solution(A);
-    for (int a = 0; a < A; a++) {
-        int duration = afos[a].get_duration();
-        solution[a].resize(duration);
-        for (int t = 0; t < duration; t++) {
-            solution[a][t] = cplex.getValue(powerVars[a][t]);
-        }
-        afos[a].apply_schedule(solution[a]);
-        int firstNonZero = -1;
-        for (int t = 0; t < duration; t++) {
-            if (solution[a][t] > 0) {
-                firstNonZero = t;
-                break;
-            }
-        }
-        if (firstNonZero > 0) {
-            time_t scheduled_start = afos[a].get_aggregated_earliest() + (firstNonZero * 3600);
-            afos[a].set_aggregated_scheduled_start_time(scheduled_start);
-        } else {
-            afos[a].set_aggregated_scheduled_start_time(afos[a].get_aggregated_earliest());
-        }
+    result.finalSchedule.resize(T, 0.0);
+    result.newDeviation.resize(T, 0.0);
+    double sumOld = 0.0, sumNew = 0.0;
+
+    for (int t = 0; t < T; t++) {
+        double pVal = cplex.getValue(p[t]);
+        double yVal = cplex.getValue(y[t]);
+        result.finalSchedule[t] = pVal;
+        result.newDeviation[t] = yVal;
+
+        double old_m = fabs(mismatch[t + afo.get_aggregated_earliest_hour()]);
+        sumOld += old_m;
+        sumNew += yVal;
     }
 
+    result.totalReduction = sumOld - sumNew;
+
+    afo.apply_schedule(result.finalSchedule);
+
     env.end();
-    return solution;
+
+    return result;
 }
 
 
 
+SolverResult Solver::solveFCR_tec(AggregatedFlexOffer &afo, const vector<double> &mismatch)
+{
+    SolverResult result;
+    result.totalReduction = 0.0;
+
+    int T = afo.get_duration();
 
 
+    auto profile = afo.get_aggregated_profile();
+    double minOverall = afo.get_min_overall();
+    double maxOverall = afo.get_max_overall();
 
-// tuple<vector<vector<double>>, vector<vector<double>>, vector<vector<double>>, double>
-// Solver::solveFCRRevenueMaximization(
-//     vector<AggregatedFlexOffer> &afos,
-//     const vector<double> &up_prices,
-//     const vector<double> &down_prices,
-//     const vector<double> &energy_cost)
-// {
-//     if (afos.empty()) {
-//         cerr << "No AggregatedFlexOffers to solve." << endl;
-//         return {};
-//     }
+    IloEnv env;
+    IloModel model(env);
+    IloNumVarArray p(env, T);
+    for (int t = 0; t < T; t++) {
+        double lb = profile[t].min_power;
+        double ub = profile[t].max_power;
+        p[t] = IloNumVar(env, lb, ub, ILOFLOAT);
+    }
 
-//     IloEnv env;
-//     try {
-//         IloModel model(env);
+    IloNumVarArray y(env, T);
+    for (int t = 0; t < T; t++) {
+        y[t] = IloNumVar(env, 0.0, IloInfinity, ILOFLOAT);
+    }
 
-//         // Number of aggregated flex-offers (AFOs)
-//         int A = static_cast<int>(afos.size());
+    for (int t = 0; t < T; t++) {
+        double v = mismatch[t + afo.get_aggregated_earliest_hour()];
 
-//         // Find the longest duration among all AFOs
-//         int max_duration = 0;
-//         for (const auto &afo : afos) {
-//             max_duration = max(max_duration, afo.get_duration());
-//         }
+        model.add( y[t] >=  (v - p[t]) );
+        model.add( y[t] >=  (p[t] - v) );
+    }
 
-//         // Create variables
-//         vector<IloNumVarArray> powerVars(A);
-//         vector<IloNumVarArray> upVars(A), downVars(A);
+    IloExpr sumP(env);
+    for (int t = 0; t < T; t++) {
+        sumP += p[t];
+    }
+    model.add(sumP >= minOverall);
+    model.add(sumP <= maxOverall);
+    sumP.end();
 
-//         // We'll build the objective expression here:
-//         IloExpr obj(env);
+    IloExpr obj(env);
+    for (int t = 0; t < T; t++) {
+        obj += y[t];
+    }
+    model.add(IloMinimize(env, obj));
+    obj.end();
 
-//         //----------------------------------------------------------------------
-//         // For each Aggregated FlexOffer (AFO)
-//         //----------------------------------------------------------------------
-//         for (int a = 0; a < A; a++) {
-//             int duration = afos[a].get_duration();
-//             auto profile = afos[a].get_aggregated_profile();
+    IloCplex cplex(model);
+    cplex.setOut(env.getNullStream());
+    if (!cplex.solve()) {
+        cerr << "[solveFCR_tec] no feasible solution found.\n";
+        env.end();
+        return result;
+    }
 
-//             powerVars[a] = IloNumVarArray(env, duration);
-//             upVars[a]    = IloNumVarArray(env, duration);
-//             downVars[a]  = IloNumVarArray(env, duration);
+    result.finalSchedule.resize(T, 0.0);
+    result.newDeviation.resize(T, 0.0);
 
-//             for (int t = 0; t < duration; t++) {
-//                 // Minimum/maximum power in hour t
-//                 double lb = profile[t].min_power;  // e.g. 0.0 kW
-//                 double ub = profile[t].max_power;  // e.g. 5.0 kW
-
-//                 powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
-//                 upVars[a][t]    = IloNumVar(env, 0.0, IloInfinity, ILOFLOAT);
-//                 downVars[a][t]  = IloNumVar(env, 0.0, IloInfinity, ILOFLOAT);
-
-//                 // Constraint: up + down <= total power available
-//                 model.add(upVars[a][t] + downVars[a][t] <= powerVars[a][t]);
-
-//                 //------------------------------------------------------------------
-//                 // Net Benefit = FCR Revenue - Cost of using power
-//                 //------------------------------------------------------------------
-//                 // Revenue from up/down capacity:
-//                 //     up_prices[t] * upVars[a][t] + down_prices[t] * downVars[a][t]
-//                 // Cost of using the (powerVars[a][t]) units of power:
-//                 //     energy_cost[t] * powerVars[a][t]
-//                 // => net contribution for time t:
-//                 obj += (up_prices[t]   * upVars[a][t])
-//                      + (down_prices[t] * downVars[a][t])
-//                      - (energy_cost[t] * powerVars[a][t]);
-//             }
-//         }
-
-//         // Now we maximize the sum of revenues minus costs
-//         model.add(IloMaximize(env, obj));
-//         obj.end();
-
-//         // ---------------------------------------------------------------------
-//         // Solve the model
-//         // ---------------------------------------------------------------------
-//         IloCplex cplex(model);
-//         // If you want debug output, comment out the next line
-//         cplex.setOut(env.getNullStream());
-
-//         if (!cplex.solve()) {
-//             cerr << "No optimal solution found." << endl;
-//             env.end();
-//             return {};
-//         }
-
-//         // ---------------------------------------------------------------------
-//         // Extract the solution
-//         // ---------------------------------------------------------------------
-//         vector<vector<double>> solution(A), up_solution(A), down_solution(A);
-//         for (int a = 0; a < A; a++) {
-//             int duration = afos[a].get_duration();
-//             solution[a].resize(duration);
-//             up_solution[a].resize(duration);
-//             down_solution[a].resize(duration);
-
-//             for (int t = 0; t < duration; t++) {
-//                 solution[a][t]     = cplex.getValue(powerVars[a][t]);
-//                 up_solution[a][t]  = cplex.getValue(upVars[a][t]);
-//                 down_solution[a][t]= cplex.getValue(downVars[a][t]);
-//             }
-//             // Optionally apply the new power schedule to AFO 'a'
-//             afos[a].apply_schedule(solution[a]);
-//         }
-
-//         // Retrieve the final objective value (total net benefit)
-//         double totalNetBenefit = cplex.getObjValue();
-
-//         env.end();
-
-//         // Return (power schedule, up schedule, down schedule, net benefit)
-//         return {solution, up_solution, down_solution, totalNetBenefit};
-
-//     } catch (IloException &e) {
-//         cerr << "CPLEX Exception: " << e.getMessage() << endl;
-//         env.end();
-//     } catch (exception &e) {
-//         cerr << "Standard Exception: " << e.what() << endl;
-//         env.end();
-//     }
-
-//     return {};
-// }
+    double sumOld = 0.0, sumNew = 0.0;
+    for (int t = 0; t < T; t++) {
+        double pVal = cplex.getValue(p[t]);
+        double yVal = cplex.getValue(y[t]);
 
 
-// tuple<vector<vector<double>>, double>
-// solveVolumeReductionMultiple(
-//     vector<AggregatedFlexOffer> &allAFOs,
-//     const vector<vector<double>> &allOrigVolumes,
-//     const vector<vector<double>> &allEsch
-// )
-// {
-//     // Check consistent sizes
-//     int N = (int)allAFOs.size();
-//     if (N == 0 ||
-//         (int)allOrigVolumes.size() != N ||
-//         (int)allEsch.size()         != N )
-//     {
-//         cerr << "Mismatch in number of AFOs vs. input data.\n";
-//         return {};
-//     }
+        result.finalSchedule[t] = pVal;
+        result.newDeviation[t]  = yVal;
 
-//     IloEnv env;
-//     try {
-//         IloModel model(env);
+        double old_m = fabs(mismatch[t + afo.get_aggregated_earliest_hour()]);
 
-//         vector<IloNumVarArray>   vbarVars   (N);
-//         vector<IloNumVarArray>   vbarPlus   (N);
-//         vector<IloNumVarArray>   vbarMinus  (N);
+        sumOld += old_m;
+        sumNew += yVal;
+    }
+    result.totalReduction = sumOld - sumNew;
 
-//         IloExpr obj(env);
+    afo.apply_schedule(result.finalSchedule);
 
-//         double sumAbsAllVud = 0.0;
+    env.end();
 
-//         // Loop over each AFO i
-//         for (int i = 0; i < N; i++)
-//         {
-//             // 1) Get the duration T_i for the i-th aggregator
-//             int T_i = allAFOs[i].get_duration();
-
-//             // Basic checks
-//             if ((int)allOrigVolumes[i].size() < T_i ||
-//                 (int)allEsch[i].size() < T_i)
-//             {
-//                 cerr << "AFO " << i << ": mismatch in time slices or e_sch.\n";
-//                 continue;
-//             }
-
-//             // 2) Sum up |v_udt^i| to add to the constant part of the objective
-//             for (int t = 0; t < T_i; t++) {
-//                 sumAbsAllVud += fabs(allOrigVolumes[i][t]);
-//             }
-
-//             // 3) Create the variables for this AFO in CPLEX
-//             vbarVars[i]  = IloNumVarArray(env, T_i, -IloInfinity, IloInfinity, ILOFLOAT);
-//             vbarPlus[i]  = IloNumVarArray(env, T_i, 0.0, IloInfinity, ILOFLOAT);
-//             vbarMinus[i] = IloNumVarArray(env, T_i, 0.0, IloInfinity, ILOFLOAT);
-
-//             // 4) We'll retrieve the aggregator’s min/max from each timeslice
-//             auto profile = allAFOs[i].get_aggregated_profile();
-            
-//             // Add constraints for each time slot
-//             for (int t = 0; t < T_i; t++) {
-//                 double lb = profile[t].min_power;
-//                 double ub = profile[t].max_power;
-
-//                 model.add( vbarVars[i][t] >= lb );
-//                 model.add( vbarVars[i][t] <= ub );
-//                 model.add( vbarVars[i][t] == vbarPlus[i][t] - vbarMinus[i][t] );
-
-//                 double eschVal = allEsch[i][t];
-//                 model.add( vbarPlus[i][t] + vbarMinus[i][t] >= eschVal );
-
-//             }
-//             for (int t = 0; t < T_i; t++) {
-//                 obj -= (vbarPlus[i][t] + vbarMinus[i][t]);
-//             }
-//         }
-
-//         IloObjective objective = IloMaximize(env, sumAbsAllVud + obj);
-//         model.add(objective);
-//         obj.end();
-
-//         IloCplex cplex(model);
-//         cplex.setOut(env.getNullStream()); // quiet the solver
-
-//         if (!cplex.solve()) {
-//             cerr << "CPLEX: no optimal solution found.\n";
-//             env.end();
-//             return {};
-//         }
-
-//         double totalObj = cplex.getObjValue();
-
-//         // ------------------------------------------------------------
-//         // Extract the solution 
-//         // ------------------------------------------------------------
-//         // We’ll store them in a 2D array: solutions[i][t]
-//         vector<vector<double>> solutions(N);
-
-//         for (int i = 0; i < N; i++) {
-//             int T_i = allAFOs[i].get_duration();
-//             solutions[i].resize(T_i);
-
-//             for (int t = 0; t < T_i; t++) {
-//                 solutions[i][t] = cplex.getValue(vbarVars[i][t]);
-//             }
-
-//             // Optionally, apply the schedule to the aggregator 
-//             allAFOs[i].apply_schedule(solutions[i]);
-//         }
-
-//         env.end();
-
-//         // Return the solutions for each AFO + total objective
-//         return make_tuple(solutions, totalObj);
-
-//     } catch (IloException &e) {
-//         cerr << "CPLEX exception: " << e.getMessage() << endl;
-//         env.end();
-//     } catch (exception &e) {
-//         cerr << "std::exception: " << e.what() << endl;
-//         env.end();
-//     }
-
-//     // Return empty in case of errors
-//     return {};
-// }
+    return result;
+}

@@ -2,6 +2,7 @@
 #include <vector>
 #include <variant> 
 #include <string>
+#include <cmath>
 
 #include "../include/aggregation.h"
 #include "../include/solver.h"
@@ -44,4 +45,4 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-// still needs to add the DFO to main properly, and then get FCR working properly
+// // still needs to add the DFO to main properly, and then get FCR working properly
