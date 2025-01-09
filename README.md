@@ -24,6 +24,6 @@ To generate the graph used in the report:
 1. Step into the visuals folder (assuming you are in the projects root folder)
     - Command: ```cd visuals``` 
 2. Make sure the pip librarys pandas and matplotlib is installed
-    - Command ```pip install pandas && pip install matplotlib```
+    - Command: ```pip install pandas && pip install matplotlib```
 3. Run the python file
-    - Command ```python3 plots.py```
+    - Command: ```python3 plots.py```
