@@ -33,7 +33,7 @@ class Flexoffer{
         int get_offer_id() const;
         time_t get_est() const;
         time_t get_lst() const;
-        time_t get_et() const; // Renamed from get_et()
+        time_t get_et() const; 
         int get_duration() const;
         vector<TimeSlice> get_profile() const;
         vector<double> get_scheduled_allocation() const;
