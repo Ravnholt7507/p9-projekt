@@ -173,50 +173,23 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilo
             double step = (aggregated_max_prev - aggregated_min_prev) / (numsamples - 1);
             
             for (int j = 0; j < numsamples; ++j) {
+                // Calculate current dependecy amount for DFO1, DFO2, and aggregated DFO
                 double current_prev_energy1 = polygon1.min_prev_energy + j * step1;
                 double current_prev_energy2 = polygon2.min_prev_energy + j * step2;
                 double current_prev_energy = aggregated_min_prev + j * step;
+
+                // Based on the current dependency amount - find min and max energy usage for DFO1 and DFO2 respectively
+                // DFO 1
+                vector<Point> matching_points1 = find_or_interpolate_points(polygon1.points, current_prev_energy1);
+                double dfo1_min_energy = matching_points1[0].y;
+                double dfo1_max_energy = matching_points1[1].y;
                 
-                double dfo1_min_energy = 0.0, dfo1_max_energy = 0.0;
-                if (polygon1.numsamples == numsamples) {
-                    dfo1_min_energy = polygon1.points[j * 2].y;
-                    dfo1_max_energy = polygon1.points[j * 2 + 1].y;
-                } else {
-                    for (size_t k = 1; k + 1 < polygon1.points.size(); k += 2) {
-                        const auto &prev_point_min = polygon1.points[k - 1];
-                        const auto &prev_point_max = polygon1.points[k];
-                        const auto &next_point_min = polygon1.points[k + 1];
-                        const auto &next_point_max = polygon1.points[k + 2];
-                        if (current_prev_energy1 >= prev_point_min.x && current_prev_energy1 <= next_point_min.x) {
-                            dfo1_min_energy = linear_interpolation(
-                                current_prev_energy1, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
-                            dfo1_max_energy = linear_interpolation(
-                                current_prev_energy1, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
-                            break;
-                        }
-                    }
-                }
-                
-                double dfo2_min_energy = 0.0, dfo2_max_energy = 0.0;
-                if (polygon2.numsamples == numsamples) {
-                    dfo2_min_energy = polygon2.points[j * 2].y;
-                    dfo2_max_energy = polygon2.points[j * 2 + 1].y;  
-                } else {
-                    for (size_t k = 1; k + 1 < polygon2.points.size(); k += 2) {
-                        const auto &prev_point_min = polygon2.points[k - 1];
-                        const auto &prev_point_max = polygon2.points[k];
-                        const auto &next_point_min = polygon2.points[k + 1];
-                        const auto &next_point_max = polygon2.points[k + 2];
-                        if (current_prev_energy2 >= prev_point_min.x && current_prev_energy2 <= next_point_min.x) {
-                            dfo2_min_energy = linear_interpolation(
-                                current_prev_energy2, prev_point_min.x, prev_point_min.y, next_point_min.x, next_point_min.y);
-                            dfo2_max_energy = linear_interpolation(
-                                current_prev_energy2, prev_point_max.x, prev_point_max.y, next_point_max.x, next_point_max.y);
-                            break;
-                        }
-                    }
-                }
-                
+                // DFO 2
+                vector<Point> matching_points2 = find_or_interpolate_points(polygon2.points, current_prev_energy2);
+                double dfo2_min_energy = matching_points2[0].y;
+                double dfo2_max_energy = matching_points2[1].y;
+
+                // Aggregate the found min / max energy amount and add the points to the aggregated DFO slice
                 double min_current_energy = dfo1_min_energy + dfo2_min_energy;
                 double max_current_energy = dfo1_max_energy + dfo2_max_energy;
                 
