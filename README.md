@@ -17,7 +17,7 @@ A requirement for building the project is to have the CPLEX solver installed on 
     - Command: ```./output```
 
 # Running unit tests
-    - Command: ```./output --run_tests``` 
+```./output --run_tests``` 
 
 # Generating graphs
 To generate the graph used in the report:
