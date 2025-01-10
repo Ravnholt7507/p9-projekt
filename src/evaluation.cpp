@@ -67,12 +67,6 @@ double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPr
     return total_cost;
 }
 
-
-
-
-
-
-
 double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices){
     vector<AggregatedFlexOffer> afos = nToMAggregation(flexOffers, est_threshold, lst_threshold, max_group_size, align, spotPrices, 0);
     Solver::solve(afos, spotPrices);
@@ -113,7 +107,7 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices)
     for(auto &dfo : dfos) {
         vector<double> schedule = Solver::DFO_Optimization(dfo, spotPrices);
 
-        for(int t=0; t<schedule.size() && t<spotPrices.size(); t++){
+        for(int t=0; t<static_cast<int>(schedule.size()) && t<static_cast<int>(spotPrices.size()); t++){
             total_cost += schedule[t] * spotPrices[t];
         }
     }

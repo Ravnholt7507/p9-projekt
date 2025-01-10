@@ -3,8 +3,6 @@
 #include <variant> 
 #include <string>
 
-#include "../include/aggregation.h"
-#include "../include/solver.h"
 #include "../include/generator.h"
 #include "../include/evaluation.h" 
 #include "../include/helperfunctions.h"
