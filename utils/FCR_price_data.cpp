@@ -8,7 +8,6 @@ using namespace std;
 using json = nlohmann::json;
 
 
-// Callback function to handle data received from libcurl
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) {
     size_t newLength = size * nmemb;
     try {
@@ -19,7 +18,6 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s) 
     return newLength;
 }
 
-// Function to download and process price data
 void downloadAndConvertPrices(const string &url, const string &outputFilePath) {
     CURL* curl;
     CURLcode res;

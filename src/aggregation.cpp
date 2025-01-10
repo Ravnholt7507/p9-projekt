@@ -32,7 +32,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
     } else if (align == Alignments::price){
         cout << "No spotPrices was given" << endl;
     }
-    cout << "duration: " << duration << endl;
 
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
@@ -55,7 +54,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
         priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, offers, spotPrices);
     }
 
-    cout << "duration: " << duration << endl;
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
         individual_offers.push_back(offer);
@@ -78,7 +76,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
         cout << "No spotPrices was given!" << endl;
     }
 
-    cout << "duration: " << duration << endl;
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
         individual_offers.push_back(offer);
@@ -100,7 +97,6 @@ AggregatedFlexOffer::AggregatedFlexOffer(int offer_id, const Alignments align, c
         priceAwareAlignment(aggregated_earliest, aggregated_latest, aggregated_end_time, aggregated_profile, duration, overall_min, overall_max, offers, spotPrices);
     }
 
-    cout << "duration: " << duration << endl;
     scheduled_allocation.resize(duration, 0.0);
     for(auto offer : offers){
         individual_offers.push_back(offer);

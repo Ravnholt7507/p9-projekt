@@ -115,7 +115,9 @@ void downloadData(const string &url, const string &outputFilePath)
 
                         // 3) Check duration (skip if < 1 hour)
                         double diffSec = difftime(doneTime, connTime);
-                        if (diffSec < 3600.0) {
+                        double diffSec2 = difftime(disTime, connTime);
+                        double diff_done_dis = difftime(disTime, doneTime);
+                        if (diffSec < 3600.0 || diffSec2 < 3600 || diff_done_dis < 0) {
                             continue;
                         }
 
@@ -127,7 +129,8 @@ void downloadData(const string &url, const string &outputFilePath)
 
                         // If they differ by day, skip
                         if (connTM.tm_year != doneTM.tm_year || connTM.tm_mon  != doneTM.tm_mon  || connTM.tm_mday != doneTM.tm_mday || 
-                            connTM.tm_year != disTM.tm_year || connTM.tm_mon  != disTM.tm_mon  || connTM.tm_mday != disTM.tm_mday ){
+                            connTM.tm_year != disTM.tm_year || connTM.tm_mon  != disTM.tm_mon  || connTM.tm_mday != disTM.tm_mday ||
+                            disTM.tm_year != doneTM.tm_year || disTM.tm_mon  != doneTM.tm_mon  || disTM.tm_mday != doneTM.tm_mday ){
                             continue;
                         }
 
