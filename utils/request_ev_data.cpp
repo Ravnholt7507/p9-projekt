@@ -9,6 +9,7 @@
 using namespace std;
 using json = nlohmann::json;
 
+
 // Callback function to handle data received from libcurl
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
@@ -16,19 +17,32 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
+std::string timeToGmtString(time_t t)
+{
+    char buf[128];
+    std::tm *gmt = std::gmtime(&t);
+    std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+    return std::string(buf);
+}
+
+
+time_t forceDate(time_t origTime){
+    std::tm localTm = *std::gmtime(&origTime);
+
+    localTm.tm_year = 2019 - 1900;  // 2019
+    localTm.tm_mon  = 4;
+    localTm.tm_mday = 20;
+
+    return timegm(&localTm);
+}
 
 time_t parseDateTime(const std::string &datetimeStr) {
-    // We'll assume it's something like "Wed, 25 Apr 2018 11:08:04 GMT"
-    // Adjust as necessary for your exact format
     std::tm timeinfo = {};
     std::istringstream iss(datetimeStr);
-    // Example: "Wed, 25 Apr 2018 11:08:04 GMT"
     iss >> std::get_time(&timeinfo, "%a, %d %b %Y %H:%M:%S GMT");
     if (iss.fail()) {
-        // If it fails, throw or return 0
         throw std::runtime_error("Invalid date-time format: " + datetimeStr);
     }
-    // Convert from struct tm to time_t (UTC)
     return timegm(&timeinfo); 
 }
 
@@ -117,10 +131,17 @@ void downloadData(const string &url, const string &outputFilePath)
                             continue;
                         }
 
-                        // If we get here, this record meets all criteria
-                        for (auto &field : record.items()) {
-                            // If the field value is null, write an empty string
-                            outFile << (field.value().is_null() ? "" : field.value().dump()) << ",";
+                        time_t forcedConn = forceDate(connTime);
+                        time_t forcedDone = forceDate(doneTime);
+                        time_t forcedDisc = forceDate(disTime);
+
+                        json modifiedRec = record;
+                        modifiedRec["connectionTime"]   = timeToGmtString(forcedConn);
+                        modifiedRec["doneChargingTime"] = timeToGmtString(forcedDone);
+                        modifiedRec["disconnectTime"]   = timeToGmtString(forcedDisc);
+
+                        for (auto &f : modifiedRec.items()) {
+                            outFile << (f.value().is_null() ? "" : f.value().dump()) << ",";
                         }
                         // Remove trailing comma
                         outFile.seekp(-1, ios_base::cur);
@@ -148,9 +169,10 @@ int main() {
 
     for (int page = 1; page <= totalPages; ++page) {
         ostringstream apiURL;
-        apiURL << "https://ev.caltech.edu/api/v1/sessions/caltech?"
+        apiURL 
+            << "https://ev.caltech.edu/api/v1/sessions/caltech?"
             << "where=connectionTime%3E%3D%22Mon,%2020%20May%202019%2000:00:00%20GMT%22%20"
-            << "and%20connectionTime%3C%22Thu,%2023%20May%202019%2000:00:00%20GMT%22"
+            << "and%20connectionTime%3C%22Mon,%2003%20Jun%202019%2000:00:00%20GMT%22"
             << "&page=" << page
             << "&pretty";
         downloadData(apiURL.str(), outputfilePath);
