@@ -116,8 +116,8 @@ void downloadData(const string &url, const string &outputFilePath)
                         // 3) Check duration (skip if < 1 hour)
                         double diffSec = difftime(doneTime, connTime);
                         double diffSec2 = difftime(disTime, connTime);
-                        double diff_done_dis = difftime(disTime, doneTime);
-                        if (diffSec < 3600.0 || diffSec2 < 3600 || diff_done_dis < 0) {
+                        double diff_done_dis = difftime(doneTime, disTime);
+                        if (diffSec < 3600.0 || diffSec2 < 3600 || diff_done_dis > 3600) {
                             continue;
                         }
 

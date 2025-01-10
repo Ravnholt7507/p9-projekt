@@ -172,16 +172,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0,1,2};
+    vector<int> aggrTypes = {1};
     vector<Alignments> aligns = {
-        Alignments::start,
+        //Alignments::start,
         Alignments::balance,
-        Alignments::price,
+        //Alignments::price,
     };
 
-    vector<int> thresholds = {2, 6, 12, 24}; 
-    vector<int> groupSizes = {50, 100, 150};
-    vector<int> nOffersVec = {50, 100, 150, 200};
+    vector<int> thresholds = {6}; 
+    vector<int> groupSizes = {50};
+    vector<int> nOffersVec = {50};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {

@@ -327,7 +327,7 @@ time_t roundToNearestHour(time_t raw_time) {
     timeinfo->tm_min = 0;
     timeinfo->tm_sec = 0;
 
-    return timegm(timeinfo); // Convert back to time_t
+    return timegm(timeinfo); 
 }
 
 vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type) {
@@ -348,42 +348,35 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
             continue;
         }
 
-        // Parse times and kWhDelivered
         time_t connectionTime = parseDateTime(fields[2]);
         time_t doneChargingTime = fields[4].empty() ? parseDateTime(fields[3]) : parseDateTime(fields[4]);
         double kWhDelivered = fields[5].empty() ? 0.0 : stod(fields[5]);
 
-        // Round connection and end times
         connectionTime = roundToNearestHour(connectionTime);
         doneChargingTime = roundToNearestHour(doneChargingTime);
 
-        // Calculate required charging duration in hours
-        double requiredHours = ceil(kWhDelivered / 7.2); // Assuming an average charging power of 7.2 kW
-        int duration = static_cast<int>(requiredHours); // Duration in hours
+        double requiredHours = ceil(kWhDelivered / 7.2);
+        int duration = static_cast<int>(requiredHours);
+        cout << "parsing duration" << duration << "\n";
         time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
 
-        // Calculate latestStartTime
         time_t latestStartTime = doneChargingTime - durationInSeconds;
         if (latestStartTime < connectionTime) {
-            latestStartTime = connectionTime; // Ensure latestStartTime respects connectionTime
+            cout << "fed";
+            latestStartTime = connectionTime;
         }
 
-        // Calculate profile for the duration
         auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
         vector<TimeSlice> profile(duration, {minPower, maxPower});
 
-        // Calculate actual min and max energy for the profile
         double actualMinEnergy = minPower * duration;
         double actualMaxEnergy = maxPower * duration;
+        double totalMinEnergy = actualMinEnergy * 1.0;
+        double totalMaxEnergy = actualMaxEnergy * 5.0;
 
-        // Calculate TEC constraints
-        double totalMinEnergy = actualMinEnergy * 1.0; // Example: 90% of actual minimum energy
-        double totalMaxEnergy = actualMaxEnergy * 5.0; // Example: 110% of actual maximum energy
-
-        // Create Flexoffer or Tec_flexoffer based on type
-        if (type == 0) { // Normal Flexoffer
+        if (type == 0) {
             flexOffers.emplace_back(Flexoffer(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
-        } else if (type == 1) { // TEC Flexoffer
+        } else if (type == 1) {
             flexOffers.emplace_back(Tec_flexoffer(totalMinEnergy, totalMaxEnergy, offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
         }
     }
