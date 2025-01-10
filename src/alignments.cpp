@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 #include <algorithm>
 
 #include "../include/alignments.h"
@@ -150,7 +151,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 double placeholder = best_result;
                 vector<TimeSlice> tmp = calc_alignment(aggregated_profile, least_flexible, i, best_result);
                 if(best_result > placeholder){
-                    best_earliest = aggregated_earliest + (i * 3600);
+                    best_earliest = aggregated_earliest + ((i-1) * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();
                     best_endtime = aggregated_latest + ((duration-1)*3600);
@@ -221,10 +222,10 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 double placeholder = best_result;
                 vector<TimeSlice> tmp = calc_alignment(aggregated_profile, least_flexible, i, best_result);
                 if(best_result > placeholder){
-                    best_earliest = aggregated_earliest + (i * 3600);
+                    best_earliest = aggregated_earliest + ((i-1) * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();
-                    best_endtime = aggregated_latest + (duration*3600);
+                    best_endtime = aggregated_latest + ((duration-1)*3600);
                     best_profile = tmp;
                     best_min = overall_min + least_flexible.get_min_overall_kw();
                     best_max = overall_max + least_flexible.get_max_overall_kw();
