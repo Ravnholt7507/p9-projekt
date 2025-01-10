@@ -38,8 +38,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // for (auto tec_fo : tec_fos){
+    //     tec_fo.print_flexoffer();
+    // }
+
     runAggregationScenarios(fos, tec_fos, dfos, spotPrices);
     return 0;
 }
-
-// still needs to add the DFO to main properly, and then get FCR working properly

@@ -330,6 +330,17 @@ time_t roundToNearestHour(time_t raw_time) {
     return timegm(timeinfo); 
 }
 
+static bool isSameLocalDay(time_t t1, time_t t2)
+{
+    // If you prefer gmtime, do so consistently
+    tm* local1 = localtime(&t1);
+    tm* local2 = localtime(&t2);
+
+    return (local1->tm_year == local2->tm_year &&
+            local1->tm_mon  == local2->tm_mon  &&
+            local1->tm_mday == local2->tm_mday);
+}
+
 vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type) {
     ifstream file(filename);
     if (!file.is_open()) throw runtime_error("Error: Could not open file " + filename);
@@ -355,17 +366,27 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
         connectionTime = roundToNearestHour(connectionTime);
         doneChargingTime = roundToNearestHour(doneChargingTime);
 
+        if (!isSameLocalDay(connectionTime, doneChargingTime)) {
+            continue;  
+        }
+
         double requiredHours = ceil(kWhDelivered / 7.2);
         int duration = static_cast<int>(requiredHours);
         time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
 
         time_t latestStartTime = doneChargingTime - durationInSeconds;
 
-
         if (latestStartTime < connectionTime) {
             continue;
             //latestStartTime = connectionTime;
         }
+
+        time_t end_time = latestStartTime + durationInSeconds;
+        
+        if (!isSameLocalDay(connectionTime, end_time)) {
+            continue;
+        }
+
 
         auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
         vector<TimeSlice> profile(duration, {minPower, maxPower});
@@ -384,6 +405,8 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
 
     return flexOffers;
 }
+
+
 
 int parseDateTimeToHour(const std::string &dateTimeStr) {
     struct tm tm = {};

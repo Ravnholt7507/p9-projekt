@@ -46,6 +46,24 @@ time_t parseDateTime(const std::string &datetimeStr) {
     return timegm(&timeinfo); 
 }
 
+// Helper to check if all times are the same local day
+bool isSameLocalDay(time_t t1, time_t t2, time_t t3)
+{
+    // Convert to local
+    std::tm tm1 = *std::localtime(&t1);
+    std::tm tm2 = *std::localtime(&t2);
+    std::tm tm3 = *std::localtime(&t3);
+
+    // Compare (yyyy, mm, dd)
+    if (tm1.tm_year != tm2.tm_year || tm1.tm_mon != tm2.tm_mon || tm1.tm_mday != tm2.tm_mday)
+        return false;
+    if (tm1.tm_year != tm3.tm_year || tm1.tm_mon != tm3.tm_mon || tm1.tm_mday != tm3.tm_mday)
+        return false;
+
+    return true;
+}
+
+
 void downloadData(const string &url, const string &outputFilePath)
 {
     CURL* curl;
@@ -133,6 +151,10 @@ void downloadData(const string &url, const string &outputFilePath)
                             disTM.tm_year != doneTM.tm_year || disTM.tm_mon  != doneTM.tm_mon  || disTM.tm_mday != doneTM.tm_mday ){
                             continue;
                         }
+
+                        if (!isSameLocalDay(connTime, doneTime, disTime)) {
+                            continue;
+                        }  
 
                         time_t forcedConn = forceDate(connTime);
                         time_t forcedDone = forceDate(doneTime);
