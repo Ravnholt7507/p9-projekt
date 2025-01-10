@@ -94,9 +94,9 @@ void downloadAndConvertPrices(const string &url, const string &outputFilePath) {
 
 int main() {
     string apiURL = "https://api.energidataservice.dk/dataset/Elspotprices?"
-                    "start=2022-05-01&end=2022-05-02&"
+                    "start=2022-05-01&end=2022-05-04&"
                     "filter={\"PriceArea\":[\"DK1\"]}&"
-                    "limit=24";
+                    "limit=48";
 
     string outputFilePath = "../data/spotprices.csv";
 

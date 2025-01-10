@@ -25,16 +25,6 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
     vector<IloNumVarArray> powerVars(A);
     IloExpr obj(env);
 
-    // Ensure prices cover the longest duration
-    int max_duration = 0;
-    for (const auto &afo : afos) {
-        max_duration = max(max_duration, afo.get_duration());
-    }
-    vector<double> adjusted_prices = prices;
-    if ((int)adjusted_prices.size() < max_duration) {
-        adjusted_prices.resize(max_duration, 0.0);
-    }
-    
     // Create decision variables with valid bounds
     for (int a = 0; a < A; a++) {
         int duration = afos[a].get_duration();
@@ -47,11 +37,11 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
             powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
 
             // Objective function: add only valid durations
-            obj += -1 * adjusted_prices[t] * powerVars[a][t];
+            obj += prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
         }
     }
 
-    model.add(IloMaximize(env, obj));
+    model.add(IloMinimize(env, obj));
     obj.end();
 
     // Solve the model
@@ -207,12 +197,6 @@ vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, cons
     int A = afos.size();
     vector<IloNumVarArray> powerVars(A);
     IloExpr obj(env);
-
-    // Ensure prices cover the longest duration
-    int max_duration = 0;
-    for (const auto &afo : afos) {
-        max_duration = max(max_duration, afo.get_duration());
-    }
     
     // Create decision variables with valid bounds
     for (int a = 0; a < A; a++) {
@@ -226,7 +210,7 @@ vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, cons
             powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
 
             // Objective function: add only valid durations
-            obj += prices[t] * powerVars[a][t];
+            obj += prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
         }
         IloExpr total_energy(env);
         for (int t = 0; t < duration; t++) {

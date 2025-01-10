@@ -93,9 +93,11 @@ void downloadData(const string &url, const string &outputFilePath)
                         // 2) Parse them as time_t
                         const string connTimeStr = record["connectionTime"].get<string>();
                         const string doneTimeStr = record["doneChargingTime"].get<string>();
+                        const string disTimeStr = record["disconnectTime"].get<string>();
 
                         time_t connTime  = parseDateTime(connTimeStr);
                         time_t doneTime  = parseDateTime(doneTimeStr);
+                        time_t disTime  = parseDateTime(disTimeStr);
 
                         // 3) Check duration (skip if < 1 hour)
                         double diffSec = difftime(doneTime, connTime);
@@ -107,12 +109,11 @@ void downloadData(const string &url, const string &outputFilePath)
                         //    We'll compare (year, month, day) in UTC
                         struct tm connTM = *gmtime(&connTime);
                         struct tm doneTM = *gmtime(&doneTime);
+                        struct tm disTM = *gmtime(&disTime);
 
                         // If they differ by day, skip
-                        if (connTM.tm_year != doneTM.tm_year ||
-                            connTM.tm_mon  != doneTM.tm_mon  ||
-                            connTM.tm_mday != doneTM.tm_mday)
-                        {
+                        if (connTM.tm_year != doneTM.tm_year || connTM.tm_mon  != doneTM.tm_mon  || connTM.tm_mday != doneTM.tm_mday || 
+                            connTM.tm_year != disTM.tm_year || connTM.tm_mon  != disTM.tm_mon  || connTM.tm_mday != disTM.tm_mday ){
                             continue;
                         }
 
@@ -142,16 +143,16 @@ void downloadData(const string &url, const string &outputFilePath)
 }
 
 int main() {
-    int totalPages = 2;
+    int totalPages = 50;
     string outputfilePath = "../data/ev_data.csv";
 
     for (int page = 1; page <= totalPages; ++page) {
         ostringstream apiURL;
         apiURL << "https://ev.caltech.edu/api/v1/sessions/caltech?"
-               << "where=connectionTime%3E%3D%22Mon,%2020%20May%202019%2000:00:00%20GMT%22%20"
-               << "and%20connectionTime%3C%22Tue,%2021%20May%202019%2000:00:00%20GMT%22"
-               << "&page=" << page
-               << "&pretty";
+            << "where=connectionTime%3E%3D%22Mon,%2020%20May%202019%2000:00:00%20GMT%22%20"
+            << "and%20connectionTime%3C%22Thu,%2023%20May%202019%2000:00:00%20GMT%22"
+            << "&page=" << page
+            << "&pretty";
         downloadData(apiURL.str(), outputfilePath);
     }
     return 0;

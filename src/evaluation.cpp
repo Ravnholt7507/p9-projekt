@@ -20,7 +20,7 @@ double computeBaselineCost(const vector<Flexoffer> &flexOffers, const vector<dou
         auto profile = fo.get_profile();
         for (int h = 0; h < duration; h++) {
             double avg_power = (profile[h].min_power + profile[h].max_power) / 2.0;
-            double price = spotPrices[h];
+            double price = spotPrices[h + fo.get_est_hour()];
             total_cost += avg_power * price;
         }
     }
@@ -35,7 +35,7 @@ double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector
         auto profile = fo.get_profile();
         for (int h = 0; h < duration; h++) {
             double avg_power = (profile[h].min_power + profile[h].max_power) / 2.0;
-            double price = spotPrices[h];
+            double price = spotPrices[h + fo.get_est_hour()];
             total_cost += avg_power * price;
         }
     }
@@ -50,23 +50,16 @@ double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPr
         int T = dfo.polygons.size();
         int maxT = min(T, static_cast<int>(spotPrices.size()));
 
-        double accumulated_dependency = 0.0; // Tracks the dependency amount over time
+        double accumulated_dependency = 0.0;
 
         for (int t = 0; t < maxT; ++t) {
             const auto &polygon = dfo.polygons[t];
 
-            // Find min and max energy usage allowed in this time slice
             vector<Point> matching_points = find_or_interpolate_points(polygon.points, accumulated_dependency);
             double min_current_energy = matching_points[0].y;
             double max_current_energy = matching_points[1].y;
-
-            // Compute the average energy usage for this time slice
             double avg_current_energy = 0.5 * (min_current_energy + max_current_energy);
-
-            // Update the total cost
             total_cost += avg_current_energy * spotPrices[t];
-
-            // Update the accumulated dependency for the next time slice
             accumulated_dependency += avg_current_energy;
         }
     }
@@ -90,7 +83,7 @@ double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, in
         int duration = afo.get_duration();
         for (int t = 0; t < duration; t++) {
             double power = sched[t];
-            double price = spotPrices[t];
+            double price = spotPrices[t + afo.get_aggregated_earliest_hour()];
             total_cost += power * price;
         }
     }
@@ -107,7 +100,7 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
         int duration = afo.get_duration();
         for (int t = 0; t < duration; t++) {
             double power = sched[t];
-            double price = spotPrices[t];
+            double price = spotPrices[t + afo.get_aggregated_earliest_hour()];
             total_cost += power * price;
         }
     }
@@ -185,16 +178,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0,1};
+    vector<int> aggrTypes = {0};
     vector<Alignments> aligns = {
         //Alignments::start,
-        //Alignments::balance,
-        Alignments::price,
+        Alignments::balance,
+        //Alignments::price,
     };
 
-    vector<int> thresholds = {2, 4, 6}; 
-    vector<int> groupSizes = {2, 10, 20};
-    vector<int> nOffersVec = {10, 20, 25};
+    vector<int> thresholds = {5}; 
+    vector<int> groupSizes = {30};
+    vector<int> nOffersVec = {50, 100, 200};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {
