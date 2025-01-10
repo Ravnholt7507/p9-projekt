@@ -123,7 +123,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
             for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
             aggregated_latest = least_flexible.get_lst(); 
-            aggregated_end_time += (least_flexible.get_duration()*3600); //Er det her rigtigt??
+            aggregated_end_time += (least_flexible.get_duration()*3600); 
             duration = aggregated_profile.size();
         } else if(aggregated_earliest > least_flexible.get_lst()){
             double diff_sec = difftime(aggregated_earliest, least_flexible.get_lst());
@@ -187,7 +187,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
             for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
             for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
             aggregated_latest = least_flexible.get_lst(); 
-            aggregated_end_time += (least_flexible.get_duration()*3600); //Er det her rigtigt??
+            aggregated_end_time += (least_flexible.get_duration()*3600); 
             duration = aggregated_profile.size();
             overall_min += least_flexible.get_min_overall_kw();
             overall_max += least_flexible.get_max_overall_kw();
