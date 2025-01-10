@@ -1,5 +1,5 @@
 # Building the project
-## Disclaimer: This project has only been tried and tested on Ubuntu 24.04 and Windows WSL.
+### Disclaimer: This project has only been tried and tested on Ubuntu 24.04 and Windows WSL.
 A requirement for building the project is having the CPLEX solver installed on your PC. Instructions for this can be found here: https://www.leandro-coelho.com/install-cplex-on-linux-without-administration-privileges.
 
 1. Git clone the repository.
