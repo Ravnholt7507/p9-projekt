@@ -357,13 +357,14 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
 
         double requiredHours = ceil(kWhDelivered / 7.2);
         int duration = static_cast<int>(requiredHours);
-        cout << "parsing duration" << duration << "\n";
         time_t durationInSeconds = static_cast<time_t>(requiredHours * 3600);
 
         time_t latestStartTime = doneChargingTime - durationInSeconds;
+
+
         if (latestStartTime < connectionTime) {
-            cout << "fed";
-            latestStartTime = connectionTime;
+            continue;
+            //latestStartTime = connectionTime;
         }
 
         auto [minPower, maxPower] = calculatePowerRange(kWhDelivered / duration, duration);
