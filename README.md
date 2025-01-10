@@ -4,8 +4,8 @@ A requirement for building the project is having the CPLEX solver installed on y
 
 1. Git clone the repository.
     - Command: ```git clone https://github.com/Ravnholt7507/p9-projekt.git```.
-2. Create a CPLEX solver environment variable
-    - Command: ```export CPLEX_STUDIO_DIR2211=/path/to/CPLEX_Studio_Community2211``` (For persistence, this line can also be added to your .bashrc)
+2. Create a CPLEX solver environment variable.
+    - Command: ```export CPLEX_STUDIO_DIR2211=/path/to/CPLEX_Studio_Community2211``` (For persistence, this line can also be added to your .bashrc).
 3. Step into the build folder of the repository.
     - Command: ```cd build``` (assuming you are already in the project folder).
 4. Create your own version of the makefile (as the one on GitHub might not be up to date).
