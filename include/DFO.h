@@ -17,6 +17,7 @@ class DependencyPolygon {
         void generate_polygon(size_t i, double next_min_prev, double next_max_prev);
         void generate_last_polygon();
         void add_point(double x, double y);
+        void sort_points();
         void print_polygon(int i) const;
 
         vector<Point> points;
