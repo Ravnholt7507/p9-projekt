@@ -200,6 +200,8 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
                     double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
                     double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
+                    double used1_min_final = 0.0, used2_min_final = 0.0;
+                    double used1_max_final = 0.0, used2_max_final = 0.0;
 
                     IloEnv env;
                     try {
@@ -226,7 +228,6 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         IloCplex cplex_min(model);
                         IloObjective minimizeObjective(env, used1_min + used2_min, IloObjective::Minimize);
                         model.add(minimizeObjective);
-                        double used1_min_final = 0.0, used2_min_final = 0.0;
                         if (cplex_min.solve()) {
                             used1_min_final = cplex_min.getValue(used1_min);
                             used2_min_final = cplex_min.getValue(used2_min);
@@ -239,7 +240,6 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         IloObjective maximizeObjective(env, used1_max + used2_max, IloObjective::Maximize);
                         model.add(maximizeObjective);
                         
-                        double used1_max_final = 0.0, used2_max_final = 0.0;
                         if (cplex_max.solve()) {
                             used1_max_final = cplex_max.getValue(used1_max);
                             used2_max_final = cplex_max.getValue(used2_max);
