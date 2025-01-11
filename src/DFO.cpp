@@ -251,9 +251,12 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     env.end();
                     min_current_energy = used1_min_final + used2_min_final;
                     max_current_energy = used1_max_final + used2_max_final;
-                    epsilon1 *= (used1_max_final - used1_min_final) / (dfo1_max_energy - dfo1_min_energy);
-                    epsilon2 *= (used2_max_final - used2_min_final) / (dfo2_max_energy - dfo2_min_energy);
-
+                    if (dfo1_max_energy != dfo1_min_energy) {
+                        epsilon1 *= (used1_max_final - used1_min_final) / (dfo1_max_energy - dfo1_min_energy);
+                    }
+                    if (dfo2_max_energy != dfo2_min_energy) {
+                        epsilon2 *= (used2_max_final - used2_min_final) / (dfo2_max_energy - dfo2_min_energy);
+                    }
                 }
                 aggregated_polygon.add_point(current_prev_energy, min_current_energy);
                 aggregated_polygon.add_point(current_prev_energy, max_current_energy);
