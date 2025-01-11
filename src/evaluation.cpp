@@ -109,7 +109,7 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices)
     double epsilon1{1};
     double epsilon2{1};
 
-    DFO AFO = agg2to1(dfos[0], dfos[4], 5, epsilon1, epsilon2);
+    DFO AFO = agg2to1(dfos[0], dfos[1], 5, epsilon1, epsilon2);
 
     AFO.print_dfo();
 
