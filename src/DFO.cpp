@@ -200,13 +200,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
                     double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
                     double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
-                    double used1_min_final;
-                    double used1_max_final;
-                    double used2_min_final;
-                    double used2_max_final;
 
-                    //used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
-                    //used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))
                     IloEnv env;
                     try {
                         IloModel model(env);
@@ -215,33 +209,42 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         IloNumVar used1_max(env, 0.0, IloInfinity, ILOFLOAT);
                         IloNumVar used2_min(env, 0.0, IloInfinity, ILOFLOAT);
                         IloNumVar used2_max(env, 0.0, IloInfinity, ILOFLOAT);
-                        
-                        // Add maximum constraints
+                        // Add constraints for maximums
                         model.add(
-                            (used1_max - min_total_energy1) * (max_total_energy2 - min_total_energy2)
-                            ==
+                            (used1_max - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
                             (used2_max - min_total_energy2) * (max_total_energy1 - min_total_energy1)
                         );
-                        
-                        // Add minimum constraints
+                        // Add constraints for minimums
                         model.add(
-                            (used1_min - min_total_energy1) * (max_total_energy2 - min_total_energy2)
-                            ==
+                            (used1_min - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
                             (used2_min - min_total_energy2) * (max_total_energy1 - min_total_energy1)
                         );
-                        
                         // Add sum constraints
                         model.add(used1_max + used2_max <= max_total_energy1 + max_total_energy2);
                         model.add(used1_min + used2_min >= min_total_energy1 + min_total_energy2);
-                        // Solve the model
-                        IloCplex cplex(model);
-                        if (cplex.solve()) {
-                            used1_min_final = cplex.getValue(used1_min);
-                            used1_max_final = cplex.getValue(used1_max);
-                            used2_min_final = cplex.getValue(used2_min);
-                            used2_max_final = cplex.getValue(used2_max);
+                        // **Minimize `used1_min` and `used2_min`**
+                        IloCplex cplex_min(model);
+                        IloObjective minimizeObjective(env, used1_min + used2_min, IloObjective::Minimize);
+                        model.add(minimizeObjective);
+                        double used1_min_final = 0.0, used2_min_final = 0.0;
+                        if (cplex_min.solve()) {
+                            used1_min_final = cplex_min.getValue(used1_min);
+                            used2_min_final = cplex_min.getValue(used2_min);
                         } else {
-                            std::cerr << "No solution found!" << std::endl;
+                            std::cerr << "No solution found during minimization!" << std::endl;
+                        }
+                        
+                        // **Maximize `used1_max` and `used2_max`**
+                        IloCplex cplex_max(model);
+                        IloObjective maximizeObjective(env, used1_max + used2_max, IloObjective::Maximize);
+                        model.add(maximizeObjective);
+                        
+                        double used1_max_final = 0.0, used2_max_final = 0.0;
+                        if (cplex_max.solve()) {
+                            used1_max_final = cplex_max.getValue(used1_max);
+                            used2_max_final = cplex_max.getValue(used2_max);
+                        } else {
+                            std::cerr << "No solution found during maximization!" << std::endl;
                         }
                     } catch (const IloException &e) {
                         std::cerr << "Error: " << e.getMessage() << std::endl;
@@ -249,6 +252,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         std::cerr << "Unknown error occurred!" << std::endl;
                     }
                     env.end();
+
                     min_current_energy = used1_min_final + used2_min_final;
                     max_current_energy = used1_max_final + used2_max_final;
                     if (dfo1_max_energy != dfo1_min_energy) {
@@ -257,6 +261,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     if (dfo2_max_energy != dfo2_min_energy) {
                         epsilon2 *= (used2_max_final - used2_min_final) / (dfo2_max_energy - dfo2_min_energy);
                     }
+
                 }
                 aggregated_polygon.add_point(current_prev_energy, min_current_energy);
                 aggregated_polygon.add_point(current_prev_energy, max_current_energy);
