@@ -109,7 +109,6 @@ void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, tim
 void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, vector<TimeSlice> &aggregated_profile, int &duration, vector<Flexoffer> offers){
 
     Flexoffer least_flexible = least_flexible_object(offers);  
-    cout << "least flexi: " << least_flexible.get_profile().size() << endl;
     aggregated_earliest = least_flexible.get_est();
     aggregated_latest = least_flexible.get_lst();
     aggregated_end_time = least_flexible.get_et();
@@ -128,7 +127,6 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_end_time = least_flexible.get_et(); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
-                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             } else {
                 double diff_sec = difftime(least_flexible.get_est(), aggregated_latest);
                 int empty_space = ceil(diff_sec / 3600);
@@ -146,7 +144,6 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_end_time = least_flexible.get_et(); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
-                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             }
         } else if(aggregated_earliest > least_flexible.get_lst()){
             if(least_flexible.get_lst() + (least_flexible.get_duration() * 3600) < aggregated_earliest){
@@ -224,26 +221,69 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
     while(offers.size() > 0){
         least_flexible = least_flexible_object(offers);    
         if(aggregated_latest < least_flexible.get_est()){
-            double diff_sec = difftime(least_flexible.get_est(), aggregated_latest);
-            int empty_space = (int) ceil(diff_sec / 3600.0);
-            for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
-            for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
-            aggregated_latest = least_flexible.get_lst(); 
-            aggregated_end_time += (least_flexible.get_duration()*3600); 
-            duration = aggregated_profile.size();
-            overall_min += least_flexible.get_min_overall_kw();
-            overall_max += least_flexible.get_max_overall_kw();
+
+            if(aggregated_latest + (duration * 3600) < least_flexible.get_est()){
+                double diff_sec = difftime(least_flexible.get_est(), aggregated_latest + (duration * 3600));
+                int empty_space = ceil(diff_sec / 3600);
+                for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
+                for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
+                aggregated_end_time = least_flexible.get_et(); 
+                duration = aggregated_profile.size();
+                aggregated_latest = aggregated_end_time - (duration * 3600); 
+                overall_min += least_flexible.get_min_overall_kw();
+                overall_max += least_flexible.get_max_overall_kw();
+            } else {
+                double diff_sec = difftime(least_flexible.get_est(), aggregated_latest);
+                int empty_space = ceil(diff_sec / 3600);
+                vector<TimeSlice> tmp = least_flexible.get_profile();
+                while(!tmp.empty()){
+                    if(empty_space > duration-1){
+                        aggregated_profile.push_back(tmp[0]);
+                    } else {
+                        aggregated_profile[empty_space] = {aggregated_profile[empty_space].min_power + tmp[0].min_power,
+                                                           aggregated_profile[empty_space].max_power + tmp[0].max_power};
+                    }
+                    tmp.erase(tmp.begin());
+                    empty_space++;
+                }
+                aggregated_end_time = least_flexible.get_et(); 
+                duration = aggregated_profile.size();
+                aggregated_latest = aggregated_end_time - (duration * 3600); 
+                overall_min += least_flexible.get_min_overall_kw();
+                overall_max += least_flexible.get_max_overall_kw();
+            }
         } else if(aggregated_earliest > least_flexible.get_lst()){
-            double diff_sec = difftime(aggregated_earliest, least_flexible.get_lst());
-            int empty_space = (int) ceil(diff_sec / 3600.0);
-            for(int i = 0; i < empty_space; i++) aggregated_profile.insert(aggregated_profile.begin(), {0,0});
-            vector<TimeSlice> tmp = least_flexible.get_profile();
-            reverse(tmp.begin(), tmp.end());
-            for(auto slice : tmp) aggregated_profile.insert(aggregated_profile.begin(), slice);
-            aggregated_earliest = least_flexible.get_lst();
-            duration = aggregated_profile.size();
-            overall_min += least_flexible.get_min_overall_kw();
-            overall_max += least_flexible.get_max_overall_kw();
+            if(least_flexible.get_lst() + (least_flexible.get_duration() * 3600) < aggregated_earliest){
+                double diff_sec = difftime(aggregated_earliest, least_flexible.get_lst() + (least_flexible.get_duration()));
+                int empty_space = ceil(diff_sec / 3600);
+                for(int i = 0; i < empty_space; i++) aggregated_profile.insert(aggregated_profile.begin(), {0,0});
+                vector<TimeSlice> tmp = least_flexible.get_profile();
+                reverse(tmp.begin(), tmp.end());
+                for(auto slice : tmp) aggregated_profile.insert(aggregated_profile.begin(), slice);
+                aggregated_earliest = least_flexible.get_lst();
+                duration = aggregated_profile.size();
+                overall_min += least_flexible.get_min_overall_kw();
+                overall_max += least_flexible.get_max_overall_kw();
+            } else {
+                double diff_sec = difftime(aggregated_earliest, least_flexible.get_lst());
+                int empty_space = ceil(diff_sec / 3600);
+                vector<TimeSlice> tmp = least_flexible.get_profile();
+                for(int i = 0; i < empty_space; i++){ 
+                    aggregated_profile.insert(aggregated_profile.begin(), tmp[0]);
+                    tmp.erase(tmp.begin());
+                }
+                while(!tmp.empty()){
+                    aggregated_profile[empty_space] = {aggregated_profile[empty_space].min_power + tmp[0].min_power,
+                                                       aggregated_profile[empty_space].max_power + tmp[0].max_power};
+                    tmp.erase(tmp.begin());
+                    empty_space++;
+                }
+                aggregated_earliest = least_flexible.get_lst();
+                duration = aggregated_profile.size();
+                aggregated_latest = aggregated_end_time - (duration * 3600); 
+                overall_min += least_flexible.get_min_overall_kw();
+                overall_max += least_flexible.get_max_overall_kw();
+            }
         } else {
             double offsetMinSec = difftime(least_flexible.get_est(), aggregated_earliest);
             double offsetMaxSec = difftime(least_flexible.get_lst(), aggregated_earliest);
@@ -263,10 +303,10 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 double placeholder = best_result;
                 vector<TimeSlice> tmp = calc_alignment(aggregated_profile, least_flexible, i, best_result);
                 if(best_result > placeholder){
-                    best_earliest = aggregated_earliest + ((i-1) * 3600);
+                    best_earliest = aggregated_earliest + (i * 3600);
                     best_latest = min(aggregated_latest, least_flexible.get_lst());
                     best_duration = tmp.size();
-                    best_endtime = aggregated_latest + ((duration-1)*3600);
+                    best_endtime = aggregated_latest + (duration*3600);
                     best_profile = tmp;
                     best_min = overall_min + least_flexible.get_min_overall_kw();
                     best_max = overall_max + least_flexible.get_max_overall_kw();
