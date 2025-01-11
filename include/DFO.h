@@ -35,7 +35,7 @@ class DFO {
         vector<DependencyPolygon> polygons;
 };
 
-DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples);
+DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, double &epsilon2);
 DFO aggnto1(const vector<DFO> &dfos, int numsamples);
 void disagg1to2(
     const DFO &D1, const DFO &D2, const DFO &DA, 
