@@ -160,10 +160,11 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
         double aggregated_max_prev = polygon1.max_prev_energy + polygon2.max_prev_energy;
 
         DependencyPolygon aggregated_polygon(aggregated_min_prev, aggregated_max_prev, numsamples);
-
+        
+        double min_current_energy, max_current_energy;
         if (polygon1.points.size() == 2 && polygon2.points.size() == 2) { // Special case - For example if 1st timestep and the dependency min/max is 0. Then there are only 2 points
-            double min_current_energy = polygon1.points[0].y + polygon2.points[0].y;
-            double max_current_energy = polygon1.points[1].y + polygon2.points[1].y;
+            min_current_energy = polygon1.points[0].y + polygon2.points[0].y;
+            max_current_energy = polygon1.points[1].y + polygon2.points[1].y;
             double dependency_Amount = polygon1.points[1].x + polygon2.points[1].x;
 
             aggregated_polygon.add_point(dependency_Amount, min_current_energy);
@@ -191,7 +192,6 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                 double dfo2_max_energy = matching_points2[1].y;
 
                 // Aggregate the found min / max energy amount and add the points to the aggregated DFO slice
-                double min_current_energy, max_current_energy;
                 if(i+1 == dfo1.polygons.size()) {
                     min_current_energy = dfo1_min_energy + dfo2_min_energy;
                     max_current_energy = dfo1_max_energy + dfo2_max_energy;
