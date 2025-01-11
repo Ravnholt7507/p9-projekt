@@ -452,6 +452,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             continue;
         }
 
+
         // Parse kWhDelivered
         double kWhDelivered = 0.0;
         try {
@@ -463,6 +464,14 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
 
         if (kWhDelivered <= 0.0) {
             std::cerr << "Warning: zero or negative kWhDelivered, skipping line." << std::endl;
+            continue;
+        }
+
+        if (disconnectHour == 23 || disconnectHour == 24 || kWhDelivered < 1){
+            continue;
+        }
+
+        if (!isSameLocalDay(connectionHour, disconnectHour) || !isSameLocalDay(connectionHour, doneChargingHour)) {
             continue;
         }
 
@@ -486,6 +495,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             if (cumulative_energy > kWhDelivered) {
                 cumulative_energy = kWhDelivered;
             }
+            //cout <<"i+1: " <<i+1 << "\n";  
             max_prev[i + 1] = cumulative_energy;
         }
 
@@ -496,19 +506,23 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             if (cumulative_energy < 0) {
                 cumulative_energy = 0;
             }
+            //cout <<"i+1" <<i+1 << "\n";  
             min_prev[i + 1] = cumulative_energy;
         }
 
         // For time slices after disconnectHour, set min/max to kWhDelivered
-        for (int i = disconnectHour + 1; i <= total_time_slices; ++i) {
+        for (int i = disconnectHour + 1; i < total_time_slices; ++i) {
             min_prev[i] = kWhDelivered;
             max_prev[i] = kWhDelivered;
         }
+
 
         // Create the DFO
         DFO myDFO(dfo_id++, min_prev, max_prev, numsamples);
         // Generate dependency polygons
         myDFO.generate_dependency_polygons();
+
+        myDFO.print_dfo();
 
         // Store the DFO
         dfos.push_back(myDFO);
