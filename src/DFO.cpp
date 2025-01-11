@@ -64,6 +64,15 @@ void DependencyPolygon::generate_last_polygon() {
     }
 }
 
+void DependencyPolygon::sort_points() {
+    std::sort(points.begin(), points.end(), [](const Point& a, const Point& b) {
+        if (a.x == b.x) {
+            return a.y < b.y; // Sort by y when x values are equal
+        }
+        return a.x < b.x; // Sort by x by default
+    });
+}
+
 // Print the polygon points
 void DependencyPolygon::print_polygon(int i) const {
     cout << "Dependency Polygon Points at hour " << i << ":" << endl;
