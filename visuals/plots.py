@@ -512,44 +512,31 @@ def load_and_prepare_data(csv_file: str) -> pd.DataFrame:
 
     # Map aggregator_type
     aggregator_map = {0: 'Normal', 1: 'TEC', 2: 'DFO'}
-    df['aggregator_label'] = df['aggregator_type'].map(aggregator_map).fillna('Unknown')
-
+    df['aggregator_label'] = df['aggregator_type'].map(aggregator_map)
     # Map alignment
     alignment_map = {0: 'start', 1: 'balance', 2: 'price'}
-    df['alignment_label'] = df['alignment'].map(alignment_map).fillna('Unknown')
-
+    df['alignment_label'] = df['alignment'].map(alignment_map)
     # Combine thresholds into a short string label, e.g. "est=2|lst=2"
     df['threshold_label'] = ("th=" + df['est_threshold'].astype(str))
 
     # Combine group size for convenience
-    df['group_size_label'] = "G=" + df['max_group_size'].astype(str)
+    df['group_size_label'] = "G_size=" + df['max_group_size'].astype(str)
 
     return df
 
 def plot_savings_grid(df: pd.DataFrame):
-    # Sort or gather unique group sizes & aggregator labels
-    group_sizes = sorted(df['group_size_label'].unique())
-    aggregators = sorted(df['aggregator_label'].unique())
+    group_sizes = df['group_size_label'].unique()
+    aggregators = df['aggregator_label'].unique()
 
-    # Create the figure, subplots in a grid: rows=len(group_sizes), cols=len(aggregators)
     fig, axes = plt.subplots(
         nrows=len(group_sizes),
         ncols=len(aggregators),
         figsize=(5 * len(aggregators), 4 * len(group_sizes)),  # scale figure size
         sharey=True
     )
-    fig.suptitle("Figure 1: Savings – Subplots by (Group Size x Aggregator)", fontsize=14)
+    fig.suptitle("Figure 1: Savings – Subplots by (Group Size x Aggregator)", fontsize=12)
 
-    # If there's only one row or one column, axes might not be a 2D list
-    # We unify the indexing logic by always treating 'axes' as 2D
-    if len(group_sizes) == 1 and len(aggregators) == 1:
-        # single subplot
-        axes = [[axes]]
-    elif len(group_sizes) == 1:
-        # one row, multiple columns
-        axes = [axes]
-    elif len(aggregators) == 1:
-        # multiple rows, one column
+    if len(aggregators) == 1:
         axes = [[ax] for ax in axes]
 
     # Now iterate over each row/col
@@ -585,11 +572,6 @@ def plot_savings_grid(df: pd.DataFrame):
     plt.show()
 
 def plot_scenario_time_grid(df: pd.DataFrame):
-    """
-    Figure 2: Similar layout, but focusing on scenario_time.
-    Rows = group_size_label, columns = aggregator_label.
-    Each subplot: group by (threshold_label, alignment_label) => mean(scenario_time).
-    """
 
     group_sizes = sorted(df['group_size_label'].unique())
     aggregators = sorted(df['aggregator_label'].unique())
@@ -600,7 +582,7 @@ def plot_scenario_time_grid(df: pd.DataFrame):
         figsize=(5 * len(aggregators), 4 * len(group_sizes)),
         sharey=True
     )
-    fig.suptitle("Figure 2: Scenario Time – Subplots by (Group Size x Aggregator)", fontsize=14)
+    fig.suptitle("Figure 2: Scenario Time Subplots by (Group Size x Aggregator)", fontsize=14)
 
     if len(group_sizes) == 1 and len(aggregators) == 1:
         axes = [[axes]]
@@ -617,7 +599,6 @@ def plot_scenario_time_grid(df: pd.DataFrame):
             subdf = df[(df['aggregator_label'] == agg_lbl) &
                        (df['group_size_label'] == gsize)]
 
-            # Group by (threshold_label, alignment_label), average scenario_time
             grouped = subdf.groupby(['threshold_label','alignment_label'], as_index=False)['scenario_time'].mean()
 
             if grouped.empty:
