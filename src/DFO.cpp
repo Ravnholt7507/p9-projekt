@@ -278,6 +278,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                 aggregated_polygon.add_point(current_prev_energy, max_current_energy);
             }
         }
+        aggregated_polygon.sort_points();
 
         aggregated_polygons.push_back(aggregated_polygon);
     }
