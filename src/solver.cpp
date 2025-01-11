@@ -141,7 +141,6 @@ vector<double> Solver::DFO_Optimization(const DFO& dfo, const vector<double>& co
         IloNumVarArray energy(env, dfo.polygons.size(), 0.0, IloInfinity, ILOFLOAT);
         IloExpr totalCost(env);
 
-        // Objective: Minimize total cost
         for (size_t t = 0; t < dfo.polygons.size(); ++t) {
             totalCost += cost_per_unit[t] * energy[t];
         }

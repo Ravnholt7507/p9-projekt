@@ -1,6 +1,7 @@
 #include "../include/DFO.h"
 #include <stdexcept>
 #include <algorithm>
+#include <ilcplex/ilocplex.h>
 
 #include <ostream> // Required for std::ostream
 
@@ -142,14 +143,14 @@ vector<Point> find_or_interpolate_points(
 }
 
 // Function to aggregate two DFOs
-DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilon1, double &epsilon2
+DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, double &epsilon2) {
     if (dfo1.polygons.size() != dfo2.polygons.size()) {
         throw runtime_error("DFOs must have the same number of timesteps to aggregate. Kind Regards, agg2to1 function");
     }
 
     vector<DependencyPolygon> aggregated_polygons;
-    //epsilon1 = 1.0;
-    //epsilon2 = 1.0;
+    epsilon1 = 1.0;
+    epsilon2 = 1.0;
 
     for (size_t i = 0; i < dfo1.polygons.size(); ++i) {
         const auto &polygon1 = dfo1.polygons[i];
@@ -173,7 +174,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilo
             double step = (aggregated_max_prev - aggregated_min_prev) / (numsamples - 1);
             
             for (int j = 0; j < numsamples; ++j) {
-                // Calculate current dependecy amount for DFO1, DFO2, and aggregated DFO
+                // Calculate current dependency amount for DFO1, DFO2, and aggregated DFO
                 double current_prev_energy1 = polygon1.min_prev_energy + j * step1;
                 double current_prev_energy2 = polygon2.min_prev_energy + j * step2;
                 double current_prev_energy = aggregated_min_prev + j * step;
@@ -190,23 +191,72 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples) { //double &epsilo
                 double dfo2_max_energy = matching_points2[1].y;
 
                 // Aggregate the found min / max energy amount and add the points to the aggregated DFO slice
-                double min_current_energy = dfo1_min_energy + dfo2_min_energy;
-                double max_current_energy = dfo1_max_energy + dfo2_max_energy;
-                
+                double min_current_energy, max_current_energy;
+                if(i+1 == dfo1.polygons.size()) {
+                    min_current_energy = dfo1_min_energy + dfo2_min_energy;
+                    max_current_energy = dfo1_max_energy + dfo2_max_energy;
+                } else {
+                    double min_total_energy1 = current_prev_energy1 + dfo1_min_energy; 
+                    double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
+                    double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
+                    double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
+                    double used1_min_final;
+                    double used1_max_final;
+                    double used2_min_final;
+                    double used2_min_final;
+
+                    //used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
+                    //used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))
+                    IloEnv env;
+                    try {
+                        IloModel model(env);
+                        // Decision variables
+                        IloNumVar used1_min(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used1_max(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used2_min(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used2_max(env, 0.0, IloInfinity, ILOFLOAT);
+                        
+                        // Add maximum constraints
+                        model.add(
+                            (used1_max - min_total_energy1) * (max_total_energy2 - min_total_energy2)
+                            ==
+                            (used2_max - min_total_energy2) * (max_total_energy1 - min_total_energy1)
+                        );
+                        
+                        // Add minimum constraints
+                        model.add(
+                            (used1_min - min_total_energy1) * (max_total_energy2 - min_total_energy2)
+                            ==
+                            (used2_min - min_total_energy2) * (max_total_energy1 - min_total_energy1)
+                        );
+                        
+                        // Add sum constraints
+                        model.add(used1_max + used2_max <= max_total_energy1 + max_total_energy2);
+                        model.add(used1_min + used2_min >= min_total_energy1 + min_total_energy2);
+                        // Solve the model
+                        IloCplex cplex(model);
+                        if (cplex.solve()) {
+                            used1_min_final = cplex.getValue(used1_min);
+                            used1_max_final = cplex.getValue(used1_max);
+                            used2_min_final = cplex.getValue(used2_min);
+                            used2_max_final = cplex.getValue(used2_max);
+                        } else {
+                            std::cerr << "No solution found!" << std::endl;
+                        }
+                    } catch (const IloException &e) {
+                        std::cerr << "Error: " << e.getMessage() << std::endl;
+                    } catch (...) {
+                        std::cerr << "Unknown error occurred!" << std::endl;
+                    }
+                    env.end();
+                    min_current_energy = used1_min_final + used2_min_final;
+                    max_current_energy = used1_max_final + used2_max_final;
+                    epsilon1 *= (used1_max_final - used1_min_final) / (dfo1_max_energy - dfo1_min_energy);
+                    epsilon2 *= (used2_max_final - used2_min_final) / (dfo2_max_energy - dfo2_min_energy);
+
+                }
                 aggregated_polygon.add_point(current_prev_energy, min_current_energy);
                 aggregated_polygon.add_point(current_prev_energy, max_current_energy);
-
-                /*double min_total_energy1 = current_prev_energy1 + dfo1_min_energy; // Some temporary code. 
-                double max_total_energy1 = current_prev_energy1 + dfo1_max_energy;
-                double min_total_energy2 = current_prev_energy2 + dfo2_min_energy;
-                double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
-                double used1_min;
-                double used1_max;
-                double used2_min;
-                double used2_min;
-
-                used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
-                used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))*/
             }
         }
 
