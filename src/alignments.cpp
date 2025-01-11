@@ -231,6 +231,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 overall_min += least_flexible.get_min_overall_kw();
                 overall_max += least_flexible.get_max_overall_kw();
+                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             } else {
                 double diff_sec = difftime(least_flexible.get_est(), aggregated_latest);
                 int empty_space = ceil(diff_sec / 3600);
@@ -250,6 +251,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 overall_min += least_flexible.get_min_overall_kw();
                 overall_max += least_flexible.get_max_overall_kw();
+                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             }
         } else if(aggregated_earliest > least_flexible.get_lst()){
             if(least_flexible.get_lst() + (least_flexible.get_duration() * 3600) < aggregated_earliest){
