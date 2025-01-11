@@ -27,13 +27,6 @@ double computeBaselineCost(const vector<Flexoffer> &flexOffers, const vector<dou
     return total_cost;
 }
 
-
-
-
-
-
-
-
 double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector<double> &spotPrices)
 {
     double total_cost = 0.0;
@@ -48,7 +41,6 @@ double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector
     }
     return total_cost;
 }
-
 
 double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPrices) {
     double total_cost = 0.0;
@@ -108,18 +100,16 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
     return total_cost;
 }
 
-
-
-
-
 double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices){
     double total_cost = 0.0;
 
     for (auto dfo : dfos){
         dfo.print_dfo();
     }
+    double epsilon1{1};
+    double epsilon2{1};
 
-    DFO AFO = aggnto1(dfos, 5);
+    DFO AFO = agg2to1(dfos[0], dfos[4], 5, epsilon1, epsilon2);
 
     AFO.print_dfo();
 
@@ -131,14 +121,6 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices)
 
     return total_cost;
 }
-
-
-
-
-
-
-
-
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &dfos, const vector<double> &spotPrices){
     
@@ -195,16 +177,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0, 1};
+    vector<int> aggrTypes = {2};
     vector<Alignments> aligns = {
         Alignments::start,
-        Alignments::balance,
+        //Alignments::balance,
         //Alignments::price,
     };
 
-    vector<int> thresholds = {2, 4, 6}; 
-    vector<int> groupSizes = {5, 10, 25, 50};
-    vector<int> nOffersVec = {10, 50, 100};
+    vector<int> thresholds = {2}; 
+    vector<int> groupSizes = {5};
+    vector<int> nOffersVec = {10};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {
