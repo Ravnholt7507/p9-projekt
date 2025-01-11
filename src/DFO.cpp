@@ -203,7 +203,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     double used1_min_final;
                     double used1_max_final;
                     double used2_min_final;
-                    double used2_min_final;
+                    double used2_max_final;
 
                     //used1_max, used2_max = max(used1_max + used2_max) subject to ((used1_max - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_max - min_total_energy2) / (max_total_energy2 - min_total_energy2))
                     //used1_min, used2_min = min(used1_min + used2_min) subject to ((used1_min - min_total_energy1) / (max_total_energy1 - min_total_energy1)) == ((used2_min - min_total_energy2) / (max_total_energy2 - min_total_energy2))
