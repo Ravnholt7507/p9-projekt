@@ -45,6 +45,7 @@ class Flexoffer{
 
         // Additional methods
         int get_est_hour() const;
+        int get_et_hour() const;
         int get_lst_hour() const;
         double get_total_energy() const;
         

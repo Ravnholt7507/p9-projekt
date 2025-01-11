@@ -27,6 +27,13 @@ double computeBaselineCost(const vector<Flexoffer> &flexOffers, const vector<dou
     return total_cost;
 }
 
+
+
+
+
+
+
+
 double computeBaselineCost(const vector<Tec_flexoffer> &flexOffers, const vector<double> &spotPrices)
 {
     double total_cost = 0.0;
@@ -101,19 +108,35 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
     return total_cost;
 }
 
+
+
+
+
 double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices){
     double total_cost = 0.0;
 
-    for(auto &dfo : dfos) {
-        vector<double> schedule = Solver::DFO_Optimization(dfo, spotPrices);
+    for (auto dfo : dfos){
+        dfo.print_dfo();
+    }
 
-        for(int t=0; t<static_cast<int>(schedule.size()) && t<static_cast<int>(spotPrices.size()); t++){
-            total_cost += schedule[t] * spotPrices[t];
-        }
+    DFO AFO = aggnto1(dfos, 5);
+
+    AFO.print_dfo();
+
+    vector<double> schedule = Solver::DFO_Optimization(AFO, spotPrices);
+
+    for(int t=0; t<static_cast<int>(schedule.size()) && t<static_cast<int>(spotPrices.size()); t++){
+        total_cost += schedule[t] * spotPrices[t];
     }
 
     return total_cost;
 }
+
+
+
+
+
+
 
 
 
@@ -172,16 +195,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0};
+    vector<int> aggrTypes = {2};
     vector<Alignments> aligns = {
-        //Alignments::start,
-        Alignments::balance,
-        //Alignments::price,
+        Alignments::start,
+        //Alignments::balance,
+        Alignments::price,
     };
 
-    vector<int> thresholds = {6}; 
-    vector<int> groupSizes = {50};
-    vector<int> nOffersVec = {100};
+    vector<int> thresholds = {4}; 
+    vector<int> groupSizes = {100};
+    vector<int> nOffersVec = {2};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {

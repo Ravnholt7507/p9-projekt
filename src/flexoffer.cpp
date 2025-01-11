@@ -82,6 +82,11 @@ int Flexoffer::get_lst_hour() const {
     return timeinfo->tm_hour;
 }
 
+int Flexoffer::get_et_hour() const {
+    struct tm* timeinfo = localtime(&end_time);
+    return timeinfo->tm_hour;
+}
+
 double Flexoffer::get_total_energy() const {
     double total_energy = 0.0;
     for (const auto& ts : profile) {
