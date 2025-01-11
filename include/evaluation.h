@@ -26,7 +26,7 @@ double computeAggregatedCost(vector<Flexoffer> flexOffers, int est_threshold, in
 double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices);
 
 double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPrices);
-double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices);
+double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices, int max_group_size);
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &DFOs ,const vector<double> &spotPrices);
 vector<AggScenario> generateScenarioMatrix();

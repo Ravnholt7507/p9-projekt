@@ -37,7 +37,7 @@ class DFO {
 };
 
 DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, double &epsilon2);
-DFO aggnto1(const vector<DFO> &dfos, int numsamples);
+DFO aggnto1(const vector<DFO> &dfos, int numsamples, double &epsilon1, double &epsilon2);
 void disagg1to2(
     const DFO &D1, const DFO &D2, const DFO &DA, 
     const std::vector<double> &yA_ref, 

@@ -292,7 +292,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
 }
 
 // Function to aggregate multiple DFOs into one
-DFO aggnto1(const vector<DFO> &dfos, int numsamples) {
+DFO aggnto1(const vector<DFO> &dfos, int numsamples, double &epsilon1, double &epsilon2) {
     if (dfos.empty()) {
         throw runtime_error("No DFOs provided for aggregation. Kind Regards, aggnto1 function");
     }
@@ -302,7 +302,7 @@ DFO aggnto1(const vector<DFO> &dfos, int numsamples) {
 
     // Aggregate subsequent DFOs
     for (size_t i = 1; i < dfos.size(); ++i) {
-    //    aggregated_dfo = agg2to1(aggregated_dfo, dfos[i], numsamples);
+        aggregated_dfo = agg2to1(aggregated_dfo, dfos[i], numsamples, epsilon1, epsilon2);
     }
 
     return aggregated_dfo;

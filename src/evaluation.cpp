@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <cmath>
 
 #include "../include/evaluation.h"
 #include "../include/aggregation.h"
@@ -100,27 +101,36 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
     return total_cost;
 }
 
-double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices){
+
+
+double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices, int max_group_size){
     double total_cost = 0.0;
+    int usedOffers = 0;
 
-    for (auto dfo : dfos){
-        dfo.print_dfo();
+
+    while (usedOffers < (int)dfos.size())
+    {
+        int remain = dfos.size() - usedOffers;
+        int this_chunk_size = min(remain, max_group_size);
+
+        vector<DFO> dfo_group(dfos.begin() + usedOffers, dfos.begin() + usedOffers + this_chunk_size);
+
+        usedOffers += this_chunk_size;
+
+        double epsilon1 = 1.0;
+        double epsilon2 = 1.0;
+        DFO AFO = aggnto1(dfo_group, 5, epsilon1, epsilon2);
+
+        AFO.print_dfo();
+
+        vector<double> schedule = Solver::DFO_Optimization(AFO, spotPrices);
+        for (size_t t = 0; t < schedule.size() && t < spotPrices.size(); ++t) {
+            total_cost += schedule[t] * spotPrices[t];
+        }
     }
-    double epsilon1{1};
-    double epsilon2{1};
-
-    DFO AFO = agg2to1(dfos[0], dfos[1], 5, epsilon1, epsilon2);
-
-    AFO.print_dfo();
-
-    vector<double> schedule = Solver::DFO_Optimization(AFO, spotPrices);
-
-    for(int t=0; t<static_cast<int>(schedule.size()) && t<static_cast<int>(spotPrices.size()); t++){
-        total_cost += schedule[t] * spotPrices[t];
-    }
-
     return total_cost;
 }
+
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &dfos, const vector<double> &spotPrices){
     
@@ -155,7 +165,7 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         else if (s.aggregator_type == 2){ // DFO
             vector<DFO> subDFOs(dfos.begin(), dfos.begin()+n);
             baseline = computeBaselineCost(subNormal, spotPrices);
-            agg_cost = computeAggregatedCost(subDFOs, spotPrices);
+            agg_cost = computeAggregatedCost(subDFOs, spotPrices, s.max_group_size);
         } 
 
         auto t_end = chrono::steady_clock::now();
@@ -177,11 +187,11 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {2};
+    vector<int> aggrTypes = {0,1,2};
     vector<Alignments> aligns = {
         Alignments::start,
-        //Alignments::balance,
-        //Alignments::price,
+        Alignments::balance,
+        Alignments::price,
     };
 
     vector<int> thresholds = {2}; 
