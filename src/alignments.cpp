@@ -124,6 +124,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_end_time = least_flexible.get_et(); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
+                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             } else {
                 double diff_sec = difftime(least_flexible.get_est(), aggregated_latest);
                 int empty_space = ceil(diff_sec / 3600);
@@ -141,6 +142,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 aggregated_end_time = least_flexible.get_et(); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
+                if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
             }
         } else if(aggregated_earliest > least_flexible.get_lst()){
             if(least_flexible.get_lst() + (least_flexible.get_duration() * 3600) < aggregated_earliest){
