@@ -48,8 +48,9 @@ void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, tim
 
         duration = tmp.size();
         aggregated_earliest = min(aggregated_earliest, fo.get_est());
-        aggregated_end_time = min(aggregated_end_time, fo.get_et());
+        aggregated_end_time = max(aggregated_end_time, fo.get_et());
         aggregated_latest = aggregated_end_time - (duration * 3600);
+        if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
         aggregated_profile = tmp;
         tmp.clear();
     }
@@ -93,8 +94,9 @@ void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, tim
 
         duration = tmp.size();
         aggregated_earliest = min(aggregated_earliest, fo.get_est());
-        aggregated_end_time = min(aggregated_end_time, fo.get_et());
+        aggregated_end_time = max(aggregated_end_time, fo.get_et());
         aggregated_latest = aggregated_end_time - (duration * 3600);
+        if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
         overall_min += fo.get_min_overall_kw();
         overall_max += fo.get_max_overall_kw();
         aggregated_profile = tmp;
@@ -121,7 +123,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 int empty_space = ceil(diff_sec / 3600);
                 for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
                 for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
-                aggregated_end_time = least_flexible.get_et(); 
+                aggregated_end_time = least_flexible.get_est() + (least_flexible.get_duration() * 3600); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
@@ -139,7 +141,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                     tmp.erase(tmp.begin());
                     empty_space++;
                 }
-                aggregated_end_time = least_flexible.get_et(); 
+                aggregated_end_time = max(least_flexible.get_est() + (least_flexible.get_duration() * 3600), aggregated_end_time); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 if(aggregated_latest < aggregated_earliest) aggregated_earliest = aggregated_latest;
@@ -226,7 +228,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                 int empty_space = ceil(diff_sec / 3600);
                 for(int i = 0; i < empty_space; i++) aggregated_profile.push_back({0,0});
                 for(auto slice : least_flexible.get_profile()) aggregated_profile.push_back(slice);
-                aggregated_end_time = least_flexible.get_et(); 
+                aggregated_end_time = least_flexible.get_est() + (least_flexible.get_duration() * 3600); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 overall_min += least_flexible.get_min_overall_kw();
@@ -246,7 +248,7 @@ void balance_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, t
                     tmp.erase(tmp.begin());
                     empty_space++;
                 }
-                aggregated_end_time = least_flexible.get_et(); 
+                aggregated_end_time = max(least_flexible.get_est() + (least_flexible.get_duration() * 3600), aggregated_end_time); 
                 duration = aggregated_profile.size();
                 aggregated_latest = aggregated_end_time - (duration * 3600); 
                 overall_min += least_flexible.get_min_overall_kw();

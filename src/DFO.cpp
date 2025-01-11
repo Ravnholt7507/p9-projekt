@@ -46,6 +46,8 @@ void DependencyPolygon::generate_polygon(size_t i, double next_min_prev, double 
         add_point(current_prev_energy, min_current_energy);
         add_point(current_prev_energy, max_current_energy);
     }
+
+    sort_points();
 }
 
 // Overload for the last timestep (no next slice)
@@ -62,6 +64,15 @@ void DependencyPolygon::generate_last_polygon() {
         add_point(current_prev_energy, min_current_energy);
         add_point(current_prev_energy, max_current_energy);
     }
+}
+
+void DependencyPolygon::sort_points() {
+    std::sort(points.begin(), points.end(), [](const Point& a, const Point& b) {
+        if (a.x == b.x) {
+            return a.y < b.y; // Sort by y when x values are equal
+        }
+        return a.x < b.x; // Sort by x by default
+    });
 }
 
 // Print the polygon points

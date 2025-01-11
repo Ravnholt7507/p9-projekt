@@ -1,7 +1,6 @@
 #include <ilcplex/ilocplex.h>
 #include <iostream>
 #include <vector>
-#include <algorithm>
 
 #include "../include/solver.h"
 #include "../include/DFO.h"
@@ -168,7 +167,6 @@ vector<double> Solver::DFO_Optimization(const DFO& dfo, const vector<double>& co
             for (size_t t = 0; t < dfo.polygons.size(); ++t) {
                 double value = cplex.getValue(energy[t]);
                 DFO_Schedule.push_back(value);
-            //    cout << "Energy at time " << t + 1 << ": " << value << endl;
             }
         } else {
             cerr << "Failed to find optimal solution." << endl;
