@@ -237,6 +237,7 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         model.add(used1_min + used2_min >= min_total_energy1 + min_total_energy2);
                         // **Minimize `used1_min` and `used2_min`**
                         IloCplex cplex_min(model);
+                        cplex_min.setOut(env.getNullStream());
                         IloObjective minimizeObjective(env, used1_min + used2_min, IloObjective::Minimize);
                         model.add(minimizeObjective);
                         if (cplex_min.solve()) {
@@ -245,9 +246,11 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                         } else {
                             std::cerr << "No solution found during minimization!" << std::endl;
                         }
+                        model.remove(minimizeObjective);
                         
                         // **Maximize `used1_max` and `used2_max`**
                         IloCplex cplex_max(model);
+                        cplex_max.setOut(env.getNullStream());
                         IloObjective maximizeObjective(env, used1_max + used2_max, IloObjective::Maximize);
                         model.add(maximizeObjective);
                         
@@ -299,7 +302,7 @@ DFO aggnto1(const vector<DFO> &dfos, int numsamples) {
 
     // Aggregate subsequent DFOs
     for (size_t i = 1; i < dfos.size(); ++i) {
-        aggregated_dfo = agg2to1(aggregated_dfo, dfos[i], numsamples);
+    //    aggregated_dfo = agg2to1(aggregated_dfo, dfos[i], numsamples);
     }
 
     return aggregated_dfo;
@@ -349,19 +352,16 @@ void disagg1to2(
         } else {
             f = (yA_ref[i] - pointA_1.y) / (pointA_2.y - pointA_1.y);
         }
-        std::cout << "f: " << f << std::endl;
 
         // Use same scaling factor on DFO 1 and 2 respectively, to get their corresponding energy usage
         // DFO1
         const Point &point1_1 = matching_points1[0];
         const Point &point1_2 = matching_points1[1];
-        std::cout << "DFO 1 min / max: " << point1_1 << point1_2 << std::endl;
         y1_ref[i] = point1_1.y + f * (point1_2.y - point1_1.y);
 
         // DFO2 
         const Point &point2_1 = matching_points2[0];
         const Point &point2_2 = matching_points2[1];
-        std::cout << "DFO 2 min / max: " << point2_1 << point2_2 << std::endl;
         y2_ref[i] = point2_1.y + f * (point2_2.y - point2_1.y);
 
         //Update dependency amounts
