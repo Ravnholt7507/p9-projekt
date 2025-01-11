@@ -46,6 +46,8 @@ void DependencyPolygon::generate_polygon(size_t i, double next_min_prev, double 
         add_point(current_prev_energy, min_current_energy);
         add_point(current_prev_energy, max_current_energy);
     }
+
+    sort_points();
 }
 
 // Overload for the last timestep (no next slice)
