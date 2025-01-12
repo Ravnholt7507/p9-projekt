@@ -393,8 +393,9 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
 
         double actualMinEnergy = minPower * duration;
         double actualMaxEnergy = maxPower * duration;
-        double totalMinEnergy = actualMinEnergy * 1.0;
-        double totalMaxEnergy = actualMaxEnergy * 5.0;
+
+        double totalMinEnergy = actualMinEnergy * 1.2;
+        double totalMaxEnergy = actualMaxEnergy * 1.5;
 
         if (type == 0) {
             flexOffers.emplace_back(Flexoffer(offerID++, connectionTime, latestStartTime, doneChargingTime, profile, duration));
@@ -456,7 +457,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         // Parse kWhDelivered
         double kWhDelivered = 0.0;
         try {
-            kWhDelivered = std::stod(fields[5]);
+            kWhDelivered = std::stod(fields[5]) * 1.2;
         } catch (const std::exception &e) {
             std::cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << std::endl;
             continue;
