@@ -121,7 +121,7 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices,
         double epsilon2 = 1.0;
         DFO AFO = aggnto1(dfo_group, 5, epsilon1, epsilon2);
 
-        AFO.print_dfo();
+        //AFO.print_dfo();
 
         vector<double> schedule = Solver::DFO_Optimization(AFO, spotPrices);
         for (size_t t = 0; t < schedule.size() && t < spotPrices.size(); ++t) {
@@ -163,7 +163,8 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
             agg_cost = computeAggregatedCost(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
         }
         else if (s.aggregator_type == 2){ // DFO
-            vector<DFO> subDFOs(dfos.begin(), dfos.begin()+n);
+            int n = min(s.usedOffers, (int)dfos.size());
+            vector<DFO> subDFOs(dfos.begin(), dfos.begin() + n);
             baseline = computeBaselineCost(subNormal, spotPrices);
             agg_cost = computeAggregatedCost(subDFOs, spotPrices, s.max_group_size);
         } 
@@ -187,16 +188,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0,1,2};
+    vector<int> aggrTypes = {2};
     vector<Alignments> aligns = {
-        Alignments::start,
-        Alignments::balance,
+        //Alignments::start,
+        //Alignments::balance,
         Alignments::price,
     };
 
     vector<int> thresholds = {2}; 
-    vector<int> groupSizes = {5};
-    vector<int> nOffersVec = {10};
+    vector<int> groupSizes = {5, 10, 50};
+    vector<int> nOffersVec = {200};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {
