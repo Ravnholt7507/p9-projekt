@@ -3,7 +3,6 @@
 
 # data files
 *.json
-data/*.csv
 
 # Compiled Object files
 *.slo

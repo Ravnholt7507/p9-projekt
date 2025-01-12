@@ -478,7 +478,6 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         // Compute charging duration and charging rate
         int charging_hours = doneChargingHour - connectionHour;
         if (charging_hours <= 0 || doneChargingHour >= disconnectHour) {
-            std::cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
             continue;
         }
         double charging_rate = kWhDelivered / charging_hours;
@@ -496,18 +495,17 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
                 cumulative_energy = kWhDelivered;
             }
             //cout <<"i+1: " <<i+1 << "\n";  
-            max_prev[i] = cumulative_energy;
+            max_prev[i+1] = cumulative_energy;
         }
 
         // Scale min_prev starting from the last charging hour
         cumulative_energy = kWhDelivered;
         for (int i = doneChargingHour; i >= connectionHour && cumulative_energy > 0; --i) {
+            min_prev[i+1] = cumulative_energy;
             cumulative_energy -= charging_rate;
             if (cumulative_energy < 0) {
                 cumulative_energy = 0;
             }
-            //cout <<"i+1" <<i+1 << "\n";  
-            min_prev[i] = cumulative_energy;
         }
 
 
@@ -526,7 +524,6 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         
         myDFO.generate_dependency_polygons();
 
-        myDFO.print_dfo();
 
         // Store the DFO
         dfos.push_back(myDFO);

@@ -159,13 +159,13 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
         }
         else if (s.aggregator_type == 1) { // this is for tec FOs
             vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin() + n);
-            baseline = computeBaselineCost(subNormal, spotPrices);
+            baseline = computeBaselineCost(subTec, spotPrices);
             agg_cost = computeAggregatedCost(subTec, s.est_threshold, s.lst_threshold, s.max_group_size, s.align, spotPrices);
         }
         else if (s.aggregator_type == 2){ // DFO
             int n = min(s.usedOffers, (int)dfos.size());
             vector<DFO> subDFOs(dfos.begin(), dfos.begin() + n);
-            baseline = computeBaselineCost(subNormal, spotPrices);
+            baseline = computeBaselineCost(subDFOs, spotPrices);
             agg_cost = computeAggregatedCost(subDFOs, spotPrices, s.max_group_size);
         } 
 
@@ -188,16 +188,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {2};
+    vector<int> aggrTypes = {0, 1, 2};
     vector<Alignments> aligns = {
-        //Alignments::start,
-        //Alignments::balance,
+        Alignments::start,
+        Alignments::balance,
         Alignments::price,
     };
 
-    vector<int> thresholds = {2}; 
+    vector<int> thresholds = {2, 4, 6}; 
     vector<int> groupSizes = {5, 10, 50};
-    vector<int> nOffersVec = {200};
+    vector<int> nOffersVec = {10, 50, 100, 200};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {
