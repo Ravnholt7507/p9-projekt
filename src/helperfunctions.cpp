@@ -467,7 +467,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             continue;
         }
 
-        if (disconnectHour == 23 || disconnectHour == 24 || kWhDelivered < 1){
+        if (disconnectHour == 23 || disconnectHour == 24 || doneChargingHour == 23 || doneChargingHour == 24 ||  kWhDelivered < 1){
             continue;
         }
 
@@ -477,10 +477,10 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
 
         // Compute charging duration and charging rate
         int charging_hours = doneChargingHour - connectionHour;
-        // if (charging_hours <= 0) {
-        //     std::cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
-        //     continue;
-        // }
+        if (charging_hours <= 0 || doneChargingHour >= disconnectHour) {
+            std::cerr << "Warning: doneChargingHour <= connectionHour, skipping.\n";
+            continue;
+        }
         double charging_rate = kWhDelivered / charging_hours;
 
         // Create 24 time slices
@@ -496,7 +496,7 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
                 cumulative_energy = kWhDelivered;
             }
             //cout <<"i+1: " <<i+1 << "\n";  
-            max_prev[i + 1] = cumulative_energy;
+            max_prev[i] = cumulative_energy;
         }
 
         // Scale min_prev starting from the last charging hour
@@ -507,19 +507,23 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
                 cumulative_energy = 0;
             }
             //cout <<"i+1" <<i+1 << "\n";  
-            min_prev[i + 1] = cumulative_energy;
+            min_prev[i] = cumulative_energy;
         }
 
-        // For time slices after disconnectHour, set min/max to kWhDelivered
+
+        for (int i = doneChargingHour + 1; i <= disconnectHour; i++) {
+            min_prev[i] = kWhDelivered;
+            max_prev[i] = kWhDelivered;
+        }
+
         for (int i = disconnectHour + 1; i < total_time_slices; ++i) {
             min_prev[i] = kWhDelivered;
             max_prev[i] = kWhDelivered;
         }
 
-
         // Create the DFO
         DFO myDFO(dfo_id++, min_prev, max_prev, numsamples);
-        // Generate dependency polygons
+        
         myDFO.generate_dependency_polygons();
 
         myDFO.print_dfo();
