@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iostream>
 #include <algorithm>
 
 #include "../include/alignments.h"
@@ -9,6 +10,15 @@ Flexoffer least_flexible_object(vector<Flexoffer>&);
 Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers);
 vector<TimeSlice> calc_alignment(vector<TimeSlice>, Flexoffer, int, double&); 
 vector<TimeSlice> calc_alignment(vector<TimeSlice>, Tec_flexoffer, int, double&);
+void mergeFlexAtOffset(vector<TimeSlice> &base, const Flexoffer &fo, int offset);
+void expandToFitFront(time_t &aggEarliest, int &duration, vector<TimeSlice> &aggProfile, const Flexoffer &fo);
+void expandToFitBack(time_t &aggEarliest, int &duration,vector<TimeSlice> &aggProfile, const Flexoffer &fo);
+double synergyFunction(const vector<TimeSlice> &prof, time_t aggregatorEarliest, const vector<double> &spotPrices);
+void mergeTecAtOffset(vector<TimeSlice> &base, const Tec_flexoffer &fo, int offset);
+void expandTecFront(time_t &aggEarliest,int &duration,vector<TimeSlice> &aggProfile,double &overallMin,double &overallMax,const Tec_flexoffer &fo);
+void expandTecBack(time_t &aggEarliest,int &duration,vector<TimeSlice> &aggProfile,double &overallMin,double &overallMax,const Tec_flexoffer &fo);
+double synergyTec(const vector<TimeSlice> &prof,time_t aggregatorEarliest,const vector<double> &spotPrices);
+
 
 //for fo
 void start_alignment(time_t &aggregated_earliest, time_t &aggregated_latest, time_t &aggregated_end_time, vector<TimeSlice> &aggregated_profile, int &duration, vector<Flexoffer> offers){
@@ -459,185 +469,250 @@ Tec_flexoffer least_flexible_object(vector<Tec_flexoffer> &offers){
 }
 
 
-static const int DAY_HOURS = 24;
 
-void priceAwareAlignment(time_t &agg_est,time_t &agg_lst,time_t &agg_end,vector<TimeSlice> &agg_profile,int &duration,std::vector<Flexoffer> offers,const std::vector<double> &spotPrices){
-    
-    auto synergy = [&](const vector<TimeSlice> &prof) {
-        if (prof.empty()) return 0.0;
-        double maxP = *max_element(spotPrices.begin(), spotPrices.end());
-        double val  = 0.0;
-        int T = min<int>(prof.size(), DAY_HOURS);
-        for (int i=0; i < T; i++) {
-            double load = 0.5 * (prof[i].min_power + prof[i].max_power);
-            double locP = spotPrices[i];
-            val += load * (maxP - locP);
-        }
-        return val;
-    };
-
-    auto mergeAtOffset = [&](const std::vector<TimeSlice> &base, const Flexoffer &fo, int offset) {
-        vector<TimeSlice> result = base;
-        auto foProf = fo.get_profile();
-        int foDur   = (int)foProf.size();
-        if (offset + foDur > (int)result.size()) {
-            result.resize(offset + foDur, {0.0, 0.0});
-        }
-        for (int i = 0; i < foDur; i++) {
-            result[offset + i].min_power += foProf[i].min_power;
-            result[offset + i].max_power += foProf[i].max_power;
-        }
-        return result;
-    };
-
-    auto updateAggregator = [&](time_t newEst, const std::vector<TimeSlice> &prof) {
-        agg_est    = newEst;
-        duration   = (int)prof.size();
-        agg_end    = agg_est + duration * 3600;
-        agg_lst    = agg_end - duration * 3600;
-    };
-
-
-    Flexoffer start = offers.back();
-    offers.pop_back();
-
-    agg_est = start.get_est();
-    agg_lst = start.get_lst();
-    agg_end = start.get_et();
-    agg_profile = start.get_profile();
-
-    duration = (int)agg_profile.size();
-
-    updateAggregator(agg_est, agg_profile);
-
-    //Looking at the next offer in line (one at a time)
-    while (!offers.empty()) {
-        Flexoffer curr = offers.back();
-        offers.pop_back();
-
-        double offMinSec = difftime(curr.get_est(), agg_est); //2 
-        double offMaxSec = difftime(curr.get_lst(), agg_est); //4
-
-        int offMin = std::max(0, (int)floor(offMinSec/3600.0)); //2
-        int offMax = std::min(offMin, (int)ceil(offMaxSec/3600.0)); //4
-
-        double bestVal = 0;
-        vector<TimeSlice> bestProf = agg_profile;
-        time_t bestEst = agg_est;
-
-        //Merging at the best offset
-        for (int off = offMin; off <= offMax; off++) {
-            auto cand = mergeAtOffset(agg_profile, curr, off);
-            double s  = synergy(cand);
-            if (s > bestVal) {
-                bestVal  = s;
-                bestProf = cand;
-                bestEst  = agg_est;
-            }
-        }
-
-        agg_profile = bestProf;
-        updateAggregator(bestEst, agg_profile);
+void mergeFlexAtOffset(vector<TimeSlice>& base, const Flexoffer &fo, int offset) {
+    auto prof = fo.get_profile();
+    int dur   = fo.get_duration();
+    if (offset + dur > (int)base.size()) base.resize(offset + dur, {0,0});
+    for (int i=0; i<dur; i++){
+        base[offset + i].min_power += prof[i].min_power;
+        base[offset + i].max_power += prof[i].max_power;
     }
 }
 
-void priceAwareAlignment(time_t &agg_est,time_t &agg_lst,time_t &agg_end,std::vector<TimeSlice> &agg_profile,int &duration,double &overall_min,double &overall_max,std::vector<Tec_flexoffer> offers,const std::vector<double> &spotPrices){
-    
-    auto synergy = [&](const vector<TimeSlice> &prof){
-        if (prof.empty()) return 0.0;
-        double maxP = *max_element(spotPrices.begin(), spotPrices.end());
-        double val = 0.0;
-        int T = min<int>(prof.size(), DAY_HOURS);
-        for (int h = 0; h < T; h++) {
-            double load = 0.5 * (prof[h].min_power + prof[h].max_power);
-            double locP = spotPrices[h];
-            val += load * (maxP - locP);
-        }
-        return val;
+void mergeTecAtOffset(vector<TimeSlice> &base, const Tec_flexoffer &fo, int offset){
+    auto prof = fo.get_profile();
+    int dur   = fo.get_duration();
+    if (offset + dur > (int)base.size()) base.resize(offset + dur, {0,0});
+    for (int i=0; i<dur; i++){
+        base[offset + i].min_power += prof[i].min_power;
+        base[offset + i].max_power += prof[i].max_power;
+    }
+}
+
+double synergyFunction(const vector<TimeSlice> &prof, time_t aggEarliest, const vector<double> &prices) {
+    if (prof.empty()) return 0;
+    double mx = *max_element(prices.begin(), prices.end());
+    tm *tmInfo = localtime(&aggEarliest);
+    int off = tmInfo->tm_hour; 
+    int T = (int)prof.size();
+    double val=0;
+    for (int i=0; i<T; i++){
+        double load = 0.5*(prof[i].min_power + prof[i].max_power);
+        double locP = prices[i+off];
+        val += load*(mx-locP);
+    }
+    return val;
+}
+
+double synergyTec(const vector<TimeSlice> &prof, time_t aggEarliest, const vector<double> &prices){
+    if (prof.empty()) return 0;
+    double mx = *max_element(prices.begin(), prices.end());
+    tm *tmInfo = localtime(&aggEarliest);
+    int off = tmInfo->tm_hour;
+    int T = (int)prof.size();
+    double val=0;
+    for(int i=0; i<T; i++){
+        double load=0.5*(prof[i].min_power + prof[i].max_power);
+        double locP= prices[i+off];
+        val += load*(mx-locP);
+    }
+    return val;
+}
+
+void expandToFitFront(time_t &aggEarliest, int &duration, vector<TimeSlice> &aggProf, const Flexoffer &fo){
+    time_t aggregatorEnd = aggEarliest + duration*3600;
+    time_t foAbsEnd = fo.get_lst() + fo.get_duration()*3600;
+    if (difftime(aggEarliest, foAbsEnd)>0){
+        int needed = (int)ceil(difftime(aggEarliest, foAbsEnd)/3600.0);
+        for(int i=0;i<needed;i++) aggProf.insert(aggProf.begin(), {0,0});
+        aggEarliest -= needed*3600;
+        duration    += needed;
+        int off = (int)floor( (fo.get_est()-aggEarliest)/3600.0 );
+        if(off<0) off=0;
+        mergeFlexAtOffset(aggProf, fo, off);
+    }
+}
+
+void expandToFitBack(time_t &aggEarliest,int &duration,vector<TimeSlice> &aggProf, const Flexoffer &fo){
+    time_t aggregatorEnd = aggEarliest + duration*3600;
+    time_t foAbsStart    = fo.get_est();
+    if(difftime(foAbsStart, aggregatorEnd)>0){
+        int needed = (int)ceil(difftime(foAbsStart, aggregatorEnd)/3600.0);
+        for(int i=0;i<needed;i++) aggProf.push_back({0,0});
+        duration += needed;
+        int off= (int)aggProf.size()-fo.get_duration();
+        if(off<0) off=0;
+        mergeFlexAtOffset(aggProf, fo, off);
+    }
+}
+
+void expandTecFront(time_t &aggEarliest,int &duration,vector<TimeSlice> &aggProf,double &overMin,double &overMax,const Tec_flexoffer &fo){
+    time_t aggregatorEnd= aggEarliest+duration*3600;
+    time_t foAbsEnd= fo.get_lst()+fo.get_duration()*3600;
+    if(difftime(aggEarliest,foAbsEnd)>0){
+        int needed = (int)ceil(difftime(aggEarliest, foAbsEnd)/3600.0);
+        for(int i=0;i<needed;i++) aggProf.insert(aggProf.begin(),{0,0});
+        aggEarliest-= needed*3600;
+        duration   += needed;
+        overMin+= fo.get_min_overall_kw();
+        overMax+= fo.get_max_overall_kw();
+        int off= (int)floor((fo.get_est()-aggEarliest)/3600.0);
+        if(off<0) off=0;
+        mergeTecAtOffset(aggProf,fo,off);
+    }
+}
+
+void expandTecBack(time_t &aggEarliest,int &duration,vector<TimeSlice> &aggProf,double &overMin,double &overMax,const Tec_flexoffer &fo){
+    time_t aggregatorEnd= aggEarliest+duration*3600;
+    time_t foAbsStart= fo.get_est();
+    if(difftime(foAbsStart, aggregatorEnd)>0){
+        int needed= (int)ceil(difftime(foAbsStart, aggregatorEnd)/3600.0);
+        for(int i=0;i<needed;i++) aggProf.push_back({0,0});
+        duration+= needed;
+        overMin+= fo.get_min_overall_kw();
+        overMax+= fo.get_max_overall_kw();
+        int off= (int)aggProf.size()-fo.get_duration();
+        if(off<0) off=0;
+        mergeTecAtOffset(aggProf, fo, off);
+    }
+}
+
+void priceAwareAlignment(
+    time_t &aggEarliest,
+    time_t &aggLatest,
+    time_t &aggEnd,
+    vector<TimeSlice> &aggProfile,
+    int &duration,
+    vector<Flexoffer> offers,
+    const vector<double> &spotPrices)
+{
+    if(offers.empty()){
+        aggEarliest=aggLatest=aggEnd=0; duration=0; aggProfile.clear(); return;
+    }
+    Flexoffer start= least_flexible_object(offers);
+    aggEarliest= start.get_est(); 
+    aggLatest  = start.get_lst();
+    aggEnd     = start.get_et();
+    aggProfile = start.get_profile();
+    duration   = aggProfile.size();
+
+    auto updateAgg=[&](time_t newEst,const vector<TimeSlice> &prof){
+        aggEarliest= newEst;
+        duration= prof.size();
+        aggEnd   = aggEarliest+duration*3600;
+        aggLatest= aggEnd-duration*3600;
     };
+    updateAgg(aggEarliest, aggProfile);
 
-    auto mergeTecAtOffset = [&](const vector<TimeSlice> &base,const Tec_flexoffer &fo, int offset){
-        vector<TimeSlice> result = base;
-        auto foProf = fo.get_profile();
-        int  foDur  = (int)foProf.size();
-        if (offset + foDur > (int)result.size()) {
-            result.resize(offset + foDur, {0.0, 0.0});
+    while(!offers.empty()){
+        Flexoffer fo= least_flexible_object(offers);
+        time_t aggregatorEnd= aggEarliest+duration*3600;
+        time_t foAbsEnd= fo.get_lst()+fo.get_duration()*3600;
+
+        if(foAbsEnd<aggEarliest){
+            expandToFitFront(aggEarliest, duration, aggProfile, fo);
+            updateAgg(aggEarliest, aggProfile);
         }
-
-        for (int i = 0; i < foDur; i++) {
-            result[offset + i].min_power += foProf[i].min_power;
-            result[offset + i].max_power += foProf[i].max_power;
+        else if(fo.get_est()>aggregatorEnd){
+            expandToFitBack(aggEarliest, duration, aggProfile, fo);
+            updateAgg(aggEarliest, aggProfile);
         }
-        return result;
-    };
-
-    auto updateAggregator = [&](time_t newEst, const std::vector<TimeSlice> &prof, double minVal, double maxVal){
-        agg_est = newEst;
-        duration = (int)prof.size();
-        agg_end = agg_est + duration * 3600;
-        agg_lst = agg_end - (duration * 3600);
-
-        overall_min = minVal;
-        overall_max = maxVal;
-    };
-
-    auto recalcOverall = [&](const vector<TimeSlice> &prof){
-        double mSum=0.0, MSum=0.0;
-        int T = std::min<int>(prof.size(), DAY_HOURS);
-        for (int i=0; i < T; i++){
-            mSum += prof[i].min_power;
-            MSum += prof[i].max_power;
-        }
-        return pair<double,double>(mSum, MSum);
-    };
-
-
-    Tec_flexoffer start = offers.back();
-    offers.pop_back();
-
-    agg_est = start.get_est();
-    agg_lst = start.get_lst();
-    agg_end = start.get_et();
-    agg_profile = start.get_profile();
-
-    duration = (int)agg_profile.size();
-
-    overall_min = start.get_min_overall_kw();
-    overall_max = start.get_max_overall_kw();
-
-
-    updateAggregator(agg_est, agg_profile, overall_min, overall_max);
-
-    while (!offers.empty()) {
-        Tec_flexoffer curr = offers.back();
-        offers.pop_back();
-
-        double offMinSec = difftime(curr.get_est(), agg_est);
-        double offMaxSec = difftime(curr.get_lst(), agg_est);
-
-        int offMin = max(0, (int)floor(offMinSec/3600.0)); //2
-        int offMax = min(offMin, (int)ceil(offMaxSec/3600.0)); //4
-
-        double bestVal = 0;
-        vector<TimeSlice> bestProf = agg_profile;
-        pair<double,double> bestLimits = {overall_min, overall_max};
-        time_t bestEst = agg_est;
-
-        for (int off = offMin; off <= offMax; off++) {
-            auto cand = mergeTecAtOffset(agg_profile, curr, off);
-            auto synergyVal = synergy(cand);
-
-            auto [mSum, MSum] = recalcOverall(cand);
-
-            if (synergyVal > bestVal) {
-                bestVal    = synergyVal;
-                bestProf   = cand;
-                bestLimits = {mSum, MSum};
-                bestEst    = agg_est;
+        else {
+            double offMinSec = difftime(fo.get_est(), aggEarliest);
+            double offMaxSec = difftime(fo.get_lst(), aggEarliest);
+            int offMin= max(0,(int)floor(offMinSec/3600.0));
+            int offMax= max(offMin,(int)ceil(offMaxSec/3600.0));
+            double bestVal=0; 
+            auto bestProf= aggProfile;
+            for(int off=offMin; off<=offMax; off++){
+                auto cand= aggProfile; 
+                mergeFlexAtOffset(cand, fo, off);
+                double val= synergyFunction(cand, aggEarliest, spotPrices);
+                if(val>bestVal){
+                    bestVal= val;
+                    bestProf= cand;
+                }
             }
+            aggProfile= bestProf;
+            updateAgg(aggEarliest, aggProfile);
         }
+    }
+}
 
-        agg_profile = bestProf;
-        updateAggregator(bestEst, bestProf, bestLimits.first, bestLimits.second);
+void priceAwareAlignment(
+    time_t &aggEarliest,
+    time_t &aggLatest,
+    time_t &aggEnd,
+    vector<TimeSlice> &aggProfile,
+    int &duration,
+    double &overallMin,
+    double &overallMax,
+    vector<Tec_flexoffer> offers,
+    const vector<double> &spotPrices)
+{
+    if(offers.empty()){
+        aggEarliest=aggLatest=aggEnd=0; duration=0; overallMin=0; overallMax=0; aggProfile.clear(); return;
+    }
+    Tec_flexoffer start= least_flexible_object(offers);
+    aggEarliest= start.get_est();
+    aggLatest  = start.get_lst();
+    aggEnd     = start.get_et();
+    aggProfile = start.get_profile();
+    duration   = aggProfile.size();
+    overallMin = start.get_min_overall_kw();
+    overallMax = start.get_max_overall_kw();
+
+    auto updateAgg=[&](time_t newEst,const vector<TimeSlice>&prof,double mn,double mx){
+        aggEarliest= newEst;
+        duration   = prof.size();
+        aggEnd     = aggEarliest+ duration*3600;
+        aggLatest  = aggEnd - duration*3600;
+        overallMin = mn;
+        overallMax = mx;
+    };
+    updateAgg(aggEarliest, aggProfile, overallMin, overallMax);
+
+    while(!offers.empty()){
+        Tec_flexoffer fo= least_flexible_object(offers);
+        time_t aggregatorEnd= aggEarliest+(duration*3600);
+        time_t foAbsEnd= fo.get_lst() + fo.get_duration()*3600;
+
+        if(foAbsEnd<aggEarliest){
+            expandTecFront(aggEarliest,duration,aggProfile,overallMin,overallMax,fo);
+            updateAgg(aggEarliest,aggProfile,overallMin,overallMax);
+        }
+        else if(fo.get_est()>aggregatorEnd){
+            expandTecBack(aggEarliest,duration,aggProfile,overallMin,overallMax,fo);
+            updateAgg(aggEarliest,aggProfile,overallMin,overallMax);
+        }
+        else {
+            double offMinSec= difftime(fo.get_est(), aggEarliest);
+            double offMaxSec= difftime(fo.get_lst(), aggEarliest);
+            int offMin= max(0,(int)floor(offMinSec/3600.0));
+            int offMax= max(offMin,(int)ceil(offMaxSec/3600.0));
+            double bestVal= -1e9;
+            auto   bestProf= aggProfile;
+            double bestMin= overallMin;
+            double bestMax= overallMax;
+
+            for(int off= offMin; off<=offMax; off++){
+                auto cand= aggProfile;
+                mergeTecAtOffset(cand,fo,off);
+                double val= synergyTec(cand, aggEarliest, spotPrices);
+                double newMin= overallMin+ fo.get_min_overall_kw();
+                double newMax= overallMax+ fo.get_max_overall_kw();
+                if(val>bestVal){
+                    bestVal= val;
+                    bestProf= cand;
+                    bestMin= newMin;
+                    bestMax= newMax;
+                }
+            }
+            aggProfile= bestProf;
+            overallMin= bestMin;
+            overallMax= bestMax;
+            updateAgg(aggEarliest, bestProf, bestMin,bestMax);
+        }
     }
 }
