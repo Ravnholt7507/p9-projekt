@@ -153,6 +153,64 @@ vector<Point> find_or_interpolate_points(
     return matching_points;
 }
 
+void solveMinMaxAgg(double min_total_energy1, double max_total_energy1,
+                    double min_total_energy2,double max_total_energy2,
+                    double &used1_min_final, double &used2_min_final,
+                    double &used1_max_final, double &used2_max_final) {
+                    IloEnv env;
+                    try {
+                        IloModel model(env);
+                        // Decision variables
+                        IloNumVar used1_min(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used1_max(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used2_min(env, 0.0, IloInfinity, ILOFLOAT);
+                        IloNumVar used2_max(env, 0.0, IloInfinity, ILOFLOAT);
+                        // Add constraints for maximums
+                        model.add(
+                            (used1_max - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
+                            (used2_max - min_total_energy2) * (max_total_energy1 - min_total_energy1)
+                        );
+                        // Add constraints for minimums
+                        model.add(
+                            (used1_min - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
+                            (used2_min - min_total_energy2) * (max_total_energy1 - min_total_energy1)
+                        );
+                        // Add sum constraints
+                        model.add(used1_max + used2_max <= max_total_energy1 + max_total_energy2);
+                        model.add(used1_min + used2_min >= min_total_energy1 + min_total_energy2);
+                        // **Minimize `used1_min` and `used2_min`**
+                        IloCplex cplex_min(model);
+                        cplex_min.setOut(env.getNullStream());
+                        IloObjective minimizeObjective(env, used1_min + used2_min, IloObjective::Minimize);
+                        model.add(minimizeObjective);
+                        if (cplex_min.solve()) {
+                            used1_min_final = cplex_min.getValue(used1_min);
+                            used2_min_final = cplex_min.getValue(used2_min);
+                        } else {
+                            std::cerr << "No solution found during minimization!" << std::endl;
+                        }
+                        model.remove(minimizeObjective);
+                        
+                        // **Maximize `used1_max` and `used2_max`**
+                        IloCplex cplex_max(model);
+                        cplex_max.setOut(env.getNullStream());
+                        IloObjective maximizeObjective(env, used1_max + used2_max, IloObjective::Maximize);
+                        model.add(maximizeObjective);
+                        
+                        if (cplex_max.solve()) {
+                            used1_max_final = cplex_max.getValue(used1_max);
+                            used2_max_final = cplex_max.getValue(used2_max);
+                        } else {
+                            std::cerr << "No solution found during maximization!" << std::endl;
+                        }
+                    } catch (const IloException &e) {
+                        std::cerr << "Error: " << e.getMessage() << std::endl;
+                    } catch (...) {
+                        std::cerr << "Unknown error occurred!" << std::endl;
+                    }
+                    env.end();
+}
+
 // Function to aggregate two DFOs
 DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, double &epsilon2) {
     if (dfo1.polygons.size() != dfo2.polygons.size()) {
@@ -213,60 +271,9 @@ DFO agg2to1(const DFO &dfo1, const DFO &dfo2, int numsamples, double &epsilon1, 
                     double max_total_energy2 = current_prev_energy2 + dfo2_max_energy;
                     double used1_min_final = 0.0, used2_min_final = 0.0;
                     double used1_max_final = 0.0, used2_max_final = 0.0;
-
-                    IloEnv env;
-                    try {
-                        IloModel model(env);
-                        // Decision variables
-                        IloNumVar used1_min(env, 0.0, IloInfinity, ILOFLOAT);
-                        IloNumVar used1_max(env, 0.0, IloInfinity, ILOFLOAT);
-                        IloNumVar used2_min(env, 0.0, IloInfinity, ILOFLOAT);
-                        IloNumVar used2_max(env, 0.0, IloInfinity, ILOFLOAT);
-                        // Add constraints for maximums
-                        model.add(
-                            (used1_max - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
-                            (used2_max - min_total_energy2) * (max_total_energy1 - min_total_energy1)
-                        );
-                        // Add constraints for minimums
-                        model.add(
-                            (used1_min - min_total_energy1) * (max_total_energy2 - min_total_energy2) ==
-                            (used2_min - min_total_energy2) * (max_total_energy1 - min_total_energy1)
-                        );
-                        // Add sum constraints
-                        model.add(used1_max + used2_max <= max_total_energy1 + max_total_energy2);
-                        model.add(used1_min + used2_min >= min_total_energy1 + min_total_energy2);
-                        // **Minimize `used1_min` and `used2_min`**
-                        IloCplex cplex_min(model);
-                        cplex_min.setOut(env.getNullStream());
-                        IloObjective minimizeObjective(env, used1_min + used2_min, IloObjective::Minimize);
-                        model.add(minimizeObjective);
-                        if (cplex_min.solve()) {
-                            used1_min_final = cplex_min.getValue(used1_min);
-                            used2_min_final = cplex_min.getValue(used2_min);
-                        } else {
-                            std::cerr << "No solution found during minimization!" << std::endl;
-                        }
-                        model.remove(minimizeObjective);
-                        
-                        // **Maximize `used1_max` and `used2_max`**
-                        IloCplex cplex_max(model);
-                        cplex_max.setOut(env.getNullStream());
-                        IloObjective maximizeObjective(env, used1_max + used2_max, IloObjective::Maximize);
-                        model.add(maximizeObjective);
-                        
-                        if (cplex_max.solve()) {
-                            used1_max_final = cplex_max.getValue(used1_max);
-                            used2_max_final = cplex_max.getValue(used2_max);
-                        } else {
-                            std::cerr << "No solution found during maximization!" << std::endl;
-                        }
-                    } catch (const IloException &e) {
-                        std::cerr << "Error: " << e.getMessage() << std::endl;
-                    } catch (...) {
-                        std::cerr << "Unknown error occurred!" << std::endl;
-                    }
-                    env.end();
-
+                    solveMinMaxAgg(min_total_energy1, max_total_energy1, min_total_energy2, max_total_energy2,
+                                   used1_min_final, used2_min_final, used1_max_final, used2_max_final);
+                    
                     min_current_energy = used1_min_final + used2_min_final;
                     max_current_energy = used1_max_final + used2_max_final;
                     if (dfo1_max_energy != dfo1_min_energy) {
