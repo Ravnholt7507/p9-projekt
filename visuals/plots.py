@@ -620,7 +620,7 @@ def plot_scenario_time_grid(df: pd.DataFrame):
     plt.show()
 
 def main():
-    csv_file = "../data/stable_test_data.csv"  # Replace with your actual CSV
+    csv_file = "../data/economic_savings.csv"  # Replace with your actual CSV
     df = load_and_prepare_data(csv_file)
 
     # Figure 1: savings
