@@ -6,6 +6,7 @@
 #include "../include/generator.h"
 #include "../include/evaluation.h" 
 #include "../include/helperfunctions.h"
+#include "../include/parsing.h"
 #include "../include/tec.h"
 #include "../include/unit_test.h"
 

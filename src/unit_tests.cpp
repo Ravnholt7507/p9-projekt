@@ -3,6 +3,7 @@
 
 #include "../include/unit_test.h"
 #include "../include/helperfunctions.h"
+#include "../include/parsing.h"
 #include "../include/aggregation.h"
 #include "../include/tec.h"
 

@@ -8,6 +8,7 @@
 #include "../include/solver.h"
 #include "../include/alignments.h"
 #include "../include/helperfunctions.h"
+#include "../include/parsing.h"
 #include "../include/tec.h"
 #include "../include/DFO.h"
 
