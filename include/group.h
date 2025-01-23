@@ -26,6 +26,12 @@ public:
     int getGroupId() const;
 };
 
+
+
+
+
+
+
 class Tec_Group {
 private:
     int id;

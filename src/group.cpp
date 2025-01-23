@@ -35,6 +35,11 @@ int Fo_Group::getGroupId() const {
 }
 
 
+
+
+
+
+
 Tec_Group::Tec_Group(int group_id) : id(group_id) {
 }
 

@@ -21,6 +21,10 @@ struct MBR {
 void createMBR(const Fo_Group& group, MBR& mbr);
 void createMBR(const Tec_Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
+bool exceedThresholds(
+    int minE, int maxE, int minL, int maxL,
+    int est_threshold, int lst_threshold
+);
 void clusterGroup(std::vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 void clusterGroup(std::vector<Tec_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 time_t roundToNearestHour(time_t raw_time);
