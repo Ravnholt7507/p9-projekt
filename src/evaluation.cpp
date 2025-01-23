@@ -189,7 +189,7 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {1};
+    vector<int> aggrTypes = {0, 1};
     vector<Alignments> aligns = {
         Alignments::start,
         Alignments::balance,
