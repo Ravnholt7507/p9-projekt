@@ -3,13 +3,14 @@
 
 #include <vector>
 #include "flexoffer.h"
+#include "DFO.h"
 #include "aggregation.h"
 
 using namespace std;
 class Fo_Group {
 private:
     int id;
-    std::vector<Flexoffer> flexoffers;
+    vector<Flexoffer> flexoffers;
 
 public:
     Fo_Group(int group_id);
@@ -29,7 +30,7 @@ public:
 class Tec_Group {
 private:
     int id;
-    std::vector<Tec_flexoffer> flexoffers;
+    vector<Tec_flexoffer> flexoffers;
 
 public:
     Tec_Group(int group_id);
@@ -45,4 +46,13 @@ public:
 
     int getGroupId() const;
 };
-#endif // GROUP_H
+
+struct Dfo_Group {
+    int group_id;
+    vector<DFO> dfos;
+    Dfo_Group(int gid) : group_id(gid) {}
+    void add(const DFO &d){ dfos.push_back(d); }
+    const vector<DFO>& getDFOs() const {return dfos;}
+};
+
+#endif

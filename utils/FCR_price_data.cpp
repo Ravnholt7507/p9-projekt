@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string>
 #include <curl/curl.h>
-#include "../json.hpp" // Include nlohmann/json header
-#include <fstream> // For file operations
+#include "../json.hpp"
+#include <fstream>
 
 using namespace std;
 using json = nlohmann::json;

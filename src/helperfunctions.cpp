@@ -61,6 +61,48 @@ void createMBR(const Tec_Group& group, MBR& mbr) {
     }
 }
 
+// Return (earliestHour, latestHour) for a single DFO
+pair<int,int> findEarliestLatestHour(const DFO &dfo)
+{
+    int earliest = 24;
+    int latest   = -1;
+
+    for (int i=0; i<(int)dfo.polygons.size(); i++){
+        double mx = dfo.polygons[i].max_prev_energy;
+        // If there's any feasible usage
+        if(mx>0.0){
+            if(i<earliest) earliest=i;
+            if(i>latest)   latest=i;
+        }
+    }
+    if(latest<0) {
+        return {0,0};
+    }
+    return {earliest, latest};
+}
+
+void createMBR(const Dfo_Group &group, MBR &mbr)
+{
+    if(group.getDFOs().empty()) {
+        mbr.min_est_hour=0;  mbr.max_est_hour=0;
+        mbr.min_lst_hour=0;  mbr.max_lst_hour=0;
+        return;
+    }
+    // initialize
+    auto [est,lst] = findEarliestLatestHour(group.getDFOs()[0]);
+    mbr.min_est_hour = est;
+    mbr.max_est_hour = est;
+    mbr.min_lst_hour = lst;
+    mbr.max_lst_hour = lst;
+
+    for(const auto &d : group.getDFOs()){
+        auto [e, l] = findEarliestLatestHour(d);
+        if(e < mbr.min_est_hour) mbr.min_est_hour = e;
+        if(e > mbr.max_est_hour) mbr.max_est_hour = e;
+        if(l < mbr.min_lst_hour) mbr.min_lst_hour = l;
+        if(l > mbr.max_lst_hour) mbr.max_lst_hour = l;
+    }
+}
 
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold) {
     int est_range = mbr.max_est_hour - mbr.min_est_hour;
@@ -100,28 +142,45 @@ static double groupDistance(const Tec_Group& g1, const Tec_Group& g2) {
     return sqrt(dx*dx + dy*dy);
 }
 
+static double groupDistance(const Dfo_Group &g1, const Dfo_Group &g2)
+{
+    MBR m1, m2;
+    createMBR(g1, m1);
+    createMBR(g2, m2);
+
+    double c1_est = 0.5*(m1.min_est_hour + m1.max_est_hour);
+    double c1_lst = 0.5*(m1.min_lst_hour + m1.max_lst_hour);
+    double c2_est = 0.5*(m2.min_est_hour + m2.max_est_hour);
+    double c2_lst = 0.5*(m2.min_lst_hour + m2.max_lst_hour);
+
+    double dx = (c2_est - c1_est);
+    double dy = (c2_lst - c1_lst);
+    return sqrt(dx*dx + dy*dy);
+}
+
 //For Fo
 static Fo_Group mergeGroups(const Fo_Group& g1, const Fo_Group& g2, int newGroupId) {
     Fo_Group merged(newGroupId);
-    for (const auto& fo : g1.getFlexOffers()) {
-        merged.addFlexOffer(fo);
-    }
-    for (const auto& fo : g2.getFlexOffers()) {
-        merged.addFlexOffer(fo);
-    }
+    for (const auto& fo : g1.getFlexOffers()) merged.addFlexOffer(fo);
+    for (const auto& fo : g2.getFlexOffers()) merged.addFlexOffer(fo);
     return merged;
 }
 
 //For Tec
 static Tec_Group mergeGroups(const Tec_Group& g1, const Tec_Group& g2, int newGroupId) {
     Tec_Group merged(newGroupId);
-    for (const auto& fo : g1.getFlexOffers()) {
-        merged.addFlexOffer(fo);
-    }
-    for (const auto& fo : g2.getFlexOffers()) {
-        merged.addFlexOffer(fo);
-    }
+    for (const auto& fo : g1.getFlexOffers()) merged.addFlexOffer(fo);
+    for (const auto& fo : g2.getFlexOffers()) merged.addFlexOffer(fo);
     return merged;
+}
+
+//DFO
+static Dfo_Group mergeGroups(const Dfo_Group &g1, const Dfo_Group &g2, int newGroupId)
+{
+    Dfo_Group mg(newGroupId);
+    for(auto &d : g1.getDFOs()) mg.add(d);
+    for(auto &d : g2.getDFOs()) mg.add(d);
+    return mg;
 }
 
 //For Fo
@@ -219,8 +278,52 @@ void clusterFo_Group(vector<Tec_Group>& groups, int est_threshold, int lst_thres
             merged = false;
         }
     }
-
 }
+
+
+void clusterDfo_Group(vector<Dfo_Group> &groups,
+                      int est_threshold, int lst_threshold,
+                      int max_group_size)
+{
+    if(groups.size()<=1) return;
+
+    bool merged=true;
+    int nextId=1000;
+
+    while(merged && groups.size()>1){
+        merged=false;
+        double minDist=1e15;
+        int bestA=-1, bestB=-1;
+        // find 2 closest
+        for(size_t i=0; i<groups.size(); i++){
+            for(size_t j=i+1; j<groups.size(); j++){
+                double dist = groupDistance(groups[i], groups[j]);
+                if(dist<minDist){
+                    minDist=dist; bestA=(int)i; bestB=(int)j;
+                }
+            }
+        }
+        if(bestA<0 || bestB<0) break;
+
+        // create candidate
+        Dfo_Group cand = mergeGroups(groups[bestA], groups[bestB], nextId++);
+        MBR candMBR; createMBR(cand, candMBR);
+
+        bool thrOK = !exceedsThreshold(candMBR, est_threshold, lst_threshold);
+        bool sizeOK = ((int)cand.getDFOs().size() <= max_group_size);
+
+        if(thrOK && sizeOK){
+            if(bestA>bestB) swap(bestA,bestB);
+            groups.erase(groups.begin()+bestB);
+            groups.erase(groups.begin()+bestA);
+            groups.push_back(cand);
+            merged=true;
+        } else {
+            merged=false;
+        }
+    }
+}
+
 
 vector<double> readSpotPricesFromCSV(const string& filename) {
     vector<double> spotPrices;
@@ -409,36 +512,36 @@ vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& 
 
 
 
-int parseDateTimeToHour(const std::string &dateTimeStr) {
+int parseDateTimeToHour(const string &dateTimeStr) {
     struct tm tm = {};
     if (strptime(dateTimeStr.c_str(), "%a, %d %b %Y %H:%M:%S %Z", &tm) == nullptr) {
-        throw std::runtime_error("Failed to parse date/time: " + dateTimeStr);
+        throw runtime_error("Failed to parse date/time: " + dateTimeStr);
     }
     return tm.tm_hour; // Extract the hour of the day (0–23)
 }
 
 
-std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 4) {
-    std::ifstream file(filename);
+vector<DFO> parseEVDataToDFO(const string &filename, int numsamples = 4) {
+    ifstream file(filename);
     if (!file.is_open()) {
-        throw std::runtime_error("Error: Could not open file " + filename);
+        throw runtime_error("Error: Could not open file " + filename);
     }
 
-    std::vector<DFO> dfos; // Collect one DFO per EV session
+    vector<DFO> dfos; // Collect one DFO per EV session
 
     // Skip header line
-    std::string line;
-    if (!std::getline(file, line)) {
+    string line;
+    if (!getline(file, line)) {
         return dfos; // Empty file
     }
 
     int dfo_id = 1; // Increment for each EV session
-    while (std::getline(file, line)) {
+    while (getline(file, line)) {
         if (line.empty()) continue;
 
         auto fields = parseCSVLine(line);
         if (fields.size() < 6) {
-            std::cerr << "[parseEVDataToDFO] Skipping invalid line:\n" << line << std::endl;
+            cerr << "[parseEVDataToDFO] Skipping invalid line:\n" << line << endl;
             continue;
         }
 
@@ -448,8 +551,8 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
             connectionHour = parseDateTimeToHour(fields[2]);
             disconnectHour = parseDateTimeToHour(fields[3]);
             doneChargingHour = parseDateTimeToHour(fields[4]);
-        } catch (const std::exception &e) {
-            std::cerr << "Error parsing date/time: " << e.what() << " in line: " << line << std::endl;
+        } catch (const exception &e) {
+            cerr << "Error parsing date/time: " << e.what() << " in line: " << line << endl;
             continue;
         }
 
@@ -457,14 +560,14 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         // Parse kWhDelivered
         double kWhDelivered = 0.0;
         try {
-            kWhDelivered = std::stod(fields[5]) * 1.2;
-        } catch (const std::exception &e) {
-            std::cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << std::endl;
+            kWhDelivered = stod(fields[5]) * 1.2;
+        } catch (const exception &e) {
+            cerr << "Error parsing kWhDelivered: " << e.what() << " in line: " << line << endl;
             continue;
         }
 
         if (kWhDelivered <= 0.0) {
-            std::cerr << "Warning: zero or negative kWhDelivered, skipping line." << std::endl;
+            cerr << "Warning: zero or negative kWhDelivered, skipping line." << endl;
             continue;
         }
 
@@ -485,8 +588,8 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
 
         // Create 24 time slices
         const int total_time_slices = 24;
-        std::vector<double> min_prev(total_time_slices, 0.0);
-        std::vector<double> max_prev(total_time_slices, 0.0);
+        vector<double> min_prev(total_time_slices, 0.0);
+        vector<double> max_prev(total_time_slices, 0.0);
 
         // Scale max_prev using the full charging rate from the connection hour
         double cumulative_energy = 0.0;
@@ -516,15 +619,15 @@ std::vector<DFO> parseEVDataToDFO(const std::string &filename, int numsamples = 
         }
 
         for (int i = disconnectHour + 1; i < total_time_slices; ++i) {
-            min_prev[i] = kWhDelivered;
-            max_prev[i] = kWhDelivered;
+            min_prev[i] = 0.0;
+            max_prev[i] = 0.0;
         }
 
         // Create the DFO
         DFO myDFO(dfo_id++, min_prev, max_prev, numsamples);
         
         myDFO.generate_dependency_polygons();
-
+        myDFO.print_dfo();
 
         // Store the DFO
         dfos.push_back(myDFO);
@@ -560,6 +663,7 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers,
     // 7) Return the final AFOs
     return finalAggregates;
 }
+
 vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, 
                                             int est_threshold, 
                                             int lst_threshold, 
@@ -628,4 +732,28 @@ vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers
 }
 
 
+vector<DFO> nToMAggregation(vector<DFO> &allDFOs, int est_threshold, int lst_threshold, int max_group_size, int startGroupId=1){
+    // 1) build single-DFO groups
+    vector<Dfo_Group> groups;
+    groups.reserve(allDFOs.size());
+    int gid=startGroupId;
+    for(auto &d : allDFOs){
+        Dfo_Group g(gid++);
+        g.add(d);
+        groups.push_back(g);
+    }
+    //Cluster based on thresholds
+    clusterDfo_Group(groups, est_threshold, lst_threshold, max_group_size);
 
+    // 3) Now we have final groups. For each group, do aggnto1 => 1 aggregator DFO
+    vector<DFO> results;
+    results.reserve(groups.size());
+    for(auto &g : groups){
+        // gather the DFOs
+        auto &dfosInGroup = g.getDFOs();
+        double eps1=1.0, eps2=1.0;
+        DFO aggregated = aggnto1(dfosInGroup, /*numsamples=*/5, eps1, eps2);
+        results.push_back(aggregated);
+    }
+    return results;
+}
