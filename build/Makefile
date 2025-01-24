@@ -48,10 +48,10 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /snap/cmake/1437/bin/cmake
+CMAKE_COMMAND = /snap/cmake/1441/bin/cmake
 
 # The command to remove a file.
-RM = /snap/cmake/1437/bin/cmake -E rm -f
+RM = /snap/cmake/1441/bin/cmake -E rm -f
 
 # Escaping for special characters.
 EQUALS = =
@@ -78,7 +78,7 @@ edit_cache/fast: edit_cache
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake to regenerate build system..."
-	/snap/cmake/1437/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/snap/cmake/1441/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -321,6 +321,30 @@ src/helperfunctions.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/helperfunctions.cpp.s
 .PHONY : src/helperfunctions.cpp.s
 
+src/inc_aggregation.o: src/inc_aggregation.cpp.o
+.PHONY : src/inc_aggregation.o
+
+# target to build an object file
+src/inc_aggregation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/inc_aggregation.cpp.o
+.PHONY : src/inc_aggregation.cpp.o
+
+src/inc_aggregation.i: src/inc_aggregation.cpp.i
+.PHONY : src/inc_aggregation.i
+
+# target to preprocess a source file
+src/inc_aggregation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/inc_aggregation.cpp.i
+.PHONY : src/inc_aggregation.cpp.i
+
+src/inc_aggregation.s: src/inc_aggregation.cpp.s
+.PHONY : src/inc_aggregation.s
+
+# target to generate assembly for a file
+src/inc_aggregation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/output.dir/build.make CMakeFiles/output.dir/src/inc_aggregation.cpp.s
+.PHONY : src/inc_aggregation.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -474,6 +498,9 @@ help:
 	@echo "... src/helperfunctions.o"
 	@echo "... src/helperfunctions.i"
 	@echo "... src/helperfunctions.s"
+	@echo "... src/inc_aggregation.o"
+	@echo "... src/inc_aggregation.i"
+	@echo "... src/inc_aggregation.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

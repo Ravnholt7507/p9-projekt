@@ -22,13 +22,9 @@ struct MBR {
 void createMBR(const Fo_Group& group, MBR& mbr);
 void createMBR(const Tec_Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
-bool exceedThresholds(
-    int minE, int maxE, int minL, int maxL,
-    int est_threshold, int lst_threshold
-);
+bool exceedThresholds(int minE, int maxE, int minL, int maxL,int est_threshold, int lst_threshold);
 void clusterGroup(std::vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 void clusterGroup(std::vector<Tec_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
-time_t roundToNearestHour(time_t raw_time);
 vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);
 vector<AggregatedFlexOffer> nToMAggregation(vector<Flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, const vector<double> &spotPrices, int startGroupId);
 vector<AggregatedFlexOffer> nToMAggregation(vector<Tec_flexoffer> &allFlexoffers, int est_threshold, int lst_threshold, int max_group_size, Alignments align, int startGroupId);

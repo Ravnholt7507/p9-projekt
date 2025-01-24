@@ -6,6 +6,7 @@
 #include "../include/flexoffer.h"
 #include "../include/tec.h"
 #include "../include/DFO.h"
+#include "../include/inc_aggregation.h"
 #include "../include/alignments.h"
 
 using namespace std;
@@ -27,6 +28,9 @@ double computeAggregatedCost(vector<Tec_flexoffer> flexOffers, int est_threshold
 
 double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPrices);
 double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices, int max_group_size);
+
+double computeIncrementalAggregatedCost(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices,int est_threshold,int lst_threshold,int max_group_size, Alignments align);
+
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &DFOs ,const vector<double> &spotPrices);
 vector<AggScenario> generateScenarioMatrix();

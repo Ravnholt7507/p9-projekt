@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "../include/evaluation.h"
+#include "../include/inc_aggregation.h"
 #include "../include/aggregation.h"
 #include "../include/solver.h"
 #include "../include/alignments.h"
@@ -133,6 +134,57 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices,
 }
 
 
+double computeIncrementalAggregatedCost(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices,int est_threshold,int lst_threshold,int max_group_size, Alignments align){
+    IncAggregator aggregator;
+    aggregator.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL);
+
+    for(auto &fo : flexOffers) {
+        FOdelta d{fo, AggType::INSERT};
+        aggregator.processDelta(d);
+    }
+
+    auto finalAggs = aggregator.finalize();
+
+    Solver::solve(finalAggs, spotPrices);
+
+    double total_cost = 0.0;
+    for(auto &afo : finalAggs) {
+        auto sched = afo.get_scheduled_allocation();
+        int duration = afo.get_duration();
+        for (int t=0; t<duration; t++){
+            double power = sched[t];
+            double price = spotPrices[t + afo.get_aggregated_earliest_hour()];
+            total_cost += power * price;
+        }
+    }
+    return total_cost;
+}
+
+
+double computeIncCostTec(const vector<Tec_flexoffer> &tecs, const vector<double> &spotPrices, int est_threshold, int lst_threshold, int max_group_size, Alignments align){
+    IncAggregatorTec agg;
+    agg.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL);
+
+    for (auto &fo : tecs){
+        TecDelta d { fo, AggType::INSERT };
+        agg.processDelta(d);
+    }
+
+    auto finalAggs = agg.finalize();
+    Solver::solve_tec(finalAggs, spotPrices);
+
+    double total_cost=0.0;
+    for(auto &afo : finalAggs){
+        auto &sch=afo.get_scheduled_allocation();
+        for(int t=0; t<(int)sch.size(); t++){
+            double price=spotPrices[t + afo.get_aggregated_earliest_hour()];
+            total_cost+=sch[t]*price;
+        }
+    }
+    return total_cost;
+}
+
+
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &dfos, const vector<double> &spotPrices){
     
     auto scenarios = generateScenarioMatrix(); 
@@ -169,6 +221,15 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
             baseline = computeBaselineCost(subDFOs, spotPrices);
             agg_cost = computeAggregatedCost(subDFOs, spotPrices, s.max_group_size);
         } 
+        else if (s.aggregator_type == 3) { // incremental Aggregation for FO
+            baseline = computeBaselineCost(subNormal, spotPrices);
+            agg_cost = computeIncrementalAggregatedCost(subNormal, spotPrices, s.est_threshold, s.lst_threshold, s.max_group_size, s.align);
+        }
+        else if(s.aggregator_type==4){ // incremental aggregator for Tec
+            vector<Tec_flexoffer> subTec(tecOffers.begin(), tecOffers.begin()+n);
+            baseline=computeBaselineCost(subTec, spotPrices);
+            agg_cost=computeIncCostTec(subTec, spotPrices, s.est_threshold, s.lst_threshold, s.max_group_size, s.align);
+        }
 
         auto t_end = chrono::steady_clock::now();
         double savings = baseline - agg_cost;
@@ -189,16 +250,16 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 vector<AggScenario> generateScenarioMatrix() {
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {0, 1};
+    vector<int> aggrTypes = {1};
     vector<Alignments> aligns = {
         Alignments::start,
-        Alignments::balance,
-        Alignments::price,
+        //Alignments::balance,
+        //Alignments::price,
     };
 
-    vector<int> thresholds = {2}; 
-    vector<int> groupSizes = {5};
-    vector<int> nOffersVec = {200};
+    vector<int> thresholds = {4}; 
+    vector<int> groupSizes = {50};
+    vector<int> nOffersVec = {200, 500, 1000, 3000, 10000, 100000};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {

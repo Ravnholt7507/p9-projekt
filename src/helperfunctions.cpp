@@ -18,12 +18,10 @@ bool exceedsThreshold(int minE, int maxE, int minL, int maxL,
            ((maxL - minL) > lst_threshold);
 }
 
-// A 2D grid coordinate for earliest start (x) & latest start (y)
 struct CellCoord {
     int x;
     int y;
 
-    // For map or set ordering:
     bool operator<(const CellCoord &o) const {
         if (x < o.x) return true;
         if (x > o.x) return false;
@@ -37,7 +35,6 @@ static const int NEIGH_OFFSETS[8][2] = {
 };
 
 
-// Each grid cell for normal FOs
 struct FoCell {
     vector<Flexoffer> fos;
     int minEst = 999999;
