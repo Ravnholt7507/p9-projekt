@@ -136,7 +136,7 @@ double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices,
 
 double computeIncrementalAggregatedCost(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices,int est_threshold,int lst_threshold,int max_group_size, Alignments align){
     IncAggregator aggregator;
-    aggregator.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL);
+    aggregator.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL, spotPrices);
 
     for(auto &fo : flexOffers) {
         FOdelta d{fo, AggType::INSERT};
@@ -163,7 +163,7 @@ double computeIncrementalAggregatedCost(const vector<Flexoffer> &flexOffers, con
 
 double computeIncCostTec(const vector<Tec_flexoffer> &tecs, const vector<double> &spotPrices, int est_threshold, int lst_threshold, int max_group_size, Alignments align){
     IncAggregatorTec agg;
-    agg.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL);
+    agg.init(est_threshold, lst_threshold, max_group_size, align, AggMode::INCREMENTAL, spotPrices);
 
     for (auto &fo : tecs){
         TecDelta d { fo, AggType::INSERT };
@@ -249,17 +249,19 @@ void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector
 
 vector<AggScenario> generateScenarioMatrix() {
 
+    // 3000 FOs is limit for the Incremental aggregation
+
     vector<AggScenario> scenarios;
     vector<int> aggrTypes = {1};
     vector<Alignments> aligns = {
         Alignments::start,
-        //Alignments::balance,
-        //Alignments::price,
+        Alignments::balance,
+        Alignments::price,
     };
 
-    vector<int> thresholds = {4}; 
+    vector<int> thresholds = {2}; 
     vector<int> groupSizes = {50};
-    vector<int> nOffersVec = {200, 500, 1000, 3000, 10000, 100000};
+    vector<int> nOffersVec = {1, 10, 100, 1000, 10000, 100000};
 
     for (int at : aggrTypes) {
         for (auto al : aligns) {

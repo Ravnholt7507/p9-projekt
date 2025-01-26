@@ -34,9 +34,12 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
             double lb = profile[t].min_power;
             double ub = profile[t].max_power;
             powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
+            int idx = t + afos[a].get_aggregated_earliest_hour();
 
-            // Objective function: add only valid durations
-            obj += prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
+            // "mod" the index so it never exceeds prices.size()-1
+            idx = idx % prices.size();  // if prices.size()=24, it cycles through 0..23
+
+            obj += prices[idx] * powerVars[a][t];
         }
     }
 
@@ -45,7 +48,7 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
 
     // Solve the model
     IloCplex cplex(model);
-    cplex.setOut(env.getNullStream());
+    cplex.setOut(cout);
 
     if (!cplex.solve()) {
         cerr << "No optimal solution found." << endl;
@@ -206,8 +209,11 @@ vector<vector<double>> Solver::solve_tec(vector<AggregatedFlexOffer> &afos, cons
             double ub = profile[t].max_power;
             powerVars[a][t] = IloNumVar(env, lb, ub, ILOFLOAT);
 
-            // Objective function: add only valid durations
-            obj += prices[t + afos[a].get_aggregated_earliest_hour()] * powerVars[a][t];
+            int idx = t + afos[a].get_aggregated_earliest_hour();
+            idx = idx % prices.size();
+
+            obj += prices[idx] * powerVars[a][t];
+
         }
         IloExpr total_energy(env);
         for (int t = 0; t < duration; t++) {

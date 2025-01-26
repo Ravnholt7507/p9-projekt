@@ -133,6 +133,7 @@ static Fo_Group bfsFoGroup(
     return group;
 }
 
+
 struct TecFoCell {
     vector<Tec_flexoffer> fos;
     int minEst = 999999, maxEst = -1;
@@ -240,14 +241,17 @@ static vector<Fo_Group> buildFoGroupsFromFlexOffers(
     int deltaLst = lst_threshold + 1;
 
     map<CellCoord, FoCell> grid;
+
     for (auto &fo : allFos) {
         CellCoord c = getCellCoordFo(fo, deltaEst, deltaLst);
         grid[c].fos.push_back(fo);
     }
+
     // 2) bounding box each cell
     for (auto &kv : grid) {
         updateFoCellMBR(kv.second);
     }
+    
     // 3) BFS across cells => final groups
     set<CellCoord> visited;
     int gid = startGroupId;
@@ -301,6 +305,11 @@ static vector<Tec_Group> buildTecGroupsFromFlexOffers(
     return result;
 }
 
+
+
+
+
+
 vector<AggregatedFlexOffer> nToMAggregation(
     vector<Flexoffer> &allFlexoffers, 
     int est_threshold, 
@@ -321,6 +330,14 @@ vector<AggregatedFlexOffer> nToMAggregation(
     }
     return finalAggs;
 }
+
+
+
+
+
+
+
+
 
 vector<AggregatedFlexOffer> nToMAggregation(
     vector<Flexoffer> &allFlexoffers, 

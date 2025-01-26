@@ -36,7 +36,7 @@ struct TecDelta {
 class IncAggregator{
 public:
     IncAggregator();
-    void init(int est_threshold, int lst_threshold, int max_group_size, Alignments align, AggMode mode);
+    void init(int est_threshold, int lst_threshold, int max_group_size, Alignments align, AggMode mode, const vector<double> &spotPrices = {});
     void processDelta(const FOdelta &delta);
     vector<AggregatedFlexOffer> finalize();
     void setMode(AggMode newMode);
@@ -47,6 +47,7 @@ private:
     int max_group_size;
     Alignments align;
     AggMode mode;
+    vector<double> spotPrices;
 
     vector<Flexoffer> batchOffers;
     vector<Fo_Group> IncrGroups;
@@ -69,18 +70,14 @@ private:
     bool canMerge(const MBR &mbr, const Flexoffer &FO);
 };
 
+
+
+
 class IncAggregatorTec {
 public:
     IncAggregatorTec();
-
-    void init(int est_threshold,
-              int lst_threshold,
-              int max_group_size,
-              Alignments align,
-              AggMode mode);
-
+    void init(int est_threshold, int lst_threshold, int max_group_size, Alignments align, AggMode mode, const vector<double> &spotPrices = {});
     void setMode(AggMode M);
-
     void processDelta(const TecDelta &delta);
     std::vector<AggregatedFlexOffer> finalize();
 
@@ -90,16 +87,16 @@ private:
     int max_group_size;
     Alignments align;
     AggMode mode;
+    vector<double> spotPrices;
 
     std::vector<Tec_flexoffer> batchOffers;
-
     std::vector<Tec_Group> incrGroups;
 
     struct MBR {
         int minEst, maxEst;
         int minLst, maxLst;
     };
-    
+
     std::map<int, MBR> mbrs;
     int nextGroupId;
 

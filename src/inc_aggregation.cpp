@@ -14,16 +14,16 @@
 #include <limits>
 
 
-IncAggregator::IncAggregator(){
-}
+IncAggregator::IncAggregator(){}
 
-void IncAggregator::init(int est_th, int lst_th, int max_gr_size, Alignments alignment, AggMode Aggmode){
+void IncAggregator::init(int est_th, int lst_th, int max_gr_size, Alignments alignment, AggMode Aggmode, const vector<double> &spotPs){
     est_threshold = est_th;
     lst_threshold = lst_th;
     max_group_size = max_gr_size;
     align = alignment;
     mode = Aggmode;
-
+    
+    spotPrices = spotPs;
     nextGroupId = 1;
     batchOffers.clear();
     IncrGroups.clear();
@@ -68,8 +68,10 @@ bool IncAggregator::canMerge(const MBR &mbr, const Flexoffer &fo){
     return true;
 }
 
+
+
 void IncAggregator::IncInsert(const Flexoffer &fo){
-    
+    //Kan Fo merges ind i nogle af grupperne
     for (auto &g : IncrGroups){
         auto it = mbrs.find(g.getGroupId());
         if ((int)g.getFlexOffers().size() > max_group_size){
@@ -93,31 +95,29 @@ void IncAggregator::IncInsert(const Flexoffer &fo){
 }
 
 
+
+
+
 void IncAggregator::processDelta(const FOdelta &delta){
-    if (mode == AggMode::BATCH){
-        batchOffers.push_back(delta.fo);
-    }
-
-    else if (mode == AggMode::INCREMENTAL){
-        if (delta.type == AggType::INSERT){
-            IncInsert(delta.fo);
-        }
+    if (delta.type == AggType::INSERT){
+        IncInsert(delta.fo);
     }
 }
+
 vector<AggregatedFlexOffer> IncAggregator::finalize(){
-    if (mode == AggMode::BATCH) {
-        vector<AggregatedFlexOffer> results = nToMAggregation(batchOffers, est_threshold, lst_threshold, max_group_size, align, 1);
-        return results;
-    }
 
-    else {
-        vector<AggregatedFlexOffer> finalAggs;
-        finalAggs.reserve(IncrGroups.size());
-        for (auto &g : IncrGroups) {
-            finalAggs.push_back(g.createAggregatedOffer(align));
+    vector<AggregatedFlexOffer> finalAggs;
+    finalAggs.reserve(IncrGroups.size());
+
+    for (auto &g : IncrGroups) {
+        if (align == Alignments::price) {
+            finalAggs.push_back(g.createAggregatedOffer(align, spotPrices));
         } 
-        return finalAggs;
-    }
+        else {
+            finalAggs.push_back(g.createAggregatedOffer(align));
+        }
+    } 
+    return finalAggs;
 }
 
 
@@ -125,18 +125,26 @@ vector<AggregatedFlexOffer> IncAggregator::finalize(){
 
 
 
-//////////////////////
+
+
+
+
+
+
+
+
 // For TEC
-//////////////////////
 IncAggregatorTec::IncAggregatorTec(){}
 
-void IncAggregatorTec::init(int est_th, int lst_th, int max_g, Alignments alignment, AggMode m)
+void IncAggregatorTec::init(int est_th, int lst_th, int max_g, Alignments alignment, AggMode m, const vector<double> &spotPs)
 {
     est_threshold=est_th;
     lst_threshold=lst_th;
     max_group_size=max_g;
     mode=m;
     align = alignment;
+
+    spotPrices = spotPs;
     nextGroupId=1;
     batchOffers.clear();
     incrGroups.clear();
@@ -180,7 +188,9 @@ void IncAggregatorTec::doIncInsert(const Tec_flexoffer &fo)
 {
     for(auto &g: incrGroups){
         auto it=mbrs.find(g.getGroupId());
-        if((int)g.getFlexOffers().size()>=max_group_size) continue;
+        if((int)g.getFlexOffers().size() > max_group_size){
+            continue;
+        }
         if(canMerge(it->second, fo)){
             g.addFlexOffer(fo);
             updateMBR(g, it->second);
@@ -199,32 +209,24 @@ void IncAggregatorTec::doIncInsert(const Tec_flexoffer &fo)
 
 void IncAggregatorTec::processDelta(const TecDelta &delta)
 {
-    if(mode==AggMode::BATCH){
-        if(delta.type==AggType::INSERT){
-            batchOffers.push_back(delta.fo);
-        }
-    }
-    else {
-        if(delta.type==AggType::INSERT){
-            doIncInsert(delta.fo);
-        } else {
-            // remove if needed
-        }
+    if(delta.type==AggType::INSERT){
+        doIncInsert(delta.fo);
     }
 }
 
 vector<AggregatedFlexOffer> IncAggregatorTec::finalize()
 {
-    if(mode==AggMode::BATCH){
-        auto aggOffers = nToMAggregation(batchOffers, est_threshold, lst_threshold, max_group_size, align,1);
-        return aggOffers;
-    }
-    else {
-        std::vector<AggregatedFlexOffer> finalAggs;
-        finalAggs.reserve(incrGroups.size());
-        for(auto &g : incrGroups){
-            finalAggs.push_back(g.createAggregatedOffer(Alignments::start));
+    vector<AggregatedFlexOffer> finalAggs;
+    finalAggs.reserve(incrGroups.size());
+
+    for (auto &g : incrGroups) {
+        if (align == Alignments::price) {
+            finalAggs.push_back(g.createAggregatedOffer(align, spotPrices));
+        } 
+        else {
+            finalAggs.push_back(g.createAggregatedOffer(align));
         }
-        return finalAggs;
-    }
+    } 
+
+    return finalAggs;
 }

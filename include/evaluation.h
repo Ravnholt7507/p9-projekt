@@ -30,7 +30,7 @@ double computeBaselineCost(const vector<DFO> &dfos, const vector<double> &spotPr
 double computeAggregatedCost(vector<DFO> dfos, const vector<double> &spotPrices, int max_group_size);
 
 double computeIncrementalAggregatedCost(const vector<Flexoffer> &flexOffers, const vector<double> &spotPrices,int est_threshold,int lst_threshold,int max_group_size, Alignments align);
-
+double computeIncCostTec(const vector<Tec_flexoffer> &tecs, const vector<double> &spotPrices, int est_threshold, int lst_threshold, int max_group_size, Alignments align);
 
 void runAggregationScenarios(const vector<Flexoffer> &normalOffers, const vector<Tec_flexoffer> &tecOffers, const vector<DFO> &DFOs ,const vector<double> &spotPrices);
 vector<AggScenario> generateScenarioMatrix();
