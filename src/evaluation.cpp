@@ -252,15 +252,15 @@ vector<AggScenario> generateScenarioMatrix() {
     // 3000 FOs is limit for the Incremental aggregation
 
     vector<AggScenario> scenarios;
-    vector<int> aggrTypes = {1};
+    vector<int> aggrTypes = {0, 1};
     vector<Alignments> aligns = {
         Alignments::start,
-        Alignments::balance,
-        Alignments::price,
+        //Alignments::balance,
+        //Alignments::price,
     };
 
-    vector<int> thresholds = {2}; 
-    vector<int> groupSizes = {50};
+    vector<int> thresholds = {2, 4, 10}; 
+    vector<int> groupSizes = {5, 10, 50};
     vector<int> nOffersVec = {1, 10, 100, 1000, 10000, 100000};
 
     for (int at : aggrTypes) {

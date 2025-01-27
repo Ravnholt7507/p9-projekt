@@ -48,7 +48,6 @@ vector<vector<double>> Solver::solve(vector<AggregatedFlexOffer> &afos, const ve
 
     // Solve the model
     IloCplex cplex(model);
-    cplex.setOut(cout);
 
     if (!cplex.solve()) {
         cerr << "No optimal solution found." << endl;
