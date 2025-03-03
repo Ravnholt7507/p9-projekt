@@ -23,6 +23,7 @@ void createMBR(const Tec_Group& group, MBR& mbr);
 bool exceedsThreshold(const MBR& mbr, int est_threshold, int lst_threshold);
 void clusterGroup(std::vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 void clusterGroup(std::vector<Tec_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
+void clusterFo_Group(vector<Fo_Group>& groups, int est_threshold, int lst_threshold, int max_group_size);
 time_t roundToNearestHour(time_t raw_time);
 std::vector<double> readSpotPricesFromCSV(const string& filename);
 vector<variant<Flexoffer, Tec_flexoffer>> parseEVDataToFlexOffers(const string& filename, int type);

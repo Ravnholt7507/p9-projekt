@@ -18,7 +18,7 @@ public:
     const vector<Flexoffer>& getFlexOffers() const;
 
     AggregatedFlexOffer createAggregatedOffer(Alignments)const;
-    AggregatedFlexOffer createAggregatedOffer(Alignments, const vector<double>&) const;
+    AggregatedFlexOffer createAggregatedOfferSpot(Alignments, const vector<double>&) const;
 
     void printAggregatedOffer(Alignments) const;
     void printAggregatedOffer(Alignments, const vector<double>&) const;
